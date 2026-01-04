@@ -1,0 +1,21 @@
+HTTrack3.49-2+htsswf+htsjava launched on Sun, 28 Dec 2025 19:31:50 at https://unicoderbd.com/template/bigbazar/index-cosmetic-store.html +*.png +*.gif +*.jpg +*.jpeg +*.css +*.js -ad.doubleclick.net/* -mime:application/foobar
+(winhttrack -qwC2%Ps2u1%s%uN0%I0p3DaK0H0%kf2A25000%f#f -F "Mozilla/4.5 (compatible; HTTrack 3.0x; Windows 98)" -%F "<!-- Mirrored from %s%s by HTTrack Website Copier/3.x [XR&CO'2014], %s -->" -%l "en, *" https://unicoderbd.com/template/bigbazar/index-cosmetic-store.html -O1 "D:\SHENLUNG\BEAUTYSTORY\html\beauty" +*.png +*.gif +*.jpg +*.jpeg +*.css +*.js -ad.doubleclick.net/* -mime:application/foobar )
+
+Information, Warnings and Errors reported for this mirror:
+note:	the hts-log.txt file, and hts-cache folder, may contain sensitive information,
+	such as username/password authentication for websites mirrored in this project
+	do not share these files/folders if you want these information to remain private
+
+19:36:18	Error: 	"Not Found" (404) at link https://unicoderbd.com/template/bigbazar/compare.html (from https://unicoderbd.com/template/bigbazar/index-cosmetic-store.html)
+19:36:21	Error: 	"Not Found" (404) at link https://unicoderbd.com/template/bigbazar/assets/css/owl.video.play.png (from https://unicoderbd.com/template/bigbazar/assets/css/owl.carousel.min.css)
+19:36:21	Error: 	"Not Found" (404) at link https://unicoderbd.com/template/bigbazar/assets/images/search.png (from https://unicoderbd.com/template/bigbazar/assets/css/template.css)
+19:36:21	Error: 	"Not Found" (404) at link https://unicoderbd.com/template/bigbazar/assets/images/clipart/3.png (from https://unicoderbd.com/template/bigbazar/assets/css/template.css)
+19:36:21	Error: 	"Not Found" (404) at link https://unicoderbd.com/template/bigbazar/blog-grid.html (from https://unicoderbd.com/template/bigbazar/my-account.html)
+19:36:21	Error: 	"Not Found" (404) at link https://unicoderbd.com/template/bigbazar/blog-list.html (from https://unicoderbd.com/template/bigbazar/my-account.html)
+19:36:21	Error: 	"Not Found" (404) at link https://unicoderbd.com/template/bigbazar/shop.html (from https://unicoderbd.com/template/bigbazar/my-account.html)
+19:36:21	Error: 	"Not Found" (404) at link https://unicoderbd.com/template/bigbazar/sliderbottom (from https://unicoderbd.com/template/bigbazar/index.html)
+19:36:21	Error: 	"Not Found" (404) at link https://unicoderbd.com/template/bigbazar/blog-single.html (from https://unicoderbd.com/template/bigbazar/index-minimal.html)
+19:36:21	Error: 	"Not Found" (404) at link https://unicoderbd.com/template/bigbazar/blog-single (from https://unicoderbd.com/template/bigbazar/index-watches.html)
+
+HTTrack Website Copier/3.49-2 mirror complete in 4 minutes 32 seconds : 772 links scanned, 761 files written (111274142 bytes overall) [87416745 bytes received at 321385 bytes/sec], 27508324 bytes transferred using HTTP compression in 135 files, ratio 12%, 24.9 requests per connection
+(10 errors, 0 warnings, 0 messages)

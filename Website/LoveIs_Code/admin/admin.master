@@ -1,0 +1,137 @@
+<%@ Master Language="C#" AutoEventWireup="true" CodeFile="admin.master.cs" Inherits="AdminMaster" %>
+
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="vi">
+<head runat="server">
+    <title><asp:ContentPlaceHolder ID="PageTitle" runat="server" /> | Beauty Story</title>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="icon" type="image/png" href="/images/fav.png" />
+    <link href="/admin/assets/vendor/bootstrap/css/bootstrap.min.css" rel="stylesheet" />
+    <link href="/admin/assets/vendor/fontawesome/css/all.min.css" rel="stylesheet" />
+    <link href="/admin/assets/vendor/flaticon/css/all.css" rel="stylesheet" />
+    <link href="/admin/assets/css/admin.css" rel="stylesheet" />
+    <asp:ContentPlaceHolder ID="HeadContent" runat="server" />
+</head>
+<body class="admin-dashboard">
+    <form id="form1" runat="server">
+        <header class="admin-header">
+            <div class="brand-bar">
+                <img class="logo" src="/images/logo_ngang.png" alt="BeautyStory" />
+                <nav class="admin-nav">
+                    <asp:Repeater ID="TopMenuRepeater" runat="server" OnItemDataBound="TopMenuRepeater_ItemDataBound">
+                        <ItemTemplate>
+                            <div class="admin-nav-item dropdown" runat="server" id="MenuItemContainer">
+                                <a class="nav-button admin-nav-link" runat="server" id="MenuLink"></a>
+                                <button class="nav-button dropdown-toggle" runat="server" id="MenuButton" type="button" data-bs-toggle="dropdown" aria-expanded="false"></button>
+                                <ul class="dropdown-menu" runat="server" id="MenuDropdown">
+                                    <asp:Repeater ID="ChildRepeater" runat="server">
+                                        <ItemTemplate>
+                                            <li>
+                                                <a class="dropdown-item" href="<%# Eval("Url") %>">
+                                                    <i class="<%# Eval("Icon") %> me-2"></i><%# Eval("MenuName") %>
+                                                </a>
+                                            </li>
+                                        </ItemTemplate>
+                                    </asp:Repeater>
+                                </ul>
+                            </div>
+                        </ItemTemplate>
+                    </asp:Repeater>
+                </nav>
+                <div class="dropdown">
+                    <button class="btn btn-outline-light dropdown-toggle admin-user-btn" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                        <i class="fi fi-rr-user"></i>
+                        <asp:Literal ID="CurrentUserName" runat="server" Text="Admin"></asp:Literal>
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end">
+                        <li>
+                            <a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#profileModal">
+                                <i class="fa-solid fa-key me-2"></i>Đổi mật khẩu
+                            </a>
+                        </li>
+                        <li>
+                            <asp:LinkButton ID="LogoutButton" runat="server" CssClass="dropdown-item" OnClick="LogoutButton_Click">
+                                <i class="fa-solid fa-right-from-bracket me-2"></i>Đăng xuất
+                            </asp:LinkButton>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </header>
+        <main class="content">
+            <nav class="breadcrumb-wrap bg-white px-3 py-2 rounded-3 border" aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <asp:ContentPlaceHolder ID="PageBreadcrumb" runat="server" />
+                </ol>
+            </nav>
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h4 class="mb-1">
+                        <asp:ContentPlaceHolder ID="PageHeading" runat="server" />
+                    </h4>
+                    <div class="text-muted">
+                        <asp:ContentPlaceHolder ID="PageSubHeading" runat="server" />
+                    </div>
+                </div>
+            </div>
+            <asp:ContentPlaceHolder ID="MainContent" runat="server" />
+            <div class="mt-4 small text-center footer-note">
+                Hệ thống quản trị Beauty Story. Version 1.0
+            </div>
+        </main>
+        <div class="modal fade" id="profileModal" tabindex="-1" aria-labelledby="profileModalLabel" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="profileModalLabel">Cập nhật thông tin</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Đóng"></button>
+                    </div>
+                    <div class="modal-body">
+                        <asp:Label ID="ProfileMessage" runat="server" CssClass="text-danger small d-block mb-3"></asp:Label>
+                        <div class="mb-3">
+                            <label class="form-label">Tên hiển thị</label>
+                            <asp:TextBox ID="DisplayNameInput" runat="server" CssClass="form-control" placeholder="Nhập tên hiển thị"></asp:TextBox>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Email</label>
+                            <asp:TextBox ID="EmailInput" runat="server" CssClass="form-control" placeholder="Nhập email"></asp:TextBox>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Mật khẩu hiện tại</label>
+                            <asp:TextBox ID="CurrentPasswordInput" runat="server" CssClass="form-control" TextMode="Password" placeholder="Nhập mật khẩu hiện tại"></asp:TextBox>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Mật khẩu mới</label>
+                            <asp:TextBox ID="NewPasswordInput" runat="server" CssClass="form-control" TextMode="Password" placeholder="Nhập mật khẩu mới"></asp:TextBox>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Xác nhận mật khẩu</label>
+                            <asp:TextBox ID="ConfirmPasswordInput" runat="server" CssClass="form-control" TextMode="Password" placeholder="Nhập lại mật khẩu"></asp:TextBox>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <asp:Button ID="SaveProfileButton" runat="server" CssClass="btn btn-primary" Text="Lưu thay đổi" OnClick="SaveProfileButton_Click" />
+                    </div>
+                </div>
+            </div>
+        </div>
+        <asp:HiddenField ID="ProfileModalOpen" runat="server" Value="0" />
+    </form>
+    <script src="/admin/assets/vendor/jquery/jquery.min.js"></script>
+    <script src="/admin/assets/vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
+    <script>
+        (function () {
+            var shouldOpen = document.getElementById('<%= ProfileModalOpen.ClientID %>');
+            if (shouldOpen && shouldOpen.value === '1') {
+                var modal = document.getElementById('profileModal');
+                if (modal) {
+                    var instance = bootstrap.Modal.getOrCreateInstance(modal);
+                    instance.show();
+                }
+            }
+        })();
+    </script>
+    <asp:ContentPlaceHolder ID="PageScripts" runat="server" />
+</body>
+</html>

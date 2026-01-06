@@ -252,9 +252,41 @@ body {
         left: 0;
     }
 
-    .category-swiper .swiper-button-next {
-        right: 0;
-    }
+.category-swiper .swiper-button-next {
+    right: 0;
+}
+
+.banner-two-new {
+    padding: 20px 0 40px;
+}
+
+.banner-two-swiper {
+    position: relative;
+}
+
+.banner-two-swiper .swiper-slide img {
+    width: 100%;
+    height: auto;
+    display: block;
+    border-radius: 12px;
+    box-shadow: 0 12px 28px rgba(0, 0, 0, 0.18);
+}
+
+.banner-two-swiper .swiper-button-prev,
+.banner-two-swiper .swiper-button-next {
+    color: #3a0517;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.9);
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.18);
+}
+
+.banner-two-swiper .swiper-button-prev::after,
+.banner-two-swiper .swiper-button-next::after {
+    font-size: 16px;
+    font-weight: 700;
+}
 
 .trending-grid .product-title a {
     color: #e72969;

@@ -4,6 +4,7 @@
 <%@ Register Src="~/public/controls/trang-chu/BrandHomePage.ascx" TagPrefix="uc1" TagName="BrandHomePage" %>
 <%@ Register Src="~/public/controls/trang-chu/NewArrivalHomePage.ascx" TagPrefix="uc1" TagName="NewArrivalHomePage" %>
 <%@ Register Src="~/public/controls/trang-chu/BannerTwoHomePage.ascx" TagPrefix="uc1" TagName="BannerTwoHomePage" %>
+<%@ Register Src="~/public/controls/trang-chu/BannerHomeTwoNew.ascx" TagPrefix="uc1" TagName="BannerHomeTwoNew" %>
 <%@ Register Src="~/public/controls/trang-chu/TrendingHomePage.ascx" TagPrefix="uc1" TagName="TrendingHomePage" %>
 <%@ Register Src="~/public/controls/trang-chu/BannerThreeHomePage.ascx" TagPrefix="uc1" TagName="BannerThreeHomePage" %>
 <%@ Register Src="~/public/controls/trang-chu/BestSellingHomePage.ascx" TagPrefix="uc1" TagName="BestSellingHomePage" %>
@@ -29,6 +30,7 @@
 <asp:Content ID="MainContent" ContentPlaceHolderID="MainContent" runat="server">
     
         <uc1:BannerHomePage runat="server" ID="BannerHomePage" />
+        <uc1:BannerHomeTwoNew runat="server" ID="BannerHomeTwoNew" />
 
     <%--<uc1:BrandHomePage runat="server" ID="BrandHomePage" />
 
@@ -48,60 +50,5 @@
 
 <asp:Content ID="PageScripts" ContentPlaceHolderID="PageScripts" runat="server">
     <script src="/public/assets/vendor/swiper/swiper-bundle.min.js"></script>
-    <script>
-        $(document).ready(function() {
-            $('#slider').layerSlider({
-                sliderVersion: '6.0.0',
-                type: 'fullwidth',
-                responsiveUnder: 0,
-                layersContainer: 1200,
-                hideUnder: 0,
-                hideOver: 100000,
-                skin: 'v6',
-                globalBGColor: '#ffffff',
-                navStartStop: false,
-                skinsPath: '/public/theme/assets/skins/',
-                height: 650
-            });
-        });
-    </script>
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            var newArrivalEl = document.querySelector('.new-arrival-swiper');
-            if (!newArrivalEl) {
-                return;
-            }
-
-            new Swiper(newArrivalEl, {
-                slidesPerView: 5.5,
-                spaceBetween: 16,
-                navigation: {
-                    nextEl: '.new-arrival-next',
-                    prevEl: '.new-arrival-prev'
-                },
-                breakpoints: {
-                    0: {
-                        slidesPerView: 1.2,
-                        spaceBetween: 12
-                    },
-                    576: {
-                        slidesPerView: 2.2,
-                        spaceBetween: 14
-                    },
-                    768: {
-                        slidesPerView: 3.2,
-                        spaceBetween: 16
-                    },
-                    992: {
-                        slidesPerView: 4.2,
-                        spaceBetween: 16
-                    },
-                    1200: {
-                        slidesPerView: 5.5,
-                        spaceBetween: 16
-                    }
-                }
-            });
-        });
-    </script>
+    <script src="/public/assets/js/home.js"></script>
 </asp:Content>

@@ -87,26 +87,3 @@
     </div>
 </div>
 <!--==================== Slider Section End ====================-->
-<link rel="stylesheet" href="/public/assets/vendor/swiper/swiper-bundle.min.css" />
-<script src="/public/assets/vendor/swiper/swiper-bundle.min.js"></script>
-<script>
-    (function () {
-        var el = document.querySelector(".category-swiper");
-        if (!el || typeof Swiper === "undefined") {
-            return;
-        }
-        new Swiper(el, {
-            slidesPerView: 3,
-            spaceBetween: 18,
-            navigation: {
-                nextEl: ".category-swiper-next",
-                prevEl: ".category-swiper-prev"
-            },
-            breakpoints: {
-                640: { slidesPerView: 2 },
-                992: { slidesPerView: 3 },
-                1200: { slidesPerView: 6 }
-            }
-        });
-    })();
-</script>

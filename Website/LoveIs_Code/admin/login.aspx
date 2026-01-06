@@ -3,7 +3,7 @@
 <!DOCTYPE html>
 <html xmlns="http://www.w3.org/1999/xhtml" lang="vi">
 <head runat="server">
-    <title>Đăng nhập quản trị | Beauty Story</title>
+    <title>Đăng nhập quản trị | LoveIs Store</title>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <link rel="icon" type="image/png" href="/images/fav.png" />
@@ -37,7 +37,7 @@
                 <asp:Button ID="LoginButton" runat="server" Text="Đăng nhập" CssClass="btn btn-primary" OnClick="LoginButton_Click" />
             </div>
             <div class="mt-4 small text-center footer-note">
-                Hệ thống quản trị Beauty Story. Version 1.0
+                Hệ thống quản trị LoveIs Store. Version 1.0
             </div>
         </div>
     </form>

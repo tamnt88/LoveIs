@@ -7,7 +7,7 @@
     Bảng điều khiển
 </asp:Content>
 <asp:Content ID="SubHeadingContent" ContentPlaceHolderID="PageSubHeading" runat="server">
-    Chào mừng bạn đến hệ thống quản trị BeautyStory
+    Chào mừng bạn đến hệ thống quản trị LoveIs Store
 </asp:Content>
 <asp:Content ID="BreadcrumbContent" ContentPlaceHolderID="PageBreadcrumb" runat="server">
     <li class="breadcrumb-item"><a href="/admin/default.aspx">Trang chủ</a></li>

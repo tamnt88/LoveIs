@@ -3,7 +3,7 @@
 <!DOCTYPE html>
 <html xmlns="http://www.w3.org/1999/xhtml" lang="vi">
 <head runat="server">
-    <title><asp:ContentPlaceHolder ID="PageTitle" runat="server" /> | Beauty Story</title>
+    <title><asp:ContentPlaceHolder ID="PageTitle" runat="server" /> | LoveIs Store</title>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <link rel="icon" type="image/png" href="/images/fav.png" />
@@ -17,7 +17,7 @@
     <form id="form1" runat="server">
         <header class="admin-header">
             <div class="brand-bar">
-                <img class="logo" src="/images/logo_ngang.png" alt="BeautyStory" />
+                <img class="logo" src="/images/logo_ngang.png" alt="LoveIs Store" />
                 <nav class="admin-nav">
                     <asp:Repeater ID="TopMenuRepeater" runat="server" OnItemDataBound="TopMenuRepeater_ItemDataBound">
                         <ItemTemplate>
@@ -77,7 +77,7 @@
             </div>
             <asp:ContentPlaceHolder ID="MainContent" runat="server" />
             <div class="mt-4 small text-center footer-note">
-                Hệ thống quản trị Beauty Story. Version 1.0
+                Hệ thống quản trị LoveIs Store. Version 1.0
             </div>
         </main>
         <div class="modal fade" id="profileModal" tabindex="-1" aria-labelledby="profileModalLabel" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">

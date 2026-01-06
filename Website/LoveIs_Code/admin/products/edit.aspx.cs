@@ -201,6 +201,10 @@ public partial class AdminProductsEdit : AdminBasePage
         string twitterImage = SaveUploadedFile(TwitterImageUpload, "products/twitter", TwitterImageValue.Value);
         string canonicalUrl = (CanonicalUrlInput.Text ?? string.Empty).Trim();
         string robots = (RobotsInput.Text ?? string.Empty).Trim();
+        decimal? packageWeight = ParseNullableDecimal(PackageWeightInput.Text);
+        decimal? packageLength = ParseNullableDecimal(PackageLengthInput.Text);
+        decimal? packageWidth = ParseNullableDecimal(PackageWidthInput.Text);
+        decimal? packageHeight = ParseNullableDecimal(PackageHeightInput.Text);
         string sortText = (SortOrderInput.Text ?? string.Empty).Trim();
         bool isNewArrival = NewArrivalInput.Checked;
         bool isTrending = TrendingInput.Checked;
@@ -288,6 +292,10 @@ public partial class AdminProductsEdit : AdminBasePage
             product.TwitterImage = string.IsNullOrWhiteSpace(twitterImage) ? null : twitterImage;
             product.CanonicalUrl = string.IsNullOrWhiteSpace(canonicalUrl) ? null : canonicalUrl;
             product.Robots = string.IsNullOrWhiteSpace(robots) ? null : robots;
+            product.PackageWeightGrams = packageWeight;
+            product.PackageLengthCm = packageLength;
+            product.PackageWidthCm = packageWidth;
+            product.PackageHeightCm = packageHeight;
             product.SortOrder = sortOrder;
             product.IsNewArrival = isNewArrival;
             product.IsTrending = isTrending;
@@ -957,6 +965,10 @@ public partial class AdminProductsEdit : AdminBasePage
             SetPreview(TwitterImagePreview, product.TwitterImage);
             CanonicalUrlInput.Text = product.CanonicalUrl;
             RobotsInput.Text = product.Robots;
+            PackageWeightInput.Text = FormatNullableDecimal(product.PackageWeightGrams);
+            PackageLengthInput.Text = FormatNullableDecimal(product.PackageLengthCm);
+            PackageWidthInput.Text = FormatNullableDecimal(product.PackageWidthCm);
+            PackageHeightInput.Text = FormatNullableDecimal(product.PackageHeightCm);
             SortOrderInput.Text = product.SortOrder.ToString();
             NewArrivalInput.Checked = product.IsNewArrival;
             TrendingInput.Checked = product.IsTrending;
@@ -1855,6 +1867,10 @@ public partial class AdminProductsEdit : AdminBasePage
         SetPreview(TwitterImagePreview, null);
         CanonicalUrlInput.Text = string.Empty;
         RobotsInput.Text = string.Empty;
+        PackageWeightInput.Text = string.Empty;
+        PackageLengthInput.Text = string.Empty;
+        PackageWidthInput.Text = string.Empty;
+        PackageHeightInput.Text = string.Empty;
         SortOrderInput.Text = "0";
         NewArrivalInput.Checked = false;
         TrendingInput.Checked = false;
@@ -1866,6 +1882,32 @@ public partial class AdminProductsEdit : AdminBasePage
         ResetVariantForm();
         ResetVariantAttrForm();
         MatrixMessage.Text = string.Empty;
+    }
+
+    private static decimal? ParseNullableDecimal(string value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return null;
+        }
+
+        decimal parsed;
+        if (decimal.TryParse(value, NumberStyles.Number, CultureInfo.CurrentCulture, out parsed))
+        {
+            return parsed;
+        }
+
+        if (decimal.TryParse(value, NumberStyles.Number, CultureInfo.InvariantCulture, out parsed))
+        {
+            return parsed;
+        }
+
+        return null;
+    }
+
+    private static string FormatNullableDecimal(decimal? value)
+    {
+        return value.HasValue ? value.Value.ToString("0.##", CultureInfo.CurrentCulture) : string.Empty;
     }
 
     private void ResetImageForm()

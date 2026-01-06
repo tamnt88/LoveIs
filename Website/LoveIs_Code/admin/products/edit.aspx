@@ -585,6 +585,24 @@
                     </div>
 
                     <div class="tab-pane fade" id="tab-setting-pane" role="tabpanel">
+                        <div class="row g-2 mb-3">
+                            <div class="col-md-3">
+                                <label class="form-label">C&#226;n n&#7863;ng (gram)</label>
+                                <asp:TextBox ID="PackageWeightInput" runat="server" CssClass="form-control" />
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label">D&#224;i (cm)</label>
+                                <asp:TextBox ID="PackageLengthInput" runat="server" CssClass="form-control" />
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label">R&#7897;ng (cm)</label>
+                                <asp:TextBox ID="PackageWidthInput" runat="server" CssClass="form-control" />
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label">Cao (cm)</label>
+                                <asp:TextBox ID="PackageHeightInput" runat="server" CssClass="form-control" />
+                            </div>
+                        </div>
                         <div class="row g-2 align-items-end">
                             <div class="col-md-4">
                                 <label class="form-label">Th&#7913; t&#7921;</label>

@@ -91,6 +91,14 @@ public class CfProduct
 
     public int ContentScore { get; set; }
 
+    public decimal? PackageWeightGrams { get; set; }
+
+    public decimal? PackageLengthCm { get; set; }
+
+    public decimal? PackageWidthCm { get; set; }
+
+    public decimal? PackageHeightCm { get; set; }
+
     public bool Status { get; set; }
 
     public DateTime CreatedAt { get; set; }

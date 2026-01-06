@@ -1,0 +1,498 @@
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Web.UI.WebControls;
+
+public partial class CheckoutDefault : System.Web.UI.Page
+{
+    public class WardOption
+    {
+        public int Id { get; set; }
+        public string Name { get; set; }
+    }
+
+    public class ShippingSummary
+    {
+        public string ShippingFeeText { get; set; }
+        public string TotalText { get; set; }
+    }
+
+    protected void Page_Load(object sender, EventArgs e)
+    {
+        Response.ContentEncoding = Encoding.UTF8;
+        Response.Charset = "utf-8";
+
+        if (!IsPostBack)
+        {
+            BindProvinces();
+            BindWards(null);
+            BindShippingMethods();
+            BindPaymentMethods();
+            BindSummary();
+        }
+    }
+
+    private void BindProvinces()
+    {
+        using (var db = new BeautyStoryContext())
+        {
+            var provinces = db.CfProvinces
+                .OrderBy(p => p.ProvinceName)
+                .Select(p => new { p.Id, p.ProvinceName })
+                .ToList();
+
+            ProvinceDropDown.Items.Clear();
+            ProvinceDropDown.Items.Add(new ListItem("-- Chọn tỉnh --", ""));
+            foreach (var item in provinces)
+            {
+                ProvinceDropDown.Items.Add(new ListItem(item.ProvinceName, item.Id.ToString()));
+            }
+        }
+    }
+
+    private void BindWards(int? provinceId)
+    {
+        WardDropDown.Items.Clear();
+        WardDropDown.Items.Add(new ListItem("-- Chọn phường --", ""));
+        if (!provinceId.HasValue)
+        {
+            return;
+        }
+
+        using (var db = new BeautyStoryContext())
+        {
+            var wards = db.CfWards
+                .Where(w => w.ProvinceId == provinceId.Value)
+                .OrderBy(w => w.WardName)
+                .Select(w => new { w.Id, w.WardName })
+                .ToList();
+
+            foreach (var ward in wards)
+            {
+                WardDropDown.Items.Add(new ListItem(ward.WardName, ward.Id.ToString()));
+            }
+        }
+    }
+
+    private void BindShippingMethods()
+    {
+        using (var db = new BeautyStoryContext())
+        {
+            var methods = db.CfShippingMethods
+                .Where(m => m.Status)
+                .OrderBy(m => m.SortOrder)
+                .ToList();
+
+            ShippingMethodList.Items.Clear();
+            foreach (var method in methods)
+            {
+                var label = string.IsNullOrWhiteSpace(method.EtaText)
+                    ? method.Name
+                    : string.Format("{0} ({1})", method.Name, method.EtaText);
+                ShippingMethodList.Items.Add(new ListItem(label, method.Id.ToString()));
+            }
+
+            var selected = methods.FirstOrDefault(m => m.IsDefault) ?? methods.FirstOrDefault();
+            if (selected != null)
+            {
+                ShippingMethodList.SelectedValue = selected.Id.ToString();
+            }
+        }
+    }
+
+    private void BindPaymentMethods()
+    {
+        using (var db = new BeautyStoryContext())
+        {
+            var methods = db.CfPaymentMethods
+                .Where(m => m.Status)
+                .OrderBy(m => m.SortOrder)
+                .ToList();
+
+            PaymentMethodList.Items.Clear();
+            foreach (var method in methods)
+            {
+                PaymentMethodList.Items.Add(new ListItem(method.Name, method.Id.ToString()));
+            }
+
+            var selected = methods.FirstOrDefault(m => m.IsDefault) ?? methods.FirstOrDefault();
+            if (selected != null)
+            {
+                PaymentMethodList.SelectedValue = selected.Id.ToString();
+            }
+        }
+    }
+
+    private void BindSummary()
+    {
+        var cart = CartService.GetCart();
+        if (cart.Count == 0)
+        {
+            CheckoutEmptyPanel.Visible = true;
+            CheckoutPanel.Visible = false;
+            return;
+        }
+
+        using (var db = new BeautyStoryContext())
+        {
+            var variantIds = cart.Select(c => c.VariantId).ToList();
+            var variants = db.CfProductVariants
+                .Where(v => variantIds.Contains(v.Id))
+                .ToList();
+            var productIds = variants.Select(v => v.ProductId).Distinct().ToList();
+            var products = db.CfProducts
+                .Where(p => productIds.Contains(p.Id))
+                .ToList();
+            var attributes = db.CfProductVariantAttributes
+                .Where(pva => variantIds.Contains(pva.VariantId))
+                .ToList();
+            var attributeLookup = db.CfVariantAttributes.ToDictionary(a => a.Id, a => a.AttributeName);
+            var valueLookup = db.CfVariantAttributeValues.ToDictionary(v => v.Id, v => v.ValueName);
+
+            var variantLookup = variants.ToDictionary(v => v.Id, v => v);
+            var productLookup = products.ToDictionary(p => p.Id, p => p);
+
+            var lines = cart.Select(item =>
+            {
+                var variant = variantLookup.ContainsKey(item.VariantId) ? variantLookup[item.VariantId] : null;
+                var product = variant != null && productLookup.ContainsKey(variant.ProductId) ? productLookup[variant.ProductId] : null;
+                var price = variant != null && (variant.SalePrice.HasValue || variant.Price > 0)
+                    ? (variant.SalePrice.HasValue ? variant.SalePrice.Value : variant.Price)
+                    : 0;
+                var lineTotal = price * item.Quantity;
+
+                var attrs = attributes
+                    .Where(a => a.VariantId == item.VariantId)
+                    .Select(a =>
+                    {
+                        var attrName = attributeLookup.ContainsKey(a.AttributeId) ? attributeLookup[a.AttributeId] : "";
+                        var valueName = valueLookup.ContainsKey(a.AttributeValueId) ? valueLookup[a.AttributeValueId] : "";
+                        return string.Format("{0}: {1}", attrName, valueName);
+                    })
+                    .ToList();
+
+                return new
+                {
+                    VariantId = item.VariantId,
+                    ProductId = product != null ? product.Id : 0,
+                    ProductName = product != null ? product.ProductName : "-",
+                    VariantText = attrs.Count > 0 ? string.Join(", ", attrs) : "Mặc định",
+                    Quantity = item.Quantity,
+                    PriceValue = price,
+                    LineTotalValue = lineTotal,
+                    LineTotal = price > 0 ? string.Format("{0:N0} đ", lineTotal) : "Liên hệ"
+                };
+            }).ToList();
+
+            SummaryRepeater.DataSource = lines;
+            SummaryRepeater.DataBind();
+
+            var subtotal = lines.Sum(x => x.LineTotalValue);
+            var shippingFee = CalculateShippingFee();
+            var total = subtotal + shippingFee;
+
+            SubtotalLiteral.Text = subtotal > 0 ? string.Format("{0:N0} đ", subtotal) : "Liên hệ";
+            ShippingFeeLiteral.Text = shippingFee > 0 ? string.Format("{0:N0} đ", shippingFee) : "Miễn phí";
+            TotalLiteral.Text = total > 0 ? string.Format("{0:N0} đ", total) : "Liên hệ";
+        }
+    }
+
+    private decimal CalculateShippingFee()
+    {
+        int methodId;
+        if (!int.TryParse(ShippingMethodList.SelectedValue, out methodId))
+        {
+            return 0;
+        }
+
+        using (var db = new BeautyStoryContext())
+        {
+            var method = db.CfShippingMethods.FirstOrDefault(m => m.Id == methodId);
+            if (method == null)
+            {
+                return 0;
+            }
+
+            var baseFee = method.BaseFee;
+            var innerCityFee = method.InnerCityFee > 0 ? method.InnerCityFee : method.BaseFee;
+
+            int provinceId;
+            if (!int.TryParse(ProvinceDropDown.SelectedValue, out provinceId))
+            {
+                return baseFee;
+            }
+
+            var province = db.CfProvinces.FirstOrDefault(p => p.Id == provinceId);
+            if (province != null)
+            {
+                var name = province.ProvinceName ?? string.Empty;
+                if (name.Contains("Hồ Chí Minh") || name.Contains("Hà Nội"))
+                {
+                    return innerCityFee;
+                }
+            }
+
+            return baseFee;
+        }
+    }
+
+    protected void PlaceOrderButton_Click(object sender, EventArgs e)
+    {
+        CheckoutMessage.Text = string.Empty;
+        var cart = CartService.GetCart();
+        if (cart.Count == 0)
+        {
+            CheckoutMessage.Text = "Giỏ hàng đang trống.";
+            return;
+        }
+
+        var customerName = (CustomerNameInput.Text ?? string.Empty).Trim();
+        var phone = (PhoneInput.Text ?? string.Empty).Trim();
+        var addressLine = (AddressInput.Text ?? string.Empty).Trim();
+
+        if (string.IsNullOrWhiteSpace(customerName) || string.IsNullOrWhiteSpace(phone) || string.IsNullOrWhiteSpace(addressLine))
+        {
+            CheckoutMessage.Text = "Vui lòng nhập đầy đủ họ tên, số điện thoại và địa chỉ.";
+            return;
+        }
+
+        int provinceId;
+        int wardId;
+        int? provinceValue = int.TryParse(ProvinceDropDown.SelectedValue, out provinceId) ? (int?)provinceId : null;
+        int? wardValue = int.TryParse(WardDropDown.SelectedValue, out wardId) ? (int?)wardId : null;
+
+        var orderCode = GenerateOrderCode();
+
+        using (var db = new BeautyStoryContext())
+        {
+            var variantIds = cart.Select(c => c.VariantId).ToList();
+            var variants = db.CfProductVariants.Where(v => variantIds.Contains(v.Id)).ToList();
+            var productIds = variants.Select(v => v.ProductId).Distinct().ToList();
+            var products = db.CfProducts.Where(p => productIds.Contains(p.Id)).ToList();
+            var attributes = db.CfProductVariantAttributes.Where(pva => variantIds.Contains(pva.VariantId)).ToList();
+            var attributeLookup = db.CfVariantAttributes.ToDictionary(a => a.Id, a => a.AttributeName);
+            var valueLookup = db.CfVariantAttributeValues.ToDictionary(v => v.Id, v => v.ValueName);
+
+            var variantLookup = variants.ToDictionary(v => v.Id, v => v);
+            var productLookup = products.ToDictionary(p => p.Id, p => p);
+
+            var provinceName = provinceValue.HasValue
+                ? db.CfProvinces.Where(p => p.Id == provinceValue.Value).Select(p => p.ProvinceName).FirstOrDefault()
+                : null;
+            var wardName = wardValue.HasValue
+                ? db.CfWards.Where(w => w.Id == wardValue.Value).Select(w => w.WardName).FirstOrDefault()
+                : null;
+
+            var orderItems = new List<CfOrderItem>();
+            decimal subtotal = 0;
+
+            foreach (var item in cart)
+            {
+                var variant = variantLookup.ContainsKey(item.VariantId) ? variantLookup[item.VariantId] : null;
+                var product = variant != null && productLookup.ContainsKey(variant.ProductId) ? productLookup[variant.ProductId] : null;
+                if (variant == null || product == null)
+                {
+                    continue;
+                }
+
+                var price = variant.SalePrice.HasValue ? variant.SalePrice.Value : variant.Price;
+                var lineTotal = price * item.Quantity;
+                subtotal += lineTotal;
+
+                var attrs = attributes
+                    .Where(a => a.VariantId == item.VariantId)
+                    .Select(a =>
+                    {
+                        var attrName = attributeLookup.ContainsKey(a.AttributeId) ? attributeLookup[a.AttributeId] : "";
+                        var valueName = valueLookup.ContainsKey(a.AttributeValueId) ? valueLookup[a.AttributeValueId] : "";
+                        return string.Format("{0}: {1}", attrName, valueName);
+                    })
+                    .ToList();
+
+                orderItems.Add(new CfOrderItem
+                {
+                    ProductId = product.Id,
+                    VariantId = variant.Id,
+                    ProductName = product.ProductName,
+                    VariantName = attrs.Count > 0 ? string.Join(", ", attrs) : "Mặc định",
+                    Quantity = item.Quantity,
+                    Price = variant.Price,
+                    SalePrice = variant.SalePrice,
+                    LineTotal = lineTotal,
+                    Status = true,
+                    CreatedAt = DateTime.Now,
+                    SortOrder = 0
+                });
+            }
+
+            var shippingFee = CalculateShippingFee();
+            var total = subtotal + shippingFee;
+
+            int shippingMethodId;
+            int? shippingMethodValue = int.TryParse(ShippingMethodList.SelectedValue, out shippingMethodId) ? (int?)shippingMethodId : null;
+            int paymentMethodId;
+            int? paymentMethodValue = int.TryParse(PaymentMethodList.SelectedValue, out paymentMethodId) ? (int?)paymentMethodId : null;
+
+            var shippingMethod = shippingMethodValue.HasValue
+                ? db.CfShippingMethods.FirstOrDefault(m => m.Id == shippingMethodValue.Value)
+                : null;
+            var paymentMethod = paymentMethodValue.HasValue
+                ? db.CfPaymentMethods.FirstOrDefault(m => m.Id == paymentMethodValue.Value)
+                : null;
+
+            var orderStatus = db.CfOrderStatuses.FirstOrDefault(s => s.IsDefault) ?? db.CfOrderStatuses.FirstOrDefault();
+            var paymentStatus = db.CfPaymentStatuses.FirstOrDefault(s => s.IsDefault) ?? db.CfPaymentStatuses.FirstOrDefault();
+
+            var order = new CfOrder
+            {
+                OrderCode = orderCode,
+                CustomerName = customerName,
+                Phone = phone,
+                AddressLine = addressLine,
+                WardId = wardValue,
+                ProvinceId = provinceValue,
+                WardName = wardName,
+                ProvinceName = provinceName,
+                Note = NoteInput.Text,
+                InvoiceRequired = InvoiceCheckBox.Checked,
+                InvoiceCompanyName = InvoiceCompanyInput.Text,
+                InvoiceTaxCode = InvoiceTaxInput.Text,
+                InvoiceEmail = InvoiceEmailInput.Text,
+                InvoiceAddress = InvoiceAddressInput.Text,
+                ShippingMethodId = shippingMethod != null ? (int?)shippingMethod.Id : null,
+                ShippingMethod = shippingMethod != null ? shippingMethod.Name : string.Empty,
+                ShippingFee = shippingFee,
+                ShippingEta = shippingMethod != null ? shippingMethod.EtaText : string.Empty,
+                PaymentMethodId = paymentMethod != null ? (int?)paymentMethod.Id : null,
+                PaymentMethod = paymentMethod != null ? paymentMethod.Name : string.Empty,
+                PaymentStatusId = paymentStatus != null ? (int?)paymentStatus.Id : null,
+                PaymentStatus = paymentStatus != null ? paymentStatus.Name : string.Empty,
+                OrderStatusId = orderStatus != null ? (int?)orderStatus.Id : null,
+                OrderStatus = orderStatus != null ? orderStatus.Name : string.Empty,
+                Subtotal = subtotal,
+                Discount = 0,
+                Total = total,
+                Status = true,
+                CreatedAt = DateTime.Now,
+                SortOrder = 0,
+                Items = new List<CfOrderItem>()
+            };
+
+            db.CfOrders.Add(order);
+            db.SaveChanges();
+
+            foreach (var item in orderItems)
+            {
+                item.OrderId = order.Id;
+                db.CfOrderItems.Add(item);
+            }
+
+            db.CfOrderHistories.Add(new CfOrderHistory
+            {
+                OrderId = order.Id,
+                Action = "Create",
+                Note = "Khởi tạo đơn hàng",
+                Status = true,
+                CreatedAt = DateTime.Now,
+                SortOrder = 0
+            });
+
+            db.SaveChanges();
+        }
+
+        CartService.ClearCart();
+        Response.Redirect("/thanh-toan/hoan-tat.aspx?code=" + Server.UrlEncode(orderCode));
+    }
+
+    private static string GenerateOrderCode()
+    {
+        var random = new Random();
+        return "BS" + DateTime.Now.ToString("yyyyMMddHHmmss") + random.Next(100, 999).ToString();
+    }
+
+    [System.Web.Services.WebMethod]
+    public static List<WardOption> GetWards(int provinceId)
+    {
+        using (var db = new BeautyStoryContext())
+        {
+            return db.CfWards
+                .Where(w => w.ProvinceId == provinceId)
+                .OrderBy(w => w.WardName)
+                .Select(w => new WardOption { Id = w.Id, Name = w.WardName })
+                .ToList();
+        }
+    }
+
+    [System.Web.Services.WebMethod]
+    public static ShippingSummary GetShippingSummary(int provinceId, int shippingMethodId)
+    {
+        decimal subtotal = 0;
+        decimal shippingFee = 0;
+
+        using (var db = new BeautyStoryContext())
+        {
+            var cart = CartService.GetCart();
+            if (cart.Count > 0)
+            {
+                var variantIds = cart.Select(c => c.VariantId).ToList();
+                var variants = db.CfProductVariants
+                    .Where(v => variantIds.Contains(v.Id))
+                    .Select(v => new { v.Id, v.Price, v.SalePrice })
+                    .ToList();
+                var variantLookup = variants.ToDictionary(v => v.Id, v => v);
+
+                foreach (var item in cart)
+                {
+                    if (!variantLookup.ContainsKey(item.VariantId))
+                    {
+                        continue;
+                    }
+
+                    var variant = variantLookup[item.VariantId];
+                    var price = variant.SalePrice.HasValue ? variant.SalePrice.Value : variant.Price;
+                    subtotal += price * item.Quantity;
+                }
+            }
+
+            var method = db.CfShippingMethods.FirstOrDefault(m => m.Id == shippingMethodId);
+            if (method != null)
+            {
+                var baseFee = method.BaseFee;
+                var innerCityFee = method.InnerCityFee > 0 ? method.InnerCityFee : method.BaseFee;
+
+                if (provinceId > 0)
+                {
+                    var province = db.CfProvinces.FirstOrDefault(p => p.Id == provinceId);
+                    if (province != null)
+                    {
+                        var name = province.ProvinceName ?? string.Empty;
+                        if (name.Contains("Hồ Chí Minh") || name.Contains("Hà Nội"))
+                        {
+                            shippingFee = innerCityFee;
+                        }
+                        else
+                        {
+                            shippingFee = baseFee;
+                        }
+                    }
+                    else
+                    {
+                        shippingFee = baseFee;
+                    }
+                }
+                else
+                {
+                    shippingFee = baseFee;
+                }
+            }
+        }
+
+        var total = subtotal + shippingFee;
+        return new ShippingSummary
+        {
+            ShippingFeeText = shippingFee > 0 ? string.Format("{0:N0} đ", shippingFee) : "Miễn phí",
+            TotalText = total > 0 ? string.Format("{0:N0} đ", total) : "Liên hệ"
+        };
+    }
+}

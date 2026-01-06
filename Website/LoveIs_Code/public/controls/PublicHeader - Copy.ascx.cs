@@ -20,11 +20,11 @@ public partial class PublicHeader : System.Web.UI.UserControl
     {
         using (var db = new BeautyStoryContext())
         {
-            var info = PublicCache.GetOrCreate("contact_info", 10, () => db.CfContactInfos
+            var info = db.CfContactInfos
                 .Where(i => i.Status)
                 .OrderBy(i => i.SortOrder)
                 .ThenBy(i => i.Id)
-                .FirstOrDefault());
+                .FirstOrDefault();
 
             var address = info != null && !string.IsNullOrWhiteSpace(info.Address)
                 ? info.Address
@@ -81,13 +81,13 @@ public partial class PublicHeader : System.Web.UI.UserControl
     {
         using (var db = new BeautyStoryContext())
         {
-            var allCategories = PublicCache.GetOrCreate("categories_all", 5, () => db.CfCategories
+            var allCategories = db.CfCategories
                 .Where(c => c.Status)
                 .OrderBy(c => c.SortOrder)
                 .ThenBy(c => c.CategoryName)
-                .ToList());
+                .ToList();
 
-            var slugs = PublicCache.GetOrCreate("slugs_all", 5, () => db.CfSeoSlugs.ToList());
+            var slugs = db.CfSeoSlugs.ToList();
             var slugLookup = slugs
                 .GroupBy(s => s.EntityType)
                 .ToDictionary(

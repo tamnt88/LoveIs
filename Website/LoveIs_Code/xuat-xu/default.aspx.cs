@@ -21,7 +21,7 @@ public partial class OriginDefault : System.Web.UI.Page
     {
         using (var db = new BeautyStoryContext())
         {
-            var slugs = PublicCache.GetOrCreate("slugs_all", 5, () => db.CfSeoSlugs.ToList());
+            var slugs = db.CfSeoSlugs.ToList();
             var slugLookup = slugs
                 .GroupBy(s => s.EntityType)
                 .ToDictionary(

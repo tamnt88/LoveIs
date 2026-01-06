@@ -1,0 +1,200 @@
+
+:root {
+    --seller-primary: #3a0517;
+    --seller-ink: #1f0a12;
+    --seller-muted: #6f4b56;
+    --seller-border: #e6cfd7;
+    --seller-soft: #f7eff2;
+}
+
+body {
+    background: #fff;
+    color: var(--seller-ink);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+.seller-topbar {
+    background: var(--seller-primary);
+    color: #fff;
+}
+
+    .seller-topbar .brand {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-weight: 600;
+    }
+
+        .seller-topbar .brand img {
+            height: 28px;
+        }
+
+.seller-main {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    padding: 36px 0 40px;
+    padding-top: 100px;
+}
+
+.seller-grid {
+    display: grid;
+    grid-template-columns: 1fr 0.95fr;
+    gap: 50px;
+    align-items: start;
+}
+
+.seller-hero-title {
+    font-size: 28px;
+    font-weight: 700;
+    margin-bottom: 10px;
+}
+
+.seller-hero-sub {
+    color: var(--seller-muted);
+    max-width: 420px;
+    margin-bottom: 24px;
+    line-height: 1.6;
+}
+
+.seller-banner {
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 16px 36px rgba(24, 7, 13, 0.18);
+}
+
+    .seller-banner img {
+        width: 100%;
+        height: 360px;
+        object-fit: cover;
+    }
+
+.login-card {
+    border: none;
+    border-radius: 12px;
+    padding: 26px 28px 30px;
+    background: #fff;
+    box-shadow: 0 10px 20px rgba(20, 6, 12, 0.2);
+    margin-top: 45px;
+}
+
+.login-tabs {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    font-weight: 600;
+    font-size: 15px;
+    margin-bottom: 22px;
+    border-bottom: 1px solid #e6dfe6;
+}
+
+    .login-tabs span {
+        text-align: center;
+        padding-bottom: 10px;
+    }
+
+    .login-tabs .active {
+        color: var(--seller-primary);
+        border-bottom: 2px solid var(--seller-primary);
+        padding-bottom: 12px;
+    }
+
+    .login-tabs .qr {
+        color: #7a6b5c;
+    }
+
+.form-label {
+    font-weight: 600;
+    color: #5c4b3b;
+}
+
+.form-control {
+    border-radius: 8px;
+    border: 1px solid #d9d3dc;
+    padding: 14px 16px;
+    font-size: 15px;
+    background: #fff;
+}
+
+.password-wrap {
+    position: relative;
+}
+
+    .password-wrap i {
+        position: absolute;
+        right: 16px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: #9a8b79;
+    }
+
+.btn-seller {
+    background: var(--seller-primary);
+    border-color: var(--seller-primary);
+    color: #fff;
+    font-weight: 700;
+    letter-spacing: 0.8px;
+    padding: 12px 0;
+    border-radius: 8px;
+    text-transform: uppercase;
+    box-shadow: 0 10px 22px rgba(58, 5, 23, 0.25);
+}
+
+    .btn-seller:hover {
+        background: #2a0411;
+        border-color: #2a0411;
+        color: #fff;
+    }
+
+.divider {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    color: #7a6b5c;
+    font-size: 13px;
+    margin: 18px 0 18px;
+}
+
+    .divider::before,
+    .divider::after {
+        content: "";
+        flex: 1;
+        height: 1px;
+        background: #e0d7de;
+    }
+
+.btn-social {
+    border: 1px solid #d7d1da;
+    border-radius: 8px;
+    padding: 11px 12px;
+    font-weight: 600;
+    background: #fff;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+
+.login-footer {
+    border-top: 1px solid #eee;
+    padding-top: 14px;
+}
+
+.seller-footer {
+    text-align: center;
+    padding: 18px 0 24px;
+    color: #7a6b5c;
+    font-size: 13px;
+    border-top: 1px solid #eee;
+}
+
+@media (max-width: 991px) {
+    .seller-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .seller-banner img {
+        height: 280px;
+    }
+}

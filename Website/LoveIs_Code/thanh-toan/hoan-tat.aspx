@@ -11,7 +11,7 @@
                 <i class="fa-solid fa-check"></i>
             </div>
             <h1 class="complete-title">Đặt hàng thành công</h1>
-            <p class="complete-lead">Cảm ơn bạn đã mua sắm tại Beauty Story.</p>
+            <p class="complete-lead">Cảm ơn bạn đã mua sắm tại LoveIs Store.</p>
             <div class="complete-code">
                 Mã đơn hàng: <strong><asp:Literal ID="OrderCodeLiteral" runat="server" /></strong>
             </div>

@@ -17,8 +17,7 @@ public partial class SearchSuggest : System.Web.UI.Page
             return;
         }
 
-        string cacheKey = "search_suggest_" + query.ToLowerInvariant();
-        var result = PublicCache.GetOrCreate(cacheKey, 1, () => BuildSuggest(query));
+        var result = BuildSuggest(query);
         var serializer = new System.Web.Script.Serialization.JavaScriptSerializer();
         Response.Write(serializer.Serialize(result));
     }

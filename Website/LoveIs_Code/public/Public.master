@@ -31,8 +31,10 @@
     <link rel="stylesheet" href="<%= ResolveUrl("~/public/assets/vendor/malihu/jquery.mCustomScrollbar.min.css") %>" />
     <link rel="stylesheet" href="<%= ResolveUrl("~/public/assets/css/public.css") %>" />
     <asp:ContentPlaceHolder ID="HeadContent" runat="server"></asp:ContentPlaceHolder>
+    <asp:Literal ID="HeaderTrackingLiteral" runat="server"></asp:Literal>
 </head>
 <body>
+    <asp:Literal ID="BodyTrackingLiteral" runat="server"></asp:Literal>
     <form id="form1" runat="server">
         <asp:ScriptManager ID="PublicScriptManager" runat="server" EnablePartialRendering="true" EnablePageMethods="true" />
         <div id="page_wrapper" class="bg-white">

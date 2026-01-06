@@ -1,0 +1,102 @@
+﻿<%@ Master Language="C#" AutoEventWireup="true" CodeFile="Public.master.cs" Inherits="PublicMaster" %>
+
+<%@ Register Src="~/public/controls/PublicHeader.ascx" TagPrefix="bs" TagName="PublicHeader" %>
+<%@ Register Src="~/public/controls/PublicFooter.ascx" TagPrefix="bs" TagName="PublicFooter" %>
+
+<!DOCTYPE html>
+<%--<html xmlns="http://www.w3.org/1999/xhtml" lang="vi">--%>
+<html lang="vi" dir="ltr">
+<head runat="server">
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>
+        <asp:ContentPlaceHolder ID="TitleContent" runat="server">LoveIs Store</asp:ContentPlaceHolder>
+    </title>
+
+    <link rel="shortcut icon" href="<%= ResolveUrl("~/images/fav.png") %>" />
+
+    <link rel="stylesheet" href="<%= ResolveUrl("~/public/assets/css/roboto.css") %>" />
+    <link rel="stylesheet" href="<%= ResolveUrl("~/public/theme/assets/css/bootstrap.min.css") %>" />
+    <link rel="stylesheet" href="<%= ResolveUrl("~/public/theme/assets/css/all.min.css") %>" />
+    <link rel="stylesheet" href="<%= ResolveUrl("~/public/theme/assets/css/animate.min.css") %>" />
+    <link rel="stylesheet" href="<%= ResolveUrl("~/public/assets/vendor/fontawesome/css/all.min.css") %>" />
+    <link rel="stylesheet" href="<%= ResolveUrl("~/public/theme/assets/webfonts/flaticon/flaticon.css") %>" />
+    <link rel="stylesheet" href="<%= ResolveUrl("~/public/theme/assets/css/owl.carousel.min.css") %>" />
+    <link rel="stylesheet" href="<%= ResolveUrl("~/public/theme/assets/css/jquery.fancybox.min.css") %>" />
+    <link rel="stylesheet" href="<%= ResolveUrl("~/public/theme/assets/css/layerslider.css") %>" />
+    <link rel="stylesheet" href="<%= ResolveUrl("~/public/theme/assets/css/template.css") %>" />
+    <link rel="stylesheet" href="<%= ResolveUrl("~/public/theme/assets/css/style.css") %>" />
+    <link rel="stylesheet" href="<%= ResolveUrl("~/public/theme/assets/css/category/cosmetic-store.css") %>" />
+    <link rel="stylesheet" href="<%= ResolveUrl("~/public/assets/vendor/malihu/jquery.mCustomScrollbar.min.css") %>" />
+    <link rel="stylesheet" href="<%= ResolveUrl("~/public/assets/css/public.css") %>" />
+    <asp:ContentPlaceHolder ID="HeadContent" runat="server"></asp:ContentPlaceHolder>
+</head>
+<body>
+    <form id="form1" runat="server">
+        <asp:ScriptManager ID="PublicScriptManager" runat="server" EnablePartialRendering="true" EnablePageMethods="true" />
+        <div id="page_wrapper" class="bg-white">
+            <bs:PublicHeader runat="server" ID="PublicHeader" />
+
+            <asp:ContentPlaceHolder ID="MainContent" runat="server"></asp:ContentPlaceHolder>
+
+            <bs:PublicFooter runat="server" ID="PublicFooter" />
+        </div>
+
+        <script src="<%= ResolveUrl("~/public/theme/assets/js/jquery.min.js") %>"></script>
+        <script src="<%= ResolveUrl("~/public/theme/assets/js/greensock.js") %>"></script>
+        <script src="<%= ResolveUrl("~/public/theme/assets/js/layerslider.transitions.js") %>"></script>
+        <script src="<%= ResolveUrl("~/public/theme/assets/js/layerslider.kreaturamedia.jquery.js") %>"></script>
+        <script src="<%= ResolveUrl("~/public/theme/assets/js/popper.min.js") %>"></script>
+        <script src="<%= ResolveUrl("~/public/theme/assets/js/bootstrap.min.js") %>"></script>
+        <script src="<%= ResolveUrl("~/public/theme/assets/js/jquery.fancybox.min.js") %>"></script>
+        <script src="<%= ResolveUrl("~/public/theme/assets/js/owl.carousel.min.js") %>"></script>
+        <script src="<%= ResolveUrl("~/public/theme/assets/js/wow.js") %>"></script>
+        <script src="<%= ResolveUrl("~/public/theme/assets/js/jquery.countdown.js") %>"></script>
+        <script src="<%= ResolveUrl("~/public/theme/assets/js/custom.js") %>"></script>
+        <script src="<%= ResolveUrl("~/public/assets/vendor/malihu/jquery.mCustomScrollbar.concat.min.js") %>"></script>
+        <script src="/public/assets/js/public-search.js"></script>
+        <script>
+            (function () {
+                var categoryParents = document.querySelectorAll(".category-parent");
+                var categoryPanels = document.querySelectorAll(".category-panel");
+
+                function activatePanel(targetId) {
+                    categoryParents.forEach(function (item) {
+                        item.classList.toggle("active", item.getAttribute("data-target") === targetId);
+                    });
+                    categoryPanels.forEach(function (panel) {
+                        panel.classList.toggle("active", panel.id === targetId);
+                    });
+                }
+
+                categoryParents.forEach(function (item) {
+                    item.addEventListener("mouseenter", function () {
+                        var targetId = item.getAttribute("data-target");
+                        activatePanel(targetId);
+                    });
+                });
+
+                var categoryBar = document.querySelector(".category-bar");
+                if (categoryBar) {
+                    categoryBar.addEventListener("mouseenter", function () {
+                        var left = document.querySelector(".category-left");
+                        var right = document.querySelector(".category-right");
+                        if (!left || !right) {
+                            return;
+                        }
+                        right.style.height = left.offsetHeight + "px";
+                        $(".category-scroll").mCustomScrollbar("destroy");
+                        $(".category-scroll").mCustomScrollbar({
+                            theme: "minimal-dark",
+                            scrollInertia: 120,
+                            mouseWheel: { preventDefault: true }
+                        });
+                    });
+                }
+            })();
+        </script>
+        <asp:ContentPlaceHolder ID="PageScripts" runat="server"></asp:ContentPlaceHolder>
+    </form>
+</body>
+</html>

@@ -24,13 +24,13 @@ public partial class CategoryDefault : System.Web.UI.Page
     {
         using (var db = new BeautyStoryContext())
         {
-            var allCategories = PublicCache.GetOrCreate("categories_all", 5, () => db.CfCategories
+            var allCategories = db.CfCategories
                 .Where(c => c.Status)
                 .OrderBy(c => c.SortOrder)
                 .ThenBy(c => c.CategoryName)
-                .ToList());
+                .ToList();
 
-            var slugs = PublicCache.GetOrCreate("slugs_all", 5, () => db.CfSeoSlugs.ToList());
+            var slugs = db.CfSeoSlugs.ToList();
             var slugLookup = slugs
                 .GroupBy(s => s.EntityType)
                 .ToDictionary(
@@ -387,24 +387,24 @@ public partial class CategoryDefault : System.Web.UI.Page
         var categoryKey = _activeCategoryIds != null && _activeCategoryIds.Count > 0
             ? string.Join("_", _activeCategoryIds.OrderBy(id => id))
             : "none";
-        var groupIds = PublicCache.GetOrCreate("filter_group_ids_" + categoryKey, 2, () => db.CfCategoryFilterGroups
+        var groupIds = db.CfCategoryFilterGroups
             .Where(x => _activeCategoryIds.Contains(x.CategoryId))
             .Select(x => x.GroupId)
             .Distinct()
-            .ToList());
+            .ToList();
 
         var groupKey = groupIds.Count > 0 ? string.Join("_", groupIds.OrderBy(id => id)) : "none";
-        var groups = PublicCache.GetOrCreate("filter_groups_" + groupKey, 2, () => db.CfFilterGroups
+        var groups = db.CfFilterGroups
             .Where(g => groupIds.Contains(g.Id) && g.Status)
             .OrderBy(g => g.SortOrder)
             .ThenBy(g => g.GroupName)
-            .ToList());
+            .ToList();
 
-        var options = PublicCache.GetOrCreate("filter_options_" + groupKey, 2, () => db.CfFilterOptions
+        var options = db.CfFilterOptions
             .Where(o => groupIds.Contains(o.GroupId) && o.Status)
             .OrderBy(o => o.SortOrder)
             .ThenBy(o => o.OptionName)
-            .ToList());
+            .ToList();
 
         var grouped = groups.Select(g => new FilterGroupItem
         {
@@ -444,29 +444,29 @@ public partial class CategoryDefault : System.Web.UI.Page
         var categoryKey = _activeCategoryIds != null && _activeCategoryIds.Count > 0
             ? string.Join("_", _activeCategoryIds.OrderBy(id => id))
             : "none";
-        var productIds = PublicCache.GetOrCreate("attr_product_ids_" + categoryKey, 2, () => db.CfProducts
+        var productIds = db.CfProducts
             .Where(p => p.Status && _activeCategoryIds.Contains(p.CategoryId))
             .Select(p => p.Id)
-            .ToList());
+            .ToList();
 
-        var attributeIds = PublicCache.GetOrCreate("attr_ids_" + categoryKey, 2, () => db.CfProductVariantAttributes
+        var attributeIds = db.CfProductVariantAttributes
             .Where(pva => productIds.Contains(pva.Variant.ProductId))
             .Select(pva => pva.AttributeId)
             .Distinct()
-            .ToList());
+            .ToList();
 
         var attrKey = attributeIds.Count > 0 ? string.Join("_", attributeIds.OrderBy(id => id)) : "none";
-        var attributes = PublicCache.GetOrCreate("attr_groups_" + attrKey, 2, () => db.CfVariantAttributes
+        var attributes = db.CfVariantAttributes
             .Where(a => attributeIds.Contains(a.Id) && a.Status)
             .OrderBy(a => a.SortOrder)
             .ThenBy(a => a.AttributeName)
-            .ToList());
+            .ToList();
 
-        var values = PublicCache.GetOrCreate("attr_values_" + attrKey, 2, () => db.CfVariantAttributeValues
+        var values = db.CfVariantAttributeValues
             .Where(v => attributeIds.Contains(v.AttributeId) && v.Status)
             .OrderBy(v => v.SortOrder)
             .ThenBy(v => v.ValueName)
-            .ToList());
+            .ToList();
 
         var grouped = attributes.Select(a => new AttributeGroupItem
         {
@@ -820,4 +820,3 @@ public partial class CategoryDefault : System.Web.UI.Page
         return HttpUtility.HtmlAttributeEncode(value ?? string.Empty);
     }
 }
-

@@ -1,7 +1,7 @@
 ﻿<%@ Page Language="C#" AutoEventWireup="true" CodeFile="404.aspx.cs" Inherits="NotFoundPage" MasterPageFile="~/public/Public.master" %>
 
 <asp:Content ID="TitleContent" ContentPlaceHolderID="TitleContent" runat="server">
-    404 - Không tìm thấy | Beauty Story
+    404 - Không tìm thấy | LoveIs Store
 </asp:Content>
 
 <asp:Content ID="MainContent" ContentPlaceHolderID="MainContent" runat="server">

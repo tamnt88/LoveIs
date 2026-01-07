@@ -1,6 +1,7 @@
 <%@ Page Language="C#" AutoEventWireup="true" CodeFile="default.aspx.cs" Inherits="CommunityDefault" MasterPageFile="~/public/Public.master" %>
 <asp:Content ID="Content1" ContentPlaceHolderID="HeadContent" runat="server">
     <link rel="stylesheet" href="/public/assets/css/community.css" />
+    <script src="https://cdn.jsdelivr.net/npm/@joeattardi/emoji-button@4.6.2/dist/index.min.js"></script>
 </asp:Content>
 <asp:Content ID="Content2" ContentPlaceHolderID="MainContent" runat="server">
     <div class="community-page">
@@ -23,8 +24,8 @@
                 <main>
                     <div class="community-card community-composer-bar" id="ComposerTrigger">
                         <div class="composer-bar">
-                            <div class="composer-avatar">P</div>
-                            <button type="button" class="composer-input" id="OpenComposer">Bạn đang nghĩ gì?</button>
+                            <div class="composer-avatar"><%= ComposerInitial %></div>
+                            <button type="button" class="composer-input" id="OpenComposer"><%= ComposerDisplayName %> ơi, bạn đang nghĩ gì?</button>
                             <div class="composer-actions">
                                 <span class="composer-icon" aria-hidden="true">📷</span>
                                 <span class="composer-icon" aria-hidden="true">🖼️</span>
@@ -34,7 +35,7 @@
                     </div>
 
                     <div class="community-modal" id="ComposerModal" aria-hidden="true">
-                        <div class="community-modal-backdrop" data-modal-close="true"></div>
+                        <div class="community-modal-backdrop"></div>
                         <div class="community-modal-dialog" role="dialog" aria-modal="true" aria-labelledby="ComposerTitle">
                             <div class="community-modal-header">
                                 <div class="community-modal-title" id="ComposerTitle">Tạo bài viết</div>
@@ -43,9 +44,9 @@
                             <div class="community-modal-body">
                                 <asp:Label ID="PostMessage" runat="server" CssClass="account-message" />
                                 <div class="community-modal-user">
-                                    <div class="composer-avatar">P</div>
+                                    <div class="composer-avatar"><%= ComposerInitial %></div>
                                     <div>
-                                        <div class="fw-bold">LoveIs Community</div>
+                                        <div class="fw-bold"><%= ComposerDisplayName %></div>
                                         <div class="community-visibility">Công khai</div>
                                     </div>
                                 </div>
@@ -53,12 +54,20 @@
                                 <div class="community-modal-upload">
                                     <div class="upload-label">Thêm vào bài viết của bạn</div>
                                     <div class="upload-actions">
-                                        <span class="composer-icon" aria-hidden="true">🖼️</span>
-                                        <span class="composer-icon" aria-hidden="true">👥</span>
-                                        <span class="composer-icon" aria-hidden="true">📍</span>
-                                        <span class="composer-icon" aria-hidden="true">🎥</span>
+                                        <button type="button" class="composer-icon-btn" id="ImagePickerBtn" title="Ảnh">
+                                            🖼️
+                                        </button>
+                                        <button type="button" class="composer-icon-btn" id="EmojiPickerBtn" title="Emoji">
+                                            😊
+                                        </button>
+                                        <button type="button" class="composer-icon-btn" id="VideoPickerBtn" title="Video">
+                                            🎥
+                                        </button>
                                     </div>
                                 </div>
+                                <div id="ImagePreview" class="community-preview"></div>
+                                <div id="VideoPreview" class="community-preview"></div>
+                                <asp:HiddenField ID="VideoUrlHidden" runat="server" />
                                 <asp:FileUpload ID="PostImagesUpload" runat="server" AllowMultiple="true" CssClass="community-upload-input" />
                             </div>
                             <div class="community-modal-footer">
@@ -161,6 +170,70 @@
                     closeModal();
                 }
             });
+
+            var fileInput = document.getElementById("<%= PostImagesUpload.ClientID %>");
+            var imageBtn = document.getElementById("ImagePickerBtn");
+            var imagePreview = document.getElementById("ImagePreview");
+            if (imageBtn && fileInput) {
+                imageBtn.addEventListener("click", function () {
+                    fileInput.click();
+                });
+
+                fileInput.addEventListener("change", function () {
+                    if (!imagePreview) {
+                        return;
+                    }
+                    imagePreview.innerHTML = "";
+                    if (!fileInput.files || fileInput.files.length === 0) {
+                        return;
+                    }
+                    Array.prototype.forEach.call(fileInput.files, function (file) {
+                        if (!file.type || !file.type.startsWith("image/")) {
+                            return;
+                        }
+                        var reader = new FileReader();
+                        reader.onload = function (e) {
+                            var img = document.createElement("img");
+                            img.src = e.target.result;
+                            imagePreview.appendChild(img);
+                        };
+                        reader.readAsDataURL(file);
+                    });
+                });
+            }
+
+            var emojiBtn = document.getElementById("EmojiPickerBtn");
+            var postInput = document.getElementById("<%= PostContentInput.ClientID %>");
+            if (emojiBtn && window.EmojiButton && postInput) {
+                var picker = new EmojiButton({ position: "top-start" });
+                picker.on("emoji", function (emoji) {
+                    postInput.value += emoji;
+                });
+                emojiBtn.addEventListener("click", function () {
+                    picker.togglePicker(emojiBtn);
+                });
+            }
+
+            var videoBtn = document.getElementById("VideoPickerBtn");
+            var videoPreview = document.getElementById("VideoPreview");
+            var videoHidden = document.getElementById("<%= VideoUrlHidden.ClientID %>");
+            if (videoBtn && videoHidden) {
+                videoBtn.addEventListener("click", function () {
+                    var url = window.prompt("Nhập link YouTube:");
+                    if (!url) {
+                        return;
+                    }
+                    videoHidden.value = url;
+                    if (videoPreview) {
+                        videoPreview.innerHTML = "";
+                        var iframe = document.createElement("iframe");
+                        iframe.src = url.replace("watch?v=", "embed/").replace("youtu.be/", "www.youtube.com/embed/");
+                        iframe.setAttribute("allowfullscreen", "allowfullscreen");
+                        iframe.setAttribute("frameborder", "0");
+                        videoPreview.appendChild(iframe);
+                    }
+                });
+            }
         })();
     </script>
 </asp:Content>

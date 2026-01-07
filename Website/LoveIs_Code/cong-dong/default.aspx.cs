@@ -7,6 +7,8 @@ using System.Web;
 
 public partial class CommunityDefault : System.Web.UI.Page
 {
+    public string ComposerDisplayName { get; set; }
+    public string ComposerInitial { get; set; }
     protected void Page_Load(object sender, EventArgs e)
     {
         if (!CommunityUserHelper.EnsureCommunityCustomerId().HasValue)
@@ -15,6 +17,8 @@ public partial class CommunityDefault : System.Web.UI.Page
             Response.Redirect("/tai-khoan/dang-nhap.aspx?returnUrl=" + Server.UrlEncode(returnUrl));
             return;
         }
+
+        BindComposerUser();
 
         if (!IsPostBack)
         {
@@ -43,6 +47,15 @@ public partial class CommunityDefault : System.Web.UI.Page
         }
 
         var content = PostContentInput.Text ?? string.Empty;
+        var videoUrl = VideoUrlHidden != null ? VideoUrlHidden.Value : string.Empty;
+        if (!string.IsNullOrWhiteSpace(videoUrl))
+        {
+            var embed = BuildYoutubeEmbed(videoUrl.Trim());
+            if (!string.IsNullOrWhiteSpace(embed))
+            {
+                content = content + Environment.NewLine + embed;
+            }
+        }
         if (string.IsNullOrWhiteSpace(content))
         {
             PostMessage.Text = "Vui lòng nhập nội dung bài viết.";
@@ -92,7 +105,79 @@ public partial class CommunityDefault : System.Web.UI.Page
 
         CommunityHelper.LogAction(customerId.Value, CommunityHelper.ActionPost, "post");
         PostContentInput.Text = string.Empty;
+        if (VideoUrlHidden != null)
+        {
+            VideoUrlHidden.Value = string.Empty;
+        }
         BindPosts();
+    }
+
+    private void BindComposerUser()
+    {
+        ComposerDisplayName = "LoveIs Community";
+        ComposerInitial = "L";
+
+        var customerId = CommunityUserHelper.EnsureCommunityCustomerId();
+        if (!customerId.HasValue)
+        {
+            return;
+        }
+
+        using (var db = new BeautyStoryContext())
+        {
+            var user = db.CfCustomers.AsNoTracking()
+                .Where(c => c.Id == customerId.Value)
+                .Select(c => new { c.DisplayName, c.Username })
+                .FirstOrDefault();
+
+            if (user == null)
+            {
+                return;
+            }
+
+            var name = string.IsNullOrWhiteSpace(user.DisplayName) ? user.Username : user.DisplayName;
+            if (!string.IsNullOrWhiteSpace(name))
+            {
+                ComposerDisplayName = name;
+                ComposerInitial = name.Trim().Substring(0, 1).ToUpperInvariant();
+            }
+        }
+    }
+
+    private static string BuildYoutubeEmbed(string url)
+    {
+        if (string.IsNullOrWhiteSpace(url))
+        {
+            return string.Empty;
+        }
+
+        var id = ExtractYoutubeId(url);
+        if (string.IsNullOrWhiteSpace(id))
+        {
+            return string.Empty;
+        }
+
+        return string.Format("<div class=\"community-video\"><iframe src=\"https://www.youtube.com/embed/{0}\" title=\"YouTube\" frameborder=\"0\" allow=\"accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture\" allowfullscreen></iframe></div>", id);
+    }
+
+    private static string ExtractYoutubeId(string url)
+    {
+        if (url.Contains("youtu.be/"))
+        {
+            var id = url.Split(new[] { "youtu.be/" }, StringSplitOptions.None)[1];
+            var amp = id.IndexOf("?", StringComparison.Ordinal);
+            return amp > -1 ? id.Substring(0, amp) : id;
+        }
+
+        var vIndex = url.IndexOf("v=", StringComparison.Ordinal);
+        if (vIndex > -1)
+        {
+            var id = url.Substring(vIndex + 2);
+            var amp = id.IndexOf("&", StringComparison.Ordinal);
+            return amp > -1 ? id.Substring(0, amp) : id;
+        }
+
+        return string.Empty;
     }
 
     protected void PostRepeater_ItemCommand(object source, System.Web.UI.WebControls.RepeaterCommandEventArgs e)

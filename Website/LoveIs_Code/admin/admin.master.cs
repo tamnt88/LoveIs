@@ -199,7 +199,7 @@ public partial class AdminMaster : AdminBaseMaster
             List<CfMenu> menus;
             if (isAdminSuper)
             {
-                menus = db.CfMenus.Where(m => m.Status).ToList();
+                menus = db.CfMenus.Where(m => m.Status && m.MenuGroup == "Admin").ToList();
             }
             else
             {
@@ -209,7 +209,7 @@ public partial class AdminMaster : AdminBaseMaster
                                       where ur.UserId == userId && ur.Status && rp.Status && mp.Status
                                       select mp.MenuId).Distinct().ToList();
 
-                var parentIds = db.CfMenus.Where(m => m.ParentId.HasValue && allowedMenuIds.Contains(m.Id))
+                var parentIds = db.CfMenus.Where(m => m.ParentId.HasValue && m.MenuGroup == "Admin" && allowedMenuIds.Contains(m.Id))
                     .Select(m => m.ParentId.Value).Distinct().ToList();
 
                 var allIds = new HashSet<int>(allowedMenuIds);
@@ -218,7 +218,7 @@ public partial class AdminMaster : AdminBaseMaster
                     allIds.Add(id);
                 }
 
-                menus = db.CfMenus.Where(m => m.Status && allIds.Contains(m.Id)).ToList();
+                menus = db.CfMenus.Where(m => m.Status && m.MenuGroup == "Admin" && allIds.Contains(m.Id)).ToList();
             }
 
             var menuItems = menus

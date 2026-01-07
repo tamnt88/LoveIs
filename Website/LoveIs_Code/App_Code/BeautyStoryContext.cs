@@ -48,6 +48,7 @@ public class BeautyStoryContext : DbContext
     public DbSet<CfShopOrderHistory> CfShopOrderHistories { get; set; }
     public DbSet<CfReturnRequest> CfReturnRequests { get; set; }
     public DbSet<CfReturnItem> CfReturnItems { get; set; }
+    public DbSet<CfReturnStatus> CfReturnStatuses { get; set; }
     public DbSet<CfPaymentTransaction> CfPaymentTransactions { get; set; }
     public DbSet<CfShippingTracking> CfShippingTrackings { get; set; }
     public DbSet<CfProductReview> CfProductReviews { get; set; }

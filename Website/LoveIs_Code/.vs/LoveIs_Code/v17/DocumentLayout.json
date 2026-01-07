@@ -3,7 +3,43 @@
   "WorkspaceRootPath": "D:\\SHENLUNG\\LoveIs\\Website\\LoveIs_Code\\",
   "Documents": [
     {
-      "AbsoluteMoniker": "D:0:0:{A54D50D3-D3DA-42CF-AF2B-BB96EFC37D50}|D:\\SHENLUNG\\LoveIs\\Website\\LoveIs_Code|d:\\shenlung\\loveis\\website\\loveis_code\\danh-muc\\default.aspx.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "AbsoluteMoniker": "D:0:0:{A54D50D3-D3DA-42CF-AF2B-BB96EFC37D50}|D:\\SHENLUNG\\LoveIs\\Website\\LoveIs_Code|d:\\shenlung\\loveis\\website\\loveis_code\\role_buyer.md||{EFC0BB08-EA7D-40C6-A696-C870411A895B}",
+      "RelativeMoniker": "D:0:0:{A54D50D3-D3DA-42CF-AF2B-BB96EFC37D50}|D:\\SHENLUNG\\LoveIs\\Website\\LoveIs_Code|solutionrelative:role_buyer.md||{EFC0BB08-EA7D-40C6-A696-C870411A895B}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A54D50D3-D3DA-42CF-AF2B-BB96EFC37D50}|D:\\SHENLUNG\\LoveIs\\Website\\LoveIs_Code|d:\\shenlung\\loveis\\website\\loveis_code\\role_admin.md||{EFC0BB08-EA7D-40C6-A696-C870411A895B}",
+      "RelativeMoniker": "D:0:0:{A54D50D3-D3DA-42CF-AF2B-BB96EFC37D50}|D:\\SHENLUNG\\LoveIs\\Website\\LoveIs_Code|solutionrelative:role_admin.md||{EFC0BB08-EA7D-40C6-A696-C870411A895B}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A54D50D3-D3DA-42CF-AF2B-BB96EFC37D50}|D:\\SHENLUNG\\LoveIs\\Website\\LoveIs_Code|d:\\shenlung\\loveis\\website\\loveis_code\\required_reading.md||{EFC0BB08-EA7D-40C6-A696-C870411A895B}",
+      "RelativeMoniker": "D:0:0:{A54D50D3-D3DA-42CF-AF2B-BB96EFC37D50}|D:\\SHENLUNG\\LoveIs\\Website\\LoveIs_Code|solutionrelative:required_reading.md||{EFC0BB08-EA7D-40C6-A696-C870411A895B}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A54D50D3-D3DA-42CF-AF2B-BB96EFC37D50}|D:\\SHENLUNG\\LoveIs\\Website\\LoveIs_Code|d:\\shenlung\\loveis\\website\\loveis_code\\project_summary.md||{EFC0BB08-EA7D-40C6-A696-C870411A895B}",
+      "RelativeMoniker": "D:0:0:{A54D50D3-D3DA-42CF-AF2B-BB96EFC37D50}|D:\\SHENLUNG\\LoveIs\\Website\\LoveIs_Code|solutionrelative:project_summary.md||{EFC0BB08-EA7D-40C6-A696-C870411A895B}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A54D50D3-D3DA-42CF-AF2B-BB96EFC37D50}|D:\\SHENLUNG\\LoveIs\\Website\\LoveIs_Code|d:\\shenlung\\loveis\\website\\loveis_code\\missing_features.md||{EFC0BB08-EA7D-40C6-A696-C870411A895B}",
+      "RelativeMoniker": "D:0:0:{A54D50D3-D3DA-42CF-AF2B-BB96EFC37D50}|D:\\SHENLUNG\\LoveIs\\Website\\LoveIs_Code|solutionrelative:missing_features.md||{EFC0BB08-EA7D-40C6-A696-C870411A895B}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A54D50D3-D3DA-42CF-AF2B-BB96EFC37D50}|D:\\SHENLUNG\\LoveIs\\Website\\LoveIs_Code|d:\\shenlung\\loveis\\website\\loveis_code\\database_schema.md||{EFC0BB08-EA7D-40C6-A696-C870411A895B}",
+      "RelativeMoniker": "D:0:0:{A54D50D3-D3DA-42CF-AF2B-BB96EFC37D50}|D:\\SHENLUNG\\LoveIs\\Website\\LoveIs_Code|solutionrelative:database_schema.md||{EFC0BB08-EA7D-40C6-A696-C870411A895B}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A54D50D3-D3DA-42CF-AF2B-BB96EFC37D50}|D:\\SHENLUNG\\LoveIs\\Website\\LoveIs_Code|d:\\shenlung\\loveis\\website\\loveis_code\\codex.md||{EFC0BB08-EA7D-40C6-A696-C870411A895B}",
+      "RelativeMoniker": "D:0:0:{A54D50D3-D3DA-42CF-AF2B-BB96EFC37D50}|D:\\SHENLUNG\\LoveIs\\Website\\LoveIs_Code|solutionrelative:codex.md||{EFC0BB08-EA7D-40C6-A696-C870411A895B}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A54D50D3-D3DA-42CF-AF2B-BB96EFC37D50}|D:\\SHENLUNG\\LoveIs\\Website\\LoveIs_Code|d:\\shenlung\\loveis\\website\\loveis_code\\seller\\seller.master.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{A54D50D3-D3DA-42CF-AF2B-BB96EFC37D50}|D:\\SHENLUNG\\LoveIs\\Website\\LoveIs_Code|solutionrelative:seller\\seller.master.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A54D50D3-D3DA-42CF-AF2B-BB96EFC37D50}|D:\\SHENLUNG\\LoveIs\\Website\\LoveIs_Code|d:\\shenlung\\loveis\\website\\loveis_code\\seller\\seller.master||{B30AFBFF-D992-43B7-B62D-2642580A2883}",
+      "RelativeMoniker": "D:0:0:{A54D50D3-D3DA-42CF-AF2B-BB96EFC37D50}|D:\\SHENLUNG\\LoveIs\\Website\\LoveIs_Code|solutionrelative:seller\\seller.master||{B30AFBFF-D992-43B7-B62D-2642580A2883}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A54D50D3-D3DA-42CF-AF2B-BB96EFC37D50}|D:\\SHENLUNG\\LoveIs\\Website\\LoveIs_Code|D:\\SHENLUNG\\LoveIs\\Website\\LoveIs_Code\\danh-muc\\default.aspx.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
       "RelativeMoniker": "D:0:0:{A54D50D3-D3DA-42CF-AF2B-BB96EFC37D50}|D:\\SHENLUNG\\LoveIs\\Website\\LoveIs_Code|solutionrelative:danh-muc\\default.aspx.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
     {
@@ -43,6 +79,123 @@
             {
               "$type": "Document",
               "DocumentIndex": 0,
+              "Title": "ROLE_BUYER.md",
+              "DocumentMoniker": "D:\\SHENLUNG\\LoveIs\\Website\\LoveIs_Code\\ROLE_BUYER.md",
+              "RelativeDocumentMoniker": "ROLE_BUYER.md",
+              "ToolTip": "D:\\SHENLUNG\\LoveIs\\Website\\LoveIs_Code\\ROLE_BUYER.md",
+              "RelativeToolTip": "ROLE_BUYER.md",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001818|",
+              "WhenOpened": "2026-01-07T15:04:07.373Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 1,
+              "Title": "ROLE_ADMIN.md",
+              "DocumentMoniker": "D:\\SHENLUNG\\LoveIs\\Website\\LoveIs_Code\\ROLE_ADMIN.md",
+              "RelativeDocumentMoniker": "ROLE_ADMIN.md",
+              "ToolTip": "D:\\SHENLUNG\\LoveIs\\Website\\LoveIs_Code\\ROLE_ADMIN.md",
+              "RelativeToolTip": "ROLE_ADMIN.md",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001818|",
+              "WhenOpened": "2026-01-07T15:03:59.359Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 2,
+              "Title": "REQUIRED_READING.md",
+              "DocumentMoniker": "D:\\SHENLUNG\\LoveIs\\Website\\LoveIs_Code\\REQUIRED_READING.md",
+              "RelativeDocumentMoniker": "REQUIRED_READING.md",
+              "ToolTip": "D:\\SHENLUNG\\LoveIs\\Website\\LoveIs_Code\\REQUIRED_READING.md",
+              "RelativeToolTip": "REQUIRED_READING.md",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001818|",
+              "WhenOpened": "2026-01-07T15:03:51.929Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 6,
+              "Title": "codex.md",
+              "DocumentMoniker": "D:\\SHENLUNG\\LoveIs\\Website\\LoveIs_Code\\codex.md",
+              "RelativeDocumentMoniker": "codex.md",
+              "ToolTip": "D:\\SHENLUNG\\LoveIs\\Website\\LoveIs_Code\\codex.md",
+              "RelativeToolTip": "codex.md",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAMAAAAMAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001818|",
+              "WhenOpened": "2026-01-07T15:03:20.899Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 4,
+              "Title": "MISSING_FEATURES.md",
+              "DocumentMoniker": "D:\\SHENLUNG\\LoveIs\\Website\\LoveIs_Code\\MISSING_FEATURES.md",
+              "RelativeDocumentMoniker": "MISSING_FEATURES.md",
+              "ToolTip": "D:\\SHENLUNG\\LoveIs\\Website\\LoveIs_Code\\MISSING_FEATURES.md",
+              "RelativeToolTip": "MISSING_FEATURES.md",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001818|",
+              "WhenOpened": "2026-01-07T15:03:06.43Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 3,
+              "Title": "PROJECT_SUMMARY.md",
+              "DocumentMoniker": "D:\\SHENLUNG\\LoveIs\\Website\\LoveIs_Code\\PROJECT_SUMMARY.md",
+              "RelativeDocumentMoniker": "PROJECT_SUMMARY.md",
+              "ToolTip": "D:\\SHENLUNG\\LoveIs\\Website\\LoveIs_Code\\PROJECT_SUMMARY.md",
+              "RelativeToolTip": "PROJECT_SUMMARY.md",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001818|",
+              "WhenOpened": "2026-01-07T15:03:04.367Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 5,
+              "Title": "DATABASE_SCHEMA.md",
+              "DocumentMoniker": "D:\\SHENLUNG\\LoveIs\\Website\\LoveIs_Code\\DATABASE_SCHEMA.md",
+              "RelativeDocumentMoniker": "DATABASE_SCHEMA.md",
+              "ToolTip": "D:\\SHENLUNG\\LoveIs\\Website\\LoveIs_Code\\DATABASE_SCHEMA.md",
+              "RelativeToolTip": "DATABASE_SCHEMA.md",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001818|",
+              "WhenOpened": "2026-01-07T15:03:02.076Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 8,
+              "Title": "Seller.master",
+              "DocumentMoniker": "D:\\SHENLUNG\\LoveIs\\Website\\LoveIs_Code\\seller\\Seller.master",
+              "RelativeDocumentMoniker": "seller\\Seller.master",
+              "ToolTip": "D:\\SHENLUNG\\LoveIs\\Website\\LoveIs_Code\\seller\\Seller.master",
+              "RelativeToolTip": "seller\\Seller.master",
+              "LogicalView": "7651a703-06e5-11d1-8ebd-00a0c90f26ea",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000195|",
+              "WhenOpened": "2026-01-07T07:13:22.957Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 7,
+              "Title": "Seller.master.cs",
+              "DocumentMoniker": "D:\\SHENLUNG\\LoveIs\\Website\\LoveIs_Code\\seller\\Seller.master.cs",
+              "RelativeDocumentMoniker": "seller\\Seller.master.cs",
+              "ToolTip": "D:\\SHENLUNG\\LoveIs\\Website\\LoveIs_Code\\seller\\Seller.master.cs",
+              "RelativeToolTip": "seller\\Seller.master.cs",
+              "ViewState": "AgIAACEAAAAAAAAAAAAYwCoAAAAbAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-01-07T07:13:30.69Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 9,
               "Title": "default.aspx.cs",
               "DocumentMoniker": "D:\\SHENLUNG\\LoveIs\\Website\\LoveIs_Code\\danh-muc\\default.aspx.cs",
               "RelativeDocumentMoniker": "danh-muc\\default.aspx.cs",
@@ -50,12 +203,11 @@
               "RelativeToolTip": "danh-muc\\default.aspx.cs",
               "ViewState": "AgIAABsAAAAAAAAAAAAYwC4AAABJAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2026-01-06T17:20:25.631Z",
-              "EditorCaption": ""
+              "WhenOpened": "2026-01-06T17:20:25.631Z"
             },
             {
               "$type": "Document",
-              "DocumentIndex": 1,
+              "DocumentIndex": 10,
               "Title": "public.css",
               "DocumentMoniker": "D:\\SHENLUNG\\LoveIs\\Website\\LoveIs_Code\\public\\assets\\css\\public.css",
               "RelativeDocumentMoniker": "public\\assets\\css\\public.css",
@@ -67,7 +219,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 5,
+              "DocumentIndex": 14,
               "Title": "NewProductHomePage.ascx.cs",
               "DocumentMoniker": "D:\\SHENLUNG\\LoveIs\\Website\\LoveIs_Code\\public\\controls\\trang-chu\\NewProductHomePage.ascx.cs",
               "RelativeDocumentMoniker": "public\\controls\\trang-chu\\NewProductHomePage.ascx.cs",
@@ -79,7 +231,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 4,
+              "DocumentIndex": 13,
               "Title": "BannerHomePage.ascx.cs",
               "DocumentMoniker": "D:\\SHENLUNG\\LoveIs\\Website\\LoveIs_Code\\public\\controls\\trang-chu\\BannerHomePage.ascx.cs",
               "RelativeDocumentMoniker": "public\\controls\\trang-chu\\BannerHomePage.ascx.cs",
@@ -91,7 +243,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 3,
+              "DocumentIndex": 12,
               "Title": "NewProductHomePage.ascx",
               "DocumentMoniker": "D:\\SHENLUNG\\LoveIs\\Website\\LoveIs_Code\\public\\controls\\trang-chu\\NewProductHomePage.ascx",
               "RelativeDocumentMoniker": "public\\controls\\trang-chu\\NewProductHomePage.ascx",
@@ -103,7 +255,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 6,
+              "DocumentIndex": 15,
               "Title": "404.aspx",
               "DocumentMoniker": "D:\\SHENLUNG\\LoveIs\\Website\\LoveIs_Code\\404.aspx",
               "RelativeDocumentMoniker": "404.aspx",
@@ -115,7 +267,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 2,
+              "DocumentIndex": 11,
               "Title": "Default.aspx",
               "DocumentMoniker": "D:\\SHENLUNG\\LoveIs\\Website\\LoveIs_Code\\Default.aspx",
               "RelativeDocumentMoniker": "Default.aspx",

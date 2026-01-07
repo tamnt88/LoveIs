@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Data.Entity;
 using System.Web.UI.WebControls;
 
 public partial class CartDefault : System.Web.UI.Page
@@ -40,42 +41,53 @@ public partial class CartDefault : System.Web.UI.Page
         using (var db = new BeautyStoryContext())
         {
             var variantIds = cart.Select(c => c.VariantId).ToList();
-            var variants = db.CfProductVariants
+            var variants = db.CfProductVariants.AsNoTracking()
                 .Where(v => variantIds.Contains(v.Id))
                 .ToList();
             var productIds = variants.Select(v => v.ProductId).Distinct().ToList();
-            var products = db.CfProducts
+            var products = db.CfProducts.AsNoTracking()
                 .Where(p => productIds.Contains(p.Id))
                 .ToList();
-            var images = db.CfProductImages
+            var images = db.CfProductImages.AsNoTracking()
                 .Where(i => productIds.Contains(i.ProductId) && i.Status)
                 .ToList();
-            var slugs = db.CfSeoSlugs
+            var slugs = db.CfSeoSlugs.AsNoTracking()
                .Where(s => s.EntityType == "Product" && productIds.Contains(s.EntityId))
                .ToList();
-            var attributes = db.CfProductVariantAttributes
+            var attributes = db.CfProductVariantAttributes.AsNoTracking()
                 .Where(pva => variantIds.Contains(pva.VariantId))
                 .ToList();
-            var attributeLookup = db.CfVariantAttributes.ToDictionary(a => a.Id, a => a.AttributeName);
-            var valueLookup = db.CfVariantAttributeValues.ToDictionary(v => v.Id, v => v.ValueName);
+            var attributeIds = attributes.Select(a => a.AttributeId).Distinct().ToList();
+            var valueIds = attributes.Select(a => a.AttributeValueId).Distinct().ToList();
+            var attributeLookup = db.CfVariantAttributes.AsNoTracking()
+                .Where(a => attributeIds.Contains(a.Id))
+                .ToDictionary(a => a.Id, a => a.AttributeName);
+            var valueLookup = db.CfVariantAttributeValues.AsNoTracking()
+                .Where(v => valueIds.Contains(v.Id))
+                .ToDictionary(v => v.Id, v => v.ValueName);
             var productSlugLookup = slugs.ToDictionary(s => s.EntityId, s => s.SeoSlug);
             var productLookup = products.ToDictionary(p => p.Id, p => p);
             var variantLookup = variants.ToDictionary(v => v.Id, v => v);
 
-            var imageLookup = images
-                .GroupBy(i => i.ProductId)
-                .ToDictionary(
-                    g => g.Key,
-                    g =>
-                    {
-                        var primary = g.FirstOrDefault(i => i.IsPrimary);
-                        if (primary != null)
-                        {
-                            return primary.ImageUrl;
-                        }
-                        var fallback = g.FirstOrDefault();
-                        return fallback != null ? fallback.ImageUrl : "/images/fav.png";
-                    });
+            var imageLookup = new Dictionary<int, string>();
+            foreach (var group in images.GroupBy(i => i.ProductId))
+            {
+                var primary = group.FirstOrDefault(i => i.IsPrimary);
+                if (primary != null)
+                {
+                    imageLookup[group.Key] = primary.ImageUrl;
+                    continue;
+                }
+                var fallback = group.FirstOrDefault();
+                if (fallback != null)
+                {
+                    imageLookup[group.Key] = fallback.ImageUrl;
+                }
+            }
+
+            var attributesByVariant = attributes
+                .GroupBy(a => a.VariantId)
+                .ToDictionary(g => g.Key, g => g.ToList());
 
             var shopIds = products
                 .Where(p => p.ShopId.HasValue)
@@ -83,7 +95,7 @@ public partial class CartDefault : System.Web.UI.Page
                 .Distinct()
                 .ToList();
 
-            var shopLookup = db.CfShops
+            var shopLookup = db.CfShops.AsNoTracking()
                 .Where(s => shopIds.Contains(s.Id))
                 .ToList()
                 .ToDictionary(s => s.Id, s => s);
@@ -95,15 +107,16 @@ public partial class CartDefault : System.Web.UI.Page
                 var price = GetEffectivePrice(variant);
                 var lineTotal = price * item.Quantity;
 
-                var attrs = attributes
-                    .Where(a => a.VariantId == item.VariantId)
-                    .Select(a =>
+                var attrs = new List<string>();
+                if (attributesByVariant.ContainsKey(item.VariantId))
+                {
+                    foreach (var attr in attributesByVariant[item.VariantId])
                     {
-                        var attrName = attributeLookup.ContainsKey(a.AttributeId) ? attributeLookup[a.AttributeId] : string.Empty;
-                        var valueName = valueLookup.ContainsKey(a.AttributeValueId) ? valueLookup[a.AttributeValueId] : string.Empty;
-                        return string.Format("{0}: {1}", attrName, valueName);
-                    })
-                    .ToList();
+                        var attrName = attributeLookup.ContainsKey(attr.AttributeId) ? attributeLookup[attr.AttributeId] : string.Empty;
+                        var valueName = valueLookup.ContainsKey(attr.AttributeValueId) ? valueLookup[attr.AttributeValueId] : string.Empty;
+                        attrs.Add(string.Format("{0}: {1}", attrName, valueName));
+                    }
+                }
 
                 var shopId = product != null && product.ShopId.HasValue ? product.ShopId.Value : 0;
                 var shop = shopLookup.ContainsKey(shopId) ? shopLookup[shopId] : null;

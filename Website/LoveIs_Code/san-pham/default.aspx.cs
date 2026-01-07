@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Data.Entity;
 using System.Text.RegularExpressions;
 using System.Web;
 using System.Web.Script.Serialization;
@@ -27,13 +28,16 @@ public partial class ProductDefault : System.Web.UI.Page
     {
         using (var db = new BeautyStoryContext())
         {
-            var allCategories = db.CfCategories
+            var allCategories = db.CfCategories.AsNoTracking()
                 .Where(c => c.Status)
                 .OrderBy(c => c.SortOrder)
                 .ThenBy(c => c.CategoryName)
                 .ToList();
 
-            var slugs = db.CfSeoSlugs.ToList();
+            var slugTypes = new[] { "Product", "Category", "Brand", "Origin" };
+            var slugs = db.CfSeoSlugs.AsNoTracking()
+                .Where(s => slugTypes.Contains(s.EntityType))
+                .ToList();
             var slugLookup = slugs
                 .GroupBy(s => s.EntityType)
                 .ToDictionary(
@@ -70,7 +74,7 @@ public partial class ProductDefault : System.Web.UI.Page
             var brandSlug = string.Empty;
             if (product.BrandId > 0)
             {
-                var brand = db.CfBrands.FirstOrDefault(b => b.Id == product.BrandId);
+                var brand = db.CfBrands.AsNoTracking().FirstOrDefault(b => b.Id == product.BrandId);
                 if (brand != null)
                 {
                     brandName = brand.BrandName;
@@ -86,7 +90,7 @@ public partial class ProductDefault : System.Web.UI.Page
             var originSlug = string.Empty;
             if (product.OriginId > 0)
             {
-                var origin = db.CfOrigins.FirstOrDefault(o => o.Id == product.OriginId);
+                var origin = db.CfOrigins.AsNoTracking().FirstOrDefault(o => o.Id == product.OriginId);
                 if (origin != null)
                 {
                     originName = origin.OriginName;
@@ -119,7 +123,7 @@ public partial class ProductDefault : System.Web.UI.Page
             Ingredients.Text = string.IsNullOrWhiteSpace(product.Ingredients) ? "Đang cập nhật." : product.Ingredients;
             Usage.Text = string.IsNullOrWhiteSpace(product.Usage) ? "Đang cập nhật." : product.Usage;
 
-            var variants = db.CfProductVariants
+            var variants = db.CfProductVariants.AsNoTracking()
                 .Where(v => v.ProductId == product.Id && v.Status)
                 .OrderBy(v => v.SortOrder)
                 .ThenBy(v => v.Price)
@@ -127,7 +131,7 @@ public partial class ProductDefault : System.Web.UI.Page
 
             BindVariantAttributes(db, variants);
 
-            var images = db.CfProductImages
+            var images = db.CfProductImages.AsNoTracking()
                 .Where(i => i.ProductId == product.Id && i.Status)
                 .OrderByDescending(i => i.IsPrimary)
                 .ThenBy(i => i.SortOrder)
@@ -161,18 +165,20 @@ public partial class ProductDefault : System.Web.UI.Page
 
     private void BindRelatedProducts(BeautyStoryContext db, CfProduct product, Dictionary<string, Dictionary<int, string>> slugLookup)
     {
-        var relatedCategory = db.CfProducts
+        var relatedCategory = db.CfProducts.AsNoTracking()
             .Where(p => p.Status && p.Id != product.Id && p.CategoryId == product.CategoryId)
-            .OrderBy(p => Guid.NewGuid())
+            .OrderBy(p => p.SortOrder)
+            .ThenBy(p => p.Id)
             .Take(5)
             .ToList();
 
         var relatedBrand = new List<CfProduct>();
         if (product.BrandId.HasValue && product.BrandId.Value > 0)
         {
-            relatedBrand = db.CfProducts
+            relatedBrand = db.CfProducts.AsNoTracking()
                 .Where(p => p.Status && p.Id != product.Id && p.BrandId == product.BrandId.Value)
-                .OrderBy(p => Guid.NewGuid())
+                .OrderBy(p => p.SortOrder)
+                .ThenBy(p => p.Id)
                 .Take(5)
                 .ToList();
         }
@@ -193,30 +199,40 @@ public partial class ProductDefault : System.Web.UI.Page
 
         var productIds = products.Select(p => p.Id).ToList();
 
-        var images = db.CfProductImages
+        var images = db.CfProductImages.AsNoTracking()
             .Where(i => i.Status && productIds.Contains(i.ProductId))
             .OrderByDescending(i => i.IsPrimary)
             .ThenBy(i => i.SortOrder)
             .ThenByDescending(i => i.Id)
-            .ToList()
-            .GroupBy(i => i.ProductId)
-            .ToDictionary(g => g.Key, g => g.First().ImageUrl);
+            .ToList();
+        var imageLookup = new Dictionary<int, string>();
+        foreach (var group in images.GroupBy(i => i.ProductId))
+        {
+            var first = group.FirstOrDefault();
+            if (first != null && !string.IsNullOrWhiteSpace(first.ImageUrl))
+            {
+                imageLookup[group.Key] = first.ImageUrl;
+            }
+        }
 
-        var variants = db.CfProductVariants
+        var variants = db.CfProductVariants.AsNoTracking()
             .Where(v => v.Status && productIds.Contains(v.ProductId))
             .OrderBy(v => v.SortOrder)
             .ThenBy(v => v.Price)
-            .ToList()
-            .GroupBy(v => v.ProductId)
-            .ToDictionary(g => g.Key, g => g.ToList());
+            .ToList();
+        var variantLookup = new Dictionary<int, List<CfProductVariant>>();
+        foreach (var group in variants.GroupBy(v => v.ProductId))
+        {
+            variantLookup[group.Key] = group.ToList();
+        }
 
         var items = new List<RelatedProductItem>();
         foreach (var product in products)
         {
             var slug = GetSlug(slugLookup, "Product", product.Id);
             var url = string.IsNullOrWhiteSpace(slug) ? "#" : string.Format("/san-pham/{0}", slug);
-            var imageUrl = images.ContainsKey(product.Id) ? images[product.Id] : "/images/fav.png";
-            var variantList = variants.ContainsKey(product.Id) ? variants[product.Id] : new List<CfProductVariant>();
+            var imageUrl = imageLookup.ContainsKey(product.Id) ? imageLookup[product.Id] : "/images/fav.png";
+            var variantList = variantLookup.ContainsKey(product.Id) ? variantLookup[product.Id] : new List<CfProductVariant>();
             var priceHtml = variantList.Any() ? GetDisplayPriceHtml(variantList) : "Liên hệ";
             var saleBadge = BuildSaleBadgeHtml(variantList);
 
@@ -235,9 +251,10 @@ public partial class ProductDefault : System.Web.UI.Page
 
     private void BindSuggestedProducts(BeautyStoryContext db, int productId, Dictionary<string, Dictionary<int, string>> slugLookup)
     {
-        var suggested = db.CfProducts
+        var suggested = db.CfProducts.AsNoTracking()
             .Where(p => p.Status && p.Id != productId)
-            .OrderBy(p => Guid.NewGuid())
+            .OrderBy(p => p.SortOrder)
+            .ThenBy(p => p.Id)
             .Take(15)
             .ToList();
 
@@ -551,7 +568,7 @@ public partial class ProductDefault : System.Web.UI.Page
             var key = string.Join("|", parts);
             if (!variantPriceMap.ContainsKey(key))
             {
-                var variant = db.CfProductVariants.FirstOrDefault(v => v.Id == variantId);
+                var variant = db.CfProductVariants.AsNoTracking().FirstOrDefault(v => v.Id == variantId);
                 if (variant != null)
                 {
                     variantPriceMap[key] = FormatPriceHtml(variant);
@@ -594,7 +611,7 @@ public partial class ProductDefault : System.Web.UI.Page
             CartService.AddVariant(variantId, quantity);
             using (var db = new BeautyStoryContext())
             {
-                var productId = db.CfProductVariants
+                var productId = db.CfProductVariants.AsNoTracking()
                     .Where(v => v.Id == variantId)
                     .Select(v => v.ProductId)
                     .FirstOrDefault();
@@ -663,4 +680,6 @@ public partial class ProductDefault : System.Web.UI.Page
         return (Request.QueryString["slug"] ?? string.Empty).Trim();
     }
 }
+
+
 

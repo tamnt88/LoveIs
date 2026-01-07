@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Linq;
+using System.Data.Entity;
 using System.Collections.Generic;
 
 public partial class SearchDefault : System.Web.UI.Page
@@ -35,7 +36,7 @@ public partial class SearchDefault : System.Web.UI.Page
 
         using (var db = new BeautyStoryContext())
         {
-            var productQuery = db.CfProducts
+            var productQuery = db.CfProducts.AsNoTracking()
                 .Where(p => p.Status && p.ProductName.Contains(query));
 
             var totalProducts = productQuery.Count();
@@ -53,49 +54,63 @@ public partial class SearchDefault : System.Web.UI.Page
             }
 
             var products = ProductRanking.Apply(productQuery)
+                .Select(p => new ProductLite
+                {
+                    Id = p.Id,
+                    ProductName = p.ProductName,
+                    CategoryId = p.CategoryId
+                })
                 .Skip((_currentPage - 1) * PageSize)
                 .Take(PageSize)
                 .ToList();
 
             var productIds = products.Select(p => p.Id).ToList();
-            var categories = db.CfCategories.ToDictionary(c => c.Id, c => c.CategoryName);
-            var images = db.CfProductImages
+            var categoryIds = products.Select(p => p.CategoryId).Distinct().ToList();
+            var categories = db.CfCategories.AsNoTracking()
+                .Where(c => categoryIds.Contains(c.Id))
+                .Select(c => new { c.Id, c.CategoryName })
+                .ToList()
+                .ToDictionary(c => c.Id, c => c.CategoryName);
+            var images = db.CfProductImages.AsNoTracking()
                 .Where(i => productIds.Contains(i.ProductId) && i.Status)
                 .ToList();
-            var variants = db.CfProductVariants
+            var variants = db.CfProductVariants.AsNoTracking()
                 .Where(v => productIds.Contains(v.ProductId) && v.Status)
                 .ToList();
-            var slugs = db.CfSeoSlugs
-                .Where(s => (s.EntityType == "Product" && productIds.Contains(s.EntityId)) || s.EntityType == "Category")
+            var slugs = db.CfSeoSlugs.AsNoTracking()
+                .Where(s => (s.EntityType == "Product" && productIds.Contains(s.EntityId))
+                            || (s.EntityType == "Category" && categoryIds.Contains(s.EntityId)))
                 .ToList();
             var productSlugs = slugs.Where(s => s.EntityType == "Product").ToDictionary(s => s.EntityId, s => s.SeoSlug);
             var categorySlugs = slugs.Where(s => s.EntityType == "Category").ToDictionary(s => s.EntityId, s => s.SeoSlug);
 
-            var primaryImageLookup = images
-                .GroupBy(i => i.ProductId)
-                .ToDictionary(
-                    g => g.Key,
-                    g =>
-                    {
-                        var primary = g.FirstOrDefault(i => i.IsPrimary);
-                        if (primary != null)
-                        {
-                            return primary.ImageUrl;
-                        }
-                        var fallback = g.FirstOrDefault();
-                        return fallback != null ? fallback.ImageUrl : "/images/fav.png";
-                    });
+            var primaryImageLookup = new Dictionary<int, string>();
+            foreach (var group in images.GroupBy(i => i.ProductId))
+            {
+                var primary = group.FirstOrDefault(i => i.IsPrimary);
+                if (primary != null)
+                {
+                    primaryImageLookup[group.Key] = primary.ImageUrl;
+                    continue;
+                }
+                var fallback = group.FirstOrDefault();
+                if (fallback != null)
+                {
+                    primaryImageLookup[group.Key] = fallback.ImageUrl;
+                }
+            }
 
-            var priceLookup = variants
-                .GroupBy(v => v.ProductId)
-                .ToDictionary(
-                    g => g.Key,
-                    g => FormatPriceHtml(g.ToList()));
-            var saleBadgeLookup = variants
-                .GroupBy(v => v.ProductId)
-                .ToDictionary(
-                    g => g.Key,
-                    g => BuildSaleBadgeHtml(g.ToList()));
+            var variantsByProduct = variants.ToLookup(v => v.ProductId);
+            var variantSummaryLookup = new Dictionary<int, VariantSummary>();
+            foreach (var group in variantsByProduct)
+            {
+                var list = group.ToList();
+                variantSummaryLookup[group.Key] = new VariantSummary
+                {
+                    PriceLabel = FormatPriceHtml(list),
+                    SaleBadge = BuildSaleBadgeHtml(list)
+                };
+            }
 
             SearchRepeater.DataSource = products
                 .Select(p => new
@@ -106,8 +121,8 @@ public partial class SearchDefault : System.Web.UI.Page
                     CategorySlug = categorySlugs.ContainsKey(p.CategoryId) ? categorySlugs[p.CategoryId] : "",
                     SeoSlug = productSlugs.ContainsKey(p.Id) ? productSlugs[p.Id] : "",
                     ImageUrl = primaryImageLookup.ContainsKey(p.Id) ? primaryImageLookup[p.Id] : "/images/fav.png",
-                    PriceLabel = priceLookup.ContainsKey(p.Id) ? priceLookup[p.Id] : "Liên hệ",
-                    SaleBadge = saleBadgeLookup.ContainsKey(p.Id) ? saleBadgeLookup[p.Id] : string.Empty
+                    PriceLabel = variantSummaryLookup.ContainsKey(p.Id) ? variantSummaryLookup[p.Id].PriceLabel : "Liên hệ",
+                    SaleBadge = variantSummaryLookup.ContainsKey(p.Id) ? variantSummaryLookup[p.Id].SaleBadge : string.Empty
                 })
                 .Where(p => !string.IsNullOrWhiteSpace(p.SeoSlug))
                 .ToList();
@@ -178,6 +193,19 @@ public partial class SearchDefault : System.Web.UI.Page
         PaginationLiteral.Text = string.Format("<nav><ul class=\"pagination justify-content-center\">{0}</ul></nav>", string.Join("", links));
     }
 
+    
+    private class ProductLite
+    {
+        public int Id { get; set; }
+        public string ProductName { get; set; }
+        public int CategoryId { get; set; }
+    }
+
+    private class VariantSummary
+    {
+        public string PriceLabel { get; set; }
+        public string SaleBadge { get; set; }
+    }
     private static string FormatPriceHtml(List<CfProductVariant> variants)
     {
         if (variants == null || variants.Count == 0)
@@ -261,3 +289,7 @@ public partial class SearchDefault : System.Web.UI.Page
         return "<script type=\"application/ld+json\">" + json + "</script>";
     }
 }
+
+
+
+

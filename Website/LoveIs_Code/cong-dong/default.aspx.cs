@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Data.Entity;
 using System.Web;
 
 public partial class CommunityDefault : System.Web.UI.Page
@@ -227,28 +228,40 @@ public partial class CommunityDefault : System.Web.UI.Page
                 postQuery = postQuery.Where(p => p.Content.Contains(query));
             }
 
-            var posts = postQuery
+            var posts = postQuery.AsNoTracking()
                 .OrderByDescending(p => p.CreatedAt)
                 .Take(50)
                 .ToList();
+
+            if (posts.Count == 0)
+            {
+                PostRepeater.DataSource = new List<object>();
+                PostRepeater.DataBind();
+                return;
+            }
 
             var postIds = posts.Select(p => p.Id).ToList();
             var images = db.CfCommunityPostImages
                 .Where(i => postIds.Contains(i.PostId) && i.Status)
                 .OrderBy(i => i.SortOrder)
+                .AsNoTracking()
                 .ToList();
             var comments = db.CfCommunityComments
                 .Where(c => postIds.Contains(c.PostId) && c.Status)
                 .OrderByDescending(c => c.CreatedAt)
+                .AsNoTracking()
                 .ToList();
-            var likes = db.CfCommunityLikes
-                .Where(l => postIds.Contains(l.PostId))
-                .ToList();
+            var likes = customerId.HasValue
+                ? db.CfCommunityLikes.AsNoTracking()
+                    .Where(l => l.CustomerId == customerId.Value && postIds.Contains(l.PostId))
+                    .Select(l => l.PostId)
+                    .ToList()
+                : new List<int>();
             var customerIds = posts.Select(p => p.CustomerId).Distinct().ToList();
             var commentCustomerIds = comments.Select(c => c.CustomerId).Distinct().ToList();
             customerIds.AddRange(commentCustomerIds);
             customerIds = customerIds.Distinct().ToList();
-            var customerInfo = db.CfCustomers
+            var customerInfo = db.CfCustomers.AsNoTracking()
                 .Where(c => customerIds.Contains(c.Id))
                 .Select(c => new
                 {
@@ -268,7 +281,7 @@ public partial class CommunityDefault : System.Web.UI.Page
                 })
                 .ToList();
 
-            var customers = customerInfo.ToDictionary(c => c.Id, c => c.Name);
+            var customers = customerInfo.ToDictionary(c => c.Id, c => c);
 
             var sellerIds = customerInfo
                 .Where(c => c.IsSeller && c.SellerId.HasValue)
@@ -277,19 +290,20 @@ public partial class CommunityDefault : System.Web.UI.Page
                 .ToList();
 
             var shopLookup = sellerIds.Count > 0
-                ? db.CfShops
+                ? db.CfShops.AsNoTracking()
                     .Where(s => sellerIds.Contains(s.SellerId))
                     .ToList()
                     .ToDictionary(s => s.SellerId, s => s)
                 : new Dictionary<int, CfShop>();
 
-            var likedIds = customerId.HasValue
-                ? new HashSet<int>(likes.Where(l => l.CustomerId == customerId.Value).Select(l => l.PostId))
-                : new HashSet<int>();
+            var likedIds = new HashSet<int>(likes);
+
+            var imagesByPost = images.ToLookup(i => i.PostId, i => i.ImageUrl);
+            var commentsByPost = comments.ToLookup(c => c.PostId);
 
             var viewModels = posts.Select(post =>
             {
-                var authorInfo = customerInfo.FirstOrDefault(c => c.Id == post.CustomerId);
+                var authorInfo = customers.ContainsKey(post.CustomerId) ? customers[post.CustomerId] : null;
                 var isSeller = authorInfo != null && authorInfo.IsSeller;
                 CfShop shop = null;
                 if (isSeller && authorInfo != null && authorInfo.SellerId.HasValue && shopLookup.ContainsKey(authorInfo.SellerId.Value))
@@ -300,7 +314,7 @@ public partial class CommunityDefault : System.Web.UI.Page
                 return new
                 {
                     PostId = post.Id,
-                    AuthorName = customers.ContainsKey(post.CustomerId) ? customers[post.CustomerId] : "User",
+                    AuthorName = authorInfo != null ? authorInfo.Name : "User",
                     IsSeller = isSeller,
                     ShopName = shop != null ? shop.ShopName : string.Empty,
                     ShopUrl = shop != null && !string.IsNullOrWhiteSpace(shop.ShopCode) ? "/cua-hang/" + shop.ShopCode : "#",
@@ -309,13 +323,13 @@ public partial class CommunityDefault : System.Web.UI.Page
                     LikeCount = post.LikeCount,
                     CommentCount = post.CommentCount,
                     LikeLabel = likedIds.Contains(post.Id) ? "Bỏ thích" : "Thích",
-                    Images = images.Where(i => i.PostId == post.Id).Select(i => i.ImageUrl).ToList(),
-                    Comments = comments.Where(c => c.PostId == post.Id)
+                    Images = imagesByPost[post.Id].ToList(),
+                    Comments = commentsByPost[post.Id]
                         .OrderByDescending(c => c.CreatedAt)
                         .Take(3)
                         .Select(c =>
                         {
-                            var commentInfo = customerInfo.FirstOrDefault(x => x.Id == c.CustomerId);
+                            var commentInfo = customers.ContainsKey(c.CustomerId) ? customers[c.CustomerId] : null;
                             var commentIsSeller = commentInfo != null && commentInfo.IsSeller;
                             CfShop commentShop = null;
                             if (commentIsSeller && commentInfo != null && commentInfo.SellerId.HasValue && shopLookup.ContainsKey(commentInfo.SellerId.Value))
@@ -324,7 +338,7 @@ public partial class CommunityDefault : System.Web.UI.Page
                             }
                             return new
                             {
-                                AuthorName = customers.ContainsKey(c.CustomerId) ? customers[c.CustomerId] : "User",
+                                AuthorName = commentInfo != null ? commentInfo.Name : "User",
                                 IsSeller = commentIsSeller,
                                 ShopName = commentShop != null ? commentShop.ShopName : string.Empty,
                                 ShopUrl = commentShop != null && !string.IsNullOrWhiteSpace(commentShop.ShopCode) ? "/cua-hang/" + commentShop.ShopCode : "#",

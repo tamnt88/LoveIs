@@ -1,5 +1,6 @@
-using System;
+﻿using System;
 using System.Linq;
+using System.Data.Entity;
 using System.Collections.Generic;
 using System.Web;
 using System.Web.UI.HtmlControls;
@@ -24,7 +25,7 @@ public partial class PublicHeader : System.Web.UI.UserControl
     {
         using (var db = new BeautyStoryContext())
         {
-            var info = db.CfContactInfos
+            var info = db.CfContactInfos.AsNoTracking()
                 .Where(i => i.Status)
                 .OrderBy(i => i.SortOrder)
                 .ThenBy(i => i.Id)
@@ -85,13 +86,13 @@ public partial class PublicHeader : System.Web.UI.UserControl
     {
         using (var db = new BeautyStoryContext())
         {
-            var allCategories = db.CfCategories
+            var allCategories = db.CfCategories.AsNoTracking()
                 .Where(c => c.Status)
                 .OrderBy(c => c.SortOrder)
                 .ThenBy(c => c.CategoryName)
                 .ToList();
 
-            var slugs = db.CfSeoSlugs.ToList();
+            var slugs = db.CfSeoSlugs.AsNoTracking().ToList();
             var slugLookup = slugs
                 .GroupBy(s => s.EntityType)
                 .ToDictionary(
@@ -146,13 +147,13 @@ public partial class PublicHeader : System.Web.UI.UserControl
     {
         using (var db = new BeautyStoryContext())
         {
-            var allCategories = db.CfPostCategories
+            var allCategories = db.CfPostCategories.AsNoTracking()
                 .Where(c => c.Status)
                 .OrderBy(c => c.SortOrder)
                 .ThenBy(c => c.CategoryName)
                 .ToList();
 
-            var slugs = db.CfSeoSlugs
+            var slugs = db.CfSeoSlugs.AsNoTracking()
                 .Where(s => s.EntityType == "PostCategory")
                 .ToList();
 
@@ -302,7 +303,7 @@ public partial class PublicHeader : System.Web.UI.UserControl
                 .Where(m => m.CustomerId == customerId.Value && m.Status)
                 .Select(m => m.RoomId);
 
-            var unreadCount = db.CfCommunityMessages
+            var unreadCount = db.CfCommunityMessages.AsNoTracking()
                 .Where(m => roomIds.Contains(m.RoomId)
                             && m.Status
                             && m.SenderId != customerId.Value
@@ -367,3 +368,5 @@ public partial class PublicHeader : System.Web.UI.UserControl
         public List<PostCategoryMenuItem> Children { get; set; }
     }
 }
+
+

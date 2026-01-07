@@ -1,6 +1,7 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Data.Entity;
 using System.Web;
 
 public partial class BrandDefault : System.Web.UI.Page
@@ -21,7 +22,9 @@ public partial class BrandDefault : System.Web.UI.Page
     {
         using (var db = new BeautyStoryContext())
         {
-            var slugs = db.CfSeoSlugs.ToList();
+            var slugs = db.CfSeoSlugs.AsNoTracking()
+                .Where(s => s.EntityType == "Brand" || s.EntityType == "Product" || s.EntityType == "Category")
+                .ToList();
             var slugLookup = slugs
                 .GroupBy(s => s.EntityType)
                 .ToDictionary(
@@ -38,17 +41,17 @@ public partial class BrandDefault : System.Web.UI.Page
             _activeBrandId = ResolveBrandId(slugLookup, slug);
             if (_activeBrandId == 0)
             {
-                BrandTitle.Text = "Thương hiệu";
-                BrandSubTitle.Text = "Không tìm thấy thương hiệu.";
+                BrandTitle.Text = "ThÆ°Æ¡ng hiá»‡u";
+                BrandSubTitle.Text = "KhÃ´ng tÃ¬m tháº¥y thÆ°Æ¡ng hiá»‡u.";
                 BrandProductRepeater.DataSource = new List<object>();
                 BrandProductRepeater.DataBind();
                 return;
             }
 
-            var brand = db.CfBrands.FirstOrDefault(b => b.Id == _activeBrandId);
-            BrandTitle.Text = brand != null ? brand.BrandName : "Thương hiệu";
+            var brand = db.CfBrands.AsNoTracking().FirstOrDefault(b => b.Id == _activeBrandId);
+            BrandTitle.Text = brand != null ? brand.BrandName : "ThÆ°Æ¡ng hiá»‡u";
             BrandSubTitle.Text = string.Empty;
-            BrandTitleTop.Text = brand != null ? brand.BrandName : "Thương hiệu";
+            BrandTitleTop.Text = brand != null ? brand.BrandName : "ThÆ°Æ¡ng hiá»‡u";
 
             string bannerUrl = brand != null && !string.IsNullOrWhiteSpace(brand.BannerUrl)
                 ? brand.BannerUrl
@@ -60,7 +63,7 @@ public partial class BrandDefault : System.Web.UI.Page
             string slugUrl = !string.IsNullOrWhiteSpace(slug) ? "/thuong-hieu/" + slug : "/thuong-hieu";
             string title = brand != null && !string.IsNullOrWhiteSpace(brand.SeoTitle)
                 ? brand.SeoTitle
-                : (brand != null ? brand.BrandName : "Thương hiệu");
+                : (brand != null ? brand.BrandName : "ThÆ°Æ¡ng hiá»‡u");
             string description = brand != null && !string.IsNullOrWhiteSpace(brand.SeoDescription)
                 ? brand.SeoDescription
                 : title;
@@ -85,7 +88,7 @@ public partial class BrandDefault : System.Web.UI.Page
 
             _currentPage = ParsePage(Request.QueryString["page"]);
 
-            var productQuery = db.CfProducts
+            var productQuery = db.CfProducts.AsNoTracking()
                 .Where(p => p.Status && p.BrandId == _activeBrandId);
 
             var totalProducts = productQuery.Count();
@@ -101,51 +104,63 @@ public partial class BrandDefault : System.Web.UI.Page
                 .Take(PageSize)
                 .ToList();
 
-            var products = db.CfProducts
+            var products = db.CfProducts.AsNoTracking()
                 .Where(p => pagedProductIds.Contains(p.Id))
+                .Select(p => new ProductLite
+                {
+                    Id = p.Id,
+                    ProductName = p.ProductName,
+                    CategoryId = p.CategoryId
+                })
                 .ToList();
             var productIds = products.Select(p => p.Id).ToList();
-            var images = db.CfProductImages
+            var categoryIds = products.Select(p => p.CategoryId).Distinct().ToList();
+            var images = db.CfProductImages.AsNoTracking()
                 .Where(i => productIds.Contains(i.ProductId) && i.Status)
                 .ToList();
-            var variants = db.CfProductVariants
+            var variants = db.CfProductVariants.AsNoTracking()
                 .Where(v => productIds.Contains(v.ProductId) && v.Status)
                 .ToList();
 
-            var categoryLookup = db.CfCategories
-                .Where(c => c.Status)
+            var categoryLookup = db.CfCategories.AsNoTracking()
+                .Where(c => c.Status && categoryIds.Contains(c.Id))
                 .ToList()
                 .ToDictionary(c => c.Id, c => c.CategoryName);
 
-            var priceLookup = variants
-                .GroupBy(v => v.ProductId)
-                .ToDictionary(
-                    g => g.Key,
-                    g => FormatPriceHtml(g.ToList()));
-            var saleBadgeLookup = variants
-                .GroupBy(v => v.ProductId)
-                .ToDictionary(
-                    g => g.Key,
-                    g => BuildSaleBadgeHtml(g.ToList()));
+            var variantsByProduct = variants.ToLookup(v => v.ProductId);
+            var variantSummaryLookup = new Dictionary<int, VariantSummary>();
+            foreach (var group in variantsByProduct)
+            {
+                var list = group.ToList();
+                variantSummaryLookup[group.Key] = new VariantSummary
+                {
+                    PriceLabel = FormatPriceHtml(list),
+                    SaleBadge = BuildSaleBadgeHtml(list)
+                };
+            }
 
 
-            var primaryImageLookup = images
-                .GroupBy(i => i.ProductId)
-                .ToDictionary(
-                    g => g.Key,
-                    g =>
-                    {
-                        var primary = g.FirstOrDefault(i => i.IsPrimary);
-                        if (primary != null)
-                        {
-                            return primary.ImageUrl;
-                        }
-                        var fallback = g.FirstOrDefault();
-                        return fallback != null ? fallback.ImageUrl : null;
-                    });
+            var primaryImageLookup = new Dictionary<int, string>();
+            foreach (var group in images.GroupBy(i => i.ProductId))
+            {
+                var primary = group.FirstOrDefault(i => i.IsPrimary);
+                if (primary != null)
+                {
+                    primaryImageLookup[group.Key] = primary.ImageUrl;
+                    continue;
+                }
+                var fallback = group.FirstOrDefault();
+                if (fallback != null)
+                {
+                    primaryImageLookup[group.Key] = fallback.ImageUrl;
+                }
+            }
 
+            var orderLookup = pagedProductIds
+                .Select((id, index) => new { id, index })
+                .ToDictionary(x => x.id, x => x.index);
             BrandProductRepeater.DataSource = products
-                .OrderBy(p => pagedProductIds.IndexOf(p.Id))
+                .OrderBy(p => orderLookup[p.Id])
                 .Select(p => new
                 {
                     p.Id,
@@ -154,8 +169,8 @@ public partial class BrandDefault : System.Web.UI.Page
                     CategorySlug = GetSlug(slugLookup, "Category", p.CategoryId),
                     SeoSlug = GetSlug(slugLookup, "Product", p.Id),
                     ImageUrl = primaryImageLookup.ContainsKey(p.Id) && !string.IsNullOrWhiteSpace(primaryImageLookup[p.Id]) ? primaryImageLookup[p.Id] : "/images/fav.png",
-                    PriceLabel = priceLookup.ContainsKey(p.Id) ? priceLookup[p.Id] : "Liên hệ",
-                    SaleBadge = saleBadgeLookup.ContainsKey(p.Id) ? saleBadgeLookup[p.Id] : string.Empty
+                    PriceLabel = variantSummaryLookup.ContainsKey(p.Id) ? variantSummaryLookup[p.Id].PriceLabel : "LiÃªn há»‡",
+                    SaleBadge = variantSummaryLookup.ContainsKey(p.Id) ? variantSummaryLookup[p.Id].SaleBadge : string.Empty
                 })
                 .ToList();
             BrandProductRepeater.DataBind();
@@ -277,7 +292,7 @@ public partial class BrandDefault : System.Web.UI.Page
     {
         if (variants == null || variants.Count == 0)
         {
-            return "Liên hệ";
+            return "LiÃªn há»‡";
         }
 
         var sale = variants.Where(v => v.SalePrice.HasValue && v.SalePrice.Value > 0 && v.SalePrice.Value < v.Price)
@@ -286,15 +301,15 @@ public partial class BrandDefault : System.Web.UI.Page
         var variant = sale ?? variants.OrderBy(v => v.Price).FirstOrDefault();
         if (variant == null)
         {
-            return "Liên hệ";
+            return "LiÃªn há»‡";
         }
 
         if (variant.SalePrice.HasValue && variant.SalePrice.Value > 0 && variant.SalePrice.Value < variant.Price)
         {
-            return string.Format("<span class=\"price-old\">{0:N0} đ</span> <span class=\"price-current\">{1:N0} đ</span>", variant.Price, variant.SalePrice.Value);
+            return string.Format("<span class=\"price-old\">{0:N0} Ä‘</span> <span class=\"price-current\">{1:N0} Ä‘</span>", variant.Price, variant.SalePrice.Value);
         }
 
-        return string.Format("<span class=\"price-current\">{0:N0} đ</span>", variant.Price);
+        return string.Format("<span class=\"price-current\">{0:N0} Ä‘</span>", variant.Price);
     }
 
     private static IEnumerable<string> BuildSeoMeta(string canonical, string description, string keywords, string robots, string ogTitle, string ogDescription, string ogImage, string ogType, string twitterTitle, string twitterDescription, string twitterImage)
@@ -320,12 +335,12 @@ public partial class BrandDefault : System.Web.UI.Page
     private static string BuildBrandBreadcrumb(CfBrand brand, Dictionary<string, Dictionary<int, string>> slugLookup)
     {
         string brandSlug = brand != null ? GetSlug(slugLookup, "Brand", brand.Id) : string.Empty;
-        string brandName = brand != null ? brand.BrandName : "Thương hiệu";
+        string brandName = brand != null ? brand.BrandName : "ThÆ°Æ¡ng hiá»‡u";
 
         var links = new List<string>
         {
-            "<li class=\"breadcrumb-item\"><a href=\"/\">Trang chủ</a></li>",
-            "<li class=\"breadcrumb-item\"><a href=\"/thuong-hieu\">Thương hiệu</a></li>",
+            "<li class=\"breadcrumb-item\"><a href=\"/\">Trang chá»§</a></li>",
+            "<li class=\"breadcrumb-item\"><a href=\"/thuong-hieu\">ThÆ°Æ¡ng hiá»‡u</a></li>",
             string.Format("<li class=\"breadcrumb-item active\" aria-current=\"page\">{0}</li>", HttpUtility.HtmlEncode(brandName))
         };
 
@@ -355,6 +370,19 @@ public partial class BrandDefault : System.Web.UI.Page
         }
 
         return string.Format("<span class=\"sale-badge\">-{0}%</span>", percent);
+    }
+
+    private class ProductLite
+    {
+        public int Id { get; set; }
+        public string ProductName { get; set; }
+        public int CategoryId { get; set; }
+    }
+
+    private class VariantSummary
+    {
+        public string PriceLabel { get; set; }
+        public string SaleBadge { get; set; }
     }
 
     private class SchemaItem
@@ -391,3 +419,6 @@ public partial class BrandDefault : System.Web.UI.Page
         return "<script type=\"application/ld+json\">" + json + "</script>";
     }
 }
+
+
+

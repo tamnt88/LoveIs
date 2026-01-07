@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Data.Entity;
 using System.Web.UI;
 
 public partial class public_controls_trang_chu_NewArrivalHomePage : System.Web.UI.UserControl
@@ -17,8 +18,13 @@ public partial class public_controls_trang_chu_NewArrivalHomePage : System.Web.U
     {
         using (var db = new BeautyStoryContext())
         {
-            var products = ProductRanking.Apply(db.CfProducts
+            var products = ProductRanking.Apply(db.CfProducts.AsNoTracking()
                 .Where(p => p.Status && p.IsNewArrival))
+                .Select(p => new ProductLite
+                {
+                    Id = p.Id,
+                    ProductName = p.ProductName
+                })
                 .Take(10)
                 .ToList();
 
@@ -30,13 +36,13 @@ public partial class public_controls_trang_chu_NewArrivalHomePage : System.Web.U
             }
 
             var productIds = products.Select(p => p.Id).ToList();
-            var slugs = db.CfSeoSlugs
+            var slugs = db.CfSeoSlugs.AsNoTracking()
                 .Where(s => s.EntityType == "Product" && productIds.Contains(s.EntityId))
                 .ToList();
-            var images = db.CfProductImages
+            var images = db.CfProductImages.AsNoTracking()
                 .Where(i => productIds.Contains(i.ProductId) && i.Status)
                 .ToList();
-            var variants = db.CfProductVariants
+            var variants = db.CfProductVariants.AsNoTracking()
                 .Where(v => productIds.Contains(v.ProductId) && v.Status)
                 .ToList();
 
@@ -138,9 +144,17 @@ public partial class public_controls_trang_chu_NewArrivalHomePage : System.Web.U
         return string.Format("{0:N0} đ", value);
     }
 
-    private class PriceInfo
+    
+    private class ProductLite
     {
+        public int Id { get; set; }
+        public string ProductName { get; set; }
+    }
+
+    private class PriceInfo    {
         public decimal Price { get; set; }
         public decimal Sale { get; set; }
     }
 }
+
+

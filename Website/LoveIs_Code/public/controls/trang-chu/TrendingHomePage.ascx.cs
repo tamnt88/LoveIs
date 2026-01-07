@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Data.Entity;
 using System.Web.UI;
 using System.Web.UI.WebControls;
 
@@ -18,8 +19,14 @@ public partial class public_controls_trang_chu_TrendingHomePage : System.Web.UI.
     {
         using (var db = new BeautyStoryContext())
         {
-            var trendingProducts = ProductRanking.Apply(db.CfProducts
+            var trendingProducts = ProductRanking.Apply(db.CfProducts.AsNoTracking()
                 .Where(p => p.Status && p.IsTrending && p.CategoryId > 0))
+                .Select(p => new ProductLite
+                {
+                    Id = p.Id,
+                    ProductName = p.ProductName,
+                    CategoryId = p.CategoryId
+                })
                 .ToList();
 
             if (trendingProducts.Count == 0)
@@ -32,20 +39,20 @@ public partial class public_controls_trang_chu_TrendingHomePage : System.Web.UI.
             }
 
             var categoryIds = trendingProducts.Select(p => p.CategoryId).Distinct().ToList();
-            var categories = db.CfCategories
+            var categories = db.CfCategories.AsNoTracking()
                 .Where(c => c.Status && categoryIds.Contains(c.Id))
                 .OrderBy(c => c.SortOrder)
                 .ThenBy(c => c.CategoryName)
                 .ToList();
 
             var productIds = trendingProducts.Select(p => p.Id).ToList();
-            var slugs = db.CfSeoSlugs
+            var slugs = db.CfSeoSlugs.AsNoTracking()
                 .Where(s => s.EntityType == "Product" && productIds.Contains(s.EntityId))
                 .ToList();
-            var images = db.CfProductImages
+            var images = db.CfProductImages.AsNoTracking()
                 .Where(i => productIds.Contains(i.ProductId) && i.Status)
                 .ToList();
-            var variants = db.CfProductVariants
+            var variants = db.CfProductVariants.AsNoTracking()
                 .Where(v => productIds.Contains(v.ProductId) && v.Status)
                 .ToList();
 
@@ -223,4 +230,12 @@ public partial class public_controls_trang_chu_TrendingHomePage : System.Web.UI.
         public string PriceHtml { get; set; }
         public string DiscountBadge { get; set; }
     }
+
+    private class ProductLite
+    {
+        public int Id { get; set; }
+        public string ProductName { get; set; }
+        public int CategoryId { get; set; }
+    }
 }
+

@@ -1,6 +1,7 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Data.Entity;
 using System.Web.UI.WebControls;
 
 public partial class PublicFooter : System.Web.UI.UserControl
@@ -53,7 +54,7 @@ public partial class PublicFooter : System.Web.UI.UserControl
     {
         using (var db = new BeautyStoryContext())
         {
-            var items = db.CfFooterMenus
+            var items = db.CfFooterMenus.AsNoTracking()
                 .Where(m => m.Status)
                 .OrderBy(m => m.GroupSortOrder)
                 .ThenBy(m => m.SortOrder)
@@ -77,7 +78,7 @@ public partial class PublicFooter : System.Web.UI.UserControl
     {
         using (var db = new BeautyStoryContext())
         {
-            var info = db.CfContactInfos
+            var info = db.CfContactInfos.AsNoTracking()
                 .Where(i => i.Status)
                 .OrderBy(i => i.SortOrder)
                 .ThenBy(i => i.Id)
@@ -87,7 +88,7 @@ public partial class PublicFooter : System.Web.UI.UserControl
             ContactHotlineTelText = ContactHotlineText.Replace(" ", string.Empty);
             ContactEmailText = info == null || string.IsNullOrWhiteSpace(info.Email) ? "beautystory0909@gmail.com" : info.Email.Trim();
             ContactAddressText = info == null || string.IsNullOrWhiteSpace(info.Address)
-                ? "143 đường số 32-CL, Phường Cát Lái, TP Hồ Chí Minh, Việt Nam"
+                ? "143 Ä‘Æ°á»ng sá»‘ 32-CL, PhÆ°á»ng CÃ¡t LÃ¡i, TP Há»“ ChÃ­ Minh, Viá»‡t Nam"
                 : info.Address.Trim();
             ContactLogoUrl = info == null || string.IsNullOrWhiteSpace(info.LogoVerticalUrl) ? "/images/logo_doc.png" : info.LogoVerticalUrl.Trim();
         }
@@ -110,3 +111,5 @@ public partial class PublicFooter : System.Web.UI.UserControl
         public List<CfFooterMenu> Items { get; set; }
     }
 }
+
+

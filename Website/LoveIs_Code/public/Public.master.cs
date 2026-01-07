@@ -1,6 +1,6 @@
-using System;
+﻿using System;
 using System.Linq;
-
+using System.Data.Entity;
 public partial class PublicMaster : System.Web.UI.MasterPage
 {
     protected void Page_Load(object sender, EventArgs e)
@@ -15,7 +15,7 @@ public partial class PublicMaster : System.Web.UI.MasterPage
     {
         using (var db = new BeautyStoryContext())
         {
-            var item = db.CfTrackingCodes
+            var item = db.CfTrackingCodes.AsNoTracking()
                 .Where(t => t.Status)
                 .OrderBy(t => t.SortOrder)
                 .ThenBy(t => t.Id)
@@ -26,3 +26,5 @@ public partial class PublicMaster : System.Web.UI.MasterPage
         }
     }
 }
+
+

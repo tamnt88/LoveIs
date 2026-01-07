@@ -8,6 +8,7 @@ using System.Text;
 using System.Web.Configuration;
 using System.Web.UI.WebControls;
 using System.Text.RegularExpressions;
+using System.Data.Entity;
 
 public partial class CheckoutDefault : System.Web.UI.Page
 {
@@ -56,7 +57,7 @@ public partial class CheckoutDefault : System.Web.UI.Page
     {
         using (var db = new BeautyStoryContext())
         {
-            var provinces = db.CfProvinces
+            var provinces = db.CfProvinces.AsNoTracking()
                 .OrderBy(p => p.SortOrder)
                 .Select(p => new { p.Id, p.ProvinceName })
                 .ToList();
@@ -81,7 +82,7 @@ public partial class CheckoutDefault : System.Web.UI.Page
 
         using (var db = new BeautyStoryContext())
         {
-            var wards = db.CfWards
+            var wards = db.CfWards.AsNoTracking()
                 .Where(w => w.ProvinceId == provinceId.Value)
                 .OrderBy(w => w.WardName)
                 .Select(w => new { w.Id, w.WardName })
@@ -98,7 +99,7 @@ public partial class CheckoutDefault : System.Web.UI.Page
     {
         using (var db = new BeautyStoryContext())
         {
-            var methods = db.CfShippingMethods
+            var methods = db.CfShippingMethods.AsNoTracking()
                 .Where(m => m.Status)
                 .OrderBy(m => m.SortOrder)
                 .ToList();
@@ -124,7 +125,7 @@ public partial class CheckoutDefault : System.Web.UI.Page
     {
         using (var db = new BeautyStoryContext())
         {
-            var methods = db.CfPaymentMethods
+            var methods = db.CfPaymentMethods.AsNoTracking()
                 .Where(m => m.Status)
                 .OrderBy(m => m.SortOrder)
                 .ToList();
@@ -156,21 +157,30 @@ public partial class CheckoutDefault : System.Web.UI.Page
         using (var db = new BeautyStoryContext())
         {
             var variantIds = cart.Select(c => c.VariantId).ToList();
-            var variants = db.CfProductVariants
+            var variants = db.CfProductVariants.AsNoTracking()
                 .Where(v => variantIds.Contains(v.Id))
                 .ToList();
             var productIds = variants.Select(v => v.ProductId).Distinct().ToList();
-            var products = db.CfProducts
+            var products = db.CfProducts.AsNoTracking()
                 .Where(p => productIds.Contains(p.Id))
                 .ToList();
-            var attributes = db.CfProductVariantAttributes
+            var attributes = db.CfProductVariantAttributes.AsNoTracking()
                 .Where(pva => variantIds.Contains(pva.VariantId))
                 .ToList();
-            var attributeLookup = db.CfVariantAttributes.ToDictionary(a => a.Id, a => a.AttributeName);
-            var valueLookup = db.CfVariantAttributeValues.ToDictionary(v => v.Id, v => v.ValueName);
+            var attributeIds = attributes.Select(a => a.AttributeId).Distinct().ToList();
+            var valueIds = attributes.Select(a => a.AttributeValueId).Distinct().ToList();
+            var attributeLookup = db.CfVariantAttributes.AsNoTracking()
+                .Where(a => attributeIds.Contains(a.Id))
+                .ToDictionary(a => a.Id, a => a.AttributeName);
+            var valueLookup = db.CfVariantAttributeValues.AsNoTracking()
+                .Where(v => valueIds.Contains(v.Id))
+                .ToDictionary(v => v.Id, v => v.ValueName);
 
             var variantLookup = variants.ToDictionary(v => v.Id, v => v);
             var productLookup = products.ToDictionary(p => p.Id, p => p);
+            var attributesByVariant = attributes
+                .GroupBy(a => a.VariantId)
+                .ToDictionary(g => g.Key, g => g.ToList());
 
             var lines = cart.Select(item =>
             {
@@ -179,15 +189,16 @@ public partial class CheckoutDefault : System.Web.UI.Page
                 var price = GetEffectivePrice(variant);
                 var lineTotal = price * item.Quantity;
 
-                var attrs = attributes
-                    .Where(a => a.VariantId == item.VariantId)
-                    .Select(a =>
+                var attrs = new List<string>();
+                if (attributesByVariant.ContainsKey(item.VariantId))
+                {
+                    foreach (var attr in attributesByVariant[item.VariantId])
                     {
-                        var attrName = attributeLookup.ContainsKey(a.AttributeId) ? attributeLookup[a.AttributeId] : "";
-                        var valueName = valueLookup.ContainsKey(a.AttributeValueId) ? valueLookup[a.AttributeValueId] : "";
-                        return string.Format("{0}: {1}", attrName, valueName);
-                    })
-                    .ToList();
+                        var attrName = attributeLookup.ContainsKey(attr.AttributeId) ? attributeLookup[attr.AttributeId] : "";
+                        var valueName = valueLookup.ContainsKey(attr.AttributeValueId) ? valueLookup[attr.AttributeValueId] : "";
+                        attrs.Add(string.Format("{0}: {1}", attrName, valueName));
+                    }
+                }
 
                 return new
                 {
@@ -458,15 +469,30 @@ public partial class CheckoutDefault : System.Web.UI.Page
             }
 
             var variantIds = cart.Select(c => c.VariantId).ToList();
-            var variants = db.CfProductVariants.Where(v => variantIds.Contains(v.Id)).ToList();
+            var variants = db.CfProductVariants.AsNoTracking()
+                .Where(v => variantIds.Contains(v.Id))
+                .ToList();
             var productIds = variants.Select(v => v.ProductId).Distinct().ToList();
-            var products = db.CfProducts.Where(p => productIds.Contains(p.Id)).ToList();
-            var attributes = db.CfProductVariantAttributes.Where(pva => variantIds.Contains(pva.VariantId)).ToList();
-            var attributeLookup = db.CfVariantAttributes.ToDictionary(a => a.Id, a => a.AttributeName);
-            var valueLookup = db.CfVariantAttributeValues.ToDictionary(v => v.Id, v => v.ValueName);
+            var products = db.CfProducts.AsNoTracking()
+                .Where(p => productIds.Contains(p.Id))
+                .ToList();
+            var attributes = db.CfProductVariantAttributes.AsNoTracking()
+                .Where(pva => variantIds.Contains(pva.VariantId))
+                .ToList();
+            var attributeIds = attributes.Select(a => a.AttributeId).Distinct().ToList();
+            var valueIds = attributes.Select(a => a.AttributeValueId).Distinct().ToList();
+            var attributeLookup = db.CfVariantAttributes.AsNoTracking()
+                .Where(a => attributeIds.Contains(a.Id))
+                .ToDictionary(a => a.Id, a => a.AttributeName);
+            var valueLookup = db.CfVariantAttributeValues.AsNoTracking()
+                .Where(v => valueIds.Contains(v.Id))
+                .ToDictionary(v => v.Id, v => v.ValueName);
 
             var variantLookup = variants.ToDictionary(v => v.Id, v => v);
             var productLookup = products.ToDictionary(p => p.Id, p => p);
+            var attributesByVariant = attributes
+                .GroupBy(a => a.VariantId)
+                .ToDictionary(g => g.Key, g => g.ToList());
 
             var provinceName = provinceValue.HasValue
                 ? db.CfProvinces.Where(p => p.Id == provinceValue.Value).Select(p => p.ProvinceName).FirstOrDefault()
@@ -491,15 +517,16 @@ public partial class CheckoutDefault : System.Web.UI.Page
                 var lineTotal = price * item.Quantity;
                 subtotal += lineTotal;
 
-                var attrs = attributes
-                    .Where(a => a.VariantId == item.VariantId)
-                    .Select(a =>
+                var attrs = new List<string>();
+                if (attributesByVariant.ContainsKey(item.VariantId))
+                {
+                    foreach (var attr in attributesByVariant[item.VariantId])
                     {
-                        var attrName = attributeLookup.ContainsKey(a.AttributeId) ? attributeLookup[a.AttributeId] : "";
-                        var valueName = valueLookup.ContainsKey(a.AttributeValueId) ? valueLookup[a.AttributeValueId] : "";
-                        return string.Format("{0}: {1}", attrName, valueName);
-                    })
-                    .ToList();
+                        var attrName = attributeLookup.ContainsKey(attr.AttributeId) ? attributeLookup[attr.AttributeId] : "";
+                        var valueName = valueLookup.ContainsKey(attr.AttributeValueId) ? valueLookup[attr.AttributeValueId] : "";
+                        attrs.Add(string.Format("{0}: {1}", attrName, valueName));
+                    }
+                }
 
                 orderItems.Add(new CfOrderItem
                 {
@@ -762,20 +789,17 @@ private static string GenerateOrderCode()
             {
                 using (var db = new BeautyStoryContext())
                 {
-                    var images = db.CfProductImages
+                    var images = db.CfProductImages.AsNoTracking()
                         .Where(i => productIds.Contains(i.ProductId) && i.Status)
                         .ToList();
 
-                    imageLookup = images
-                        .GroupBy(i => i.ProductId)
-                        .ToDictionary(
-                            g => g.Key,
-                            g =>
-                            {
-                                var primary = g.FirstOrDefault(i => i.IsPrimary);
-                                var imageUrl = primary != null ? primary.ImageUrl : g.FirstOrDefault() != null ? g.First().ImageUrl : string.Empty;
-                                return BuildAbsoluteUrl(baseUrl, imageUrl);
-                            });
+                    foreach (var group in images.GroupBy(i => i.ProductId))
+                    {
+                        var primary = group.FirstOrDefault(i => i.IsPrimary);
+                        var fallback = group.FirstOrDefault();
+                        var imageUrl = primary != null ? primary.ImageUrl : (fallback != null ? fallback.ImageUrl : string.Empty);
+                        imageLookup[group.Key] = BuildAbsoluteUrl(baseUrl, imageUrl);
+                    }
                 }
             }
 

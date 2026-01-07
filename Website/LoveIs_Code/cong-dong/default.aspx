@@ -1,4 +1,4 @@
-﻿<%@ Page Language="C#" AutoEventWireup="true" CodeFile="default.aspx.cs" Inherits="CommunityDefault" MasterPageFile="~/public/Public.master" %>
+<%@ Page Language="C#" AutoEventWireup="true" CodeFile="default.aspx.cs" Inherits="CommunityDefault" MasterPageFile="~/public/Public.master" %>
 <asp:Content ID="Content1" ContentPlaceHolderID="HeadContent" runat="server">
     <link rel="stylesheet" href="/public/assets/css/community.css" />
 </asp:Content>
@@ -21,12 +21,49 @@
                     </div>
                 </aside>
                 <main>
-                    <div class="community-card community-composer">
-                        <asp:Label ID="PostMessage" runat="server" CssClass="account-message" />
-                        <asp:TextBox ID="PostContentInput" runat="server" TextMode="MultiLine" placeholder="Bạn đang nghĩ gì?" />
-                        <div class="composer-actions">
-                            <asp:FileUpload ID="PostImagesUpload" runat="server" AllowMultiple="true" />
-                            <asp:Button ID="CreatePostButton" runat="server" CssClass="community-btn" Text="Đăng bài" OnClick="CreatePostButton_Click" />
+                    <div class="community-card community-composer-bar" id="ComposerTrigger">
+                        <div class="composer-bar">
+                            <div class="composer-avatar">P</div>
+                            <button type="button" class="composer-input" id="OpenComposer">Bạn đang nghĩ gì?</button>
+                            <div class="composer-actions">
+                                <span class="composer-icon" aria-hidden="true">📷</span>
+                                <span class="composer-icon" aria-hidden="true">🖼️</span>
+                                <span class="composer-icon" aria-hidden="true">🎥</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="community-modal" id="ComposerModal" aria-hidden="true">
+                        <div class="community-modal-backdrop" data-modal-close="true"></div>
+                        <div class="community-modal-dialog" role="dialog" aria-modal="true" aria-labelledby="ComposerTitle">
+                            <div class="community-modal-header">
+                                <div class="community-modal-title" id="ComposerTitle">Tạo bài viết</div>
+                                <button type="button" class="community-modal-close" data-modal-close="true">×</button>
+                            </div>
+                            <div class="community-modal-body">
+                                <asp:Label ID="PostMessage" runat="server" CssClass="account-message" />
+                                <div class="community-modal-user">
+                                    <div class="composer-avatar">P</div>
+                                    <div>
+                                        <div class="fw-bold">LoveIs Community</div>
+                                        <div class="community-visibility">Công khai</div>
+                                    </div>
+                                </div>
+                                <asp:TextBox ID="PostContentInput" runat="server" TextMode="MultiLine" CssClass="community-modal-textarea" placeholder="Bạn đang nghĩ gì?" />
+                                <div class="community-modal-upload">
+                                    <div class="upload-label">Thêm vào bài viết của bạn</div>
+                                    <div class="upload-actions">
+                                        <span class="composer-icon" aria-hidden="true">🖼️</span>
+                                        <span class="composer-icon" aria-hidden="true">👥</span>
+                                        <span class="composer-icon" aria-hidden="true">📍</span>
+                                        <span class="composer-icon" aria-hidden="true">🎥</span>
+                                    </div>
+                                </div>
+                                <asp:FileUpload ID="PostImagesUpload" runat="server" AllowMultiple="true" CssClass="community-upload-input" />
+                            </div>
+                            <div class="community-modal-footer">
+                                <asp:Button ID="CreatePostButton" runat="server" CssClass="community-btn community-btn-block" Text="Đăng bài" OnClick="CreatePostButton_Click" />
+                            </div>
                         </div>
                     </div>
 
@@ -46,7 +83,7 @@
                                         </div>
                                         <div class="community-post-time"><%# Eval("CreatedAt") %></div>
                                     </div>
-                                    <div class="community-post-time">Thích: <%# Eval("LikeCount") %> · Bình luận: <%# Eval("CommentCount") %></div>
+                                    <div class="community-post-time">Thích: <%# Eval("LikeCount") %> • Bình luận: <%# Eval("CommentCount") %></div>
                                 </div>
                                 <div class="community-post-content"><%# Eval("Content") %></div>
                                 <asp:PlaceHolder ID="ImagePlaceholder" runat="server" Visible='<%# ((System.Collections.Generic.List<string>)Eval("Images")).Count > 0 %>'>
@@ -79,7 +116,7 @@
                                         </ItemTemplate>
                                     </asp:Repeater>
                                     <div class="community-comment-form">
-                                        <asp:TextBox ID="CommentInput" runat="server" TextMode="MultiLine" placeholder="Viết Bình luận..." />
+                                        <asp:TextBox ID="CommentInput" runat="server" TextMode="MultiLine" placeholder="Viết bình luận..." />
                                         <asp:LinkButton ID="CommentButton" runat="server" CssClass="community-btn" CommandName="comment" CommandArgument='<%# Eval("PostId") %>'>Gửi</asp:LinkButton>
                                     </div>
                                 </div>
@@ -100,4 +137,30 @@
             </div>
         </div>
     </div>
+    <script>
+        (function () {
+            var trigger = document.getElementById("ComposerTrigger");
+            var modal = document.getElementById("ComposerModal");
+            if (!trigger || !modal) {
+                return;
+            }
+
+            function openModal() {
+                modal.classList.add("is-open");
+                modal.setAttribute("aria-hidden", "false");
+            }
+
+            function closeModal() {
+                modal.classList.remove("is-open");
+                modal.setAttribute("aria-hidden", "true");
+            }
+
+            trigger.addEventListener("click", openModal);
+            modal.addEventListener("click", function (event) {
+                if (event.target && event.target.getAttribute("data-modal-close") === "true") {
+                    closeModal();
+                }
+            });
+        })();
+    </script>
 </asp:Content>

@@ -1,6 +1,7 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Data.Entity;
 using System.Web;
 
 public partial class SearchSuggest : System.Web.UI.Page
@@ -26,7 +27,7 @@ public partial class SearchSuggest : System.Web.UI.Page
     {
         using (var db = new BeautyStoryContext())
         {
-            var products = ProductRanking.Apply(db.CfProducts
+            var products = ProductRanking.Apply(db.CfProducts.AsNoTracking()
                 .Where(p => p.Status && p.ProductName.Contains(query)))
                 .Select(p => new { p.Id, p.ProductName })
                 .Take(8)
@@ -38,12 +39,12 @@ public partial class SearchSuggest : System.Web.UI.Page
             }
 
             var productIds = products.Select(p => p.Id).ToList();
-            var slugs = db.CfSeoSlugs
+            var slugs = db.CfSeoSlugs.AsNoTracking()
                 .Where(s => s.EntityType == "Product" && productIds.Contains(s.EntityId))
                 .ToList();
             var slugLookup = slugs.ToDictionary(s => s.EntityId, s => s.SeoSlug);
 
-            var images = db.CfProductImages
+            var images = db.CfProductImages.AsNoTracking()
                 .Where(i => productIds.Contains(i.ProductId) && i.Status)
                 .ToList();
             var imageLookup = images
@@ -61,7 +62,7 @@ public partial class SearchSuggest : System.Web.UI.Page
                         return fallback != null ? fallback.ImageUrl : "/images/fav.png";
                     });
 
-            var variants = db.CfProductVariants
+            var variants = db.CfProductVariants.AsNoTracking()
                 .Where(v => productIds.Contains(v.ProductId) && v.Status)
                 .ToList();
             var priceLookup = variants
@@ -74,10 +75,10 @@ public partial class SearchSuggest : System.Web.UI.Page
                         var variant = sale ?? g.OrderBy(v => v.Price).FirstOrDefault();
                         if (variant == null)
                         {
-                            return "Liên hệ";
+                            return "LiÃªn há»‡";
                         }
                         var price = variant.SalePrice.HasValue ? variant.SalePrice.Value : variant.Price;
-                        return string.Format("{0:N0} đ", price);
+                        return string.Format("{0:N0} Ä‘", price);
                     });
 
             return products
@@ -86,7 +87,7 @@ public partial class SearchSuggest : System.Web.UI.Page
                     Name = p.ProductName,
                     Slug = slugLookup.ContainsKey(p.Id) ? slugLookup[p.Id] : "",
                     ImageUrl = imageLookup.ContainsKey(p.Id) ? imageLookup[p.Id] : "/images/fav.png",
-                    Price = priceLookup.ContainsKey(p.Id) ? priceLookup[p.Id] : "Liên hệ"
+                    Price = priceLookup.ContainsKey(p.Id) ? priceLookup[p.Id] : "LiÃªn há»‡"
                 })
                 .Where(x => !string.IsNullOrWhiteSpace(x.Slug))
                 .ToList();
@@ -101,3 +102,5 @@ public partial class SearchSuggest : System.Web.UI.Page
         public string Price { get; set; }
     }
 }
+
+

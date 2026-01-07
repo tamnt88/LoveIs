@@ -179,6 +179,7 @@ public partial class SellerOrders : System.Web.UI.Page
             OrderRepeater.DataBind();
 
             PaginationLiteral.Text = BuildPagination(totalPages);
+            PaginationInfoLiteral.Text = BuildPaginationInfo(totalOrders);
 
         }
     }
@@ -344,6 +345,18 @@ public partial class SellerOrders : System.Web.UI.Page
         links.Add(string.Format("<a class=\"page-link\" href=\"{0}\">&raquo;</a>", BuildPageUrl(baseUrl, totalPages)));
 
         return string.Join("", links);
+    }
+
+    private string BuildPaginationInfo(int totalItems)
+    {
+        if (totalItems == 0)
+        {
+            return "Hiển thị 0 trong tổng số 0 đơn hàng";
+        }
+
+        int start = (_currentPage - 1) * PageSize + 1;
+        int end = Math.Min(_currentPage * PageSize, totalItems);
+        return string.Format("Hiển thị {0}-{1} trong tổng số {2} đơn hàng", start, end, totalItems);
     }
 
     private string BuildBaseUrl()

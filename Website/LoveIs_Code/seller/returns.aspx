@@ -70,7 +70,8 @@
             </asp:Repeater>
         </div>
         <div class="seller-pagination">
-            <asp:Literal ID="PaginationLiteral" runat="server" />
+            <div class="pagination-info"><asp:Literal ID="PaginationInfoLiteral" runat="server" /></div>
+            <div class="pagination-links"><asp:Literal ID="PaginationLiteral" runat="server" /></div>
         </div>
     </div>
 </asp:Content>

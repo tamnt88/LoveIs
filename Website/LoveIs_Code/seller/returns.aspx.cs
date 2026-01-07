@@ -77,8 +77,9 @@ public partial class SellerReturns : System.Web.UI.Page
             var filtered = string.Equals(_statusKey, "all", StringComparison.OrdinalIgnoreCase)
                 ? requests
                 : requests.Where(r => IsStatusMatch(r.Status, _statusKey)).ToList();
+            var filteredCount = filtered.Count;
 
-            var totalPages = (int)Math.Ceiling(filtered.Count / (double)PageSize);
+            var totalPages = (int)Math.Ceiling(filteredCount / (double)PageSize);
             if (_currentPage > totalPages && totalPages > 0)
             {
                 _currentPage = totalPages;
@@ -158,6 +159,7 @@ public partial class SellerReturns : System.Web.UI.Page
             ReturnRepeater.DataSource = rows;
             ReturnRepeater.DataBind();
             PaginationLiteral.Text = BuildPagination(totalPages);
+            PaginationInfoLiteral.Text = BuildPaginationInfo(filteredCount);
         }
     }
 
@@ -260,6 +262,17 @@ public partial class SellerReturns : System.Web.UI.Page
         links.Add(string.Format("<a class=\"page-link\" href=\"{0}\">&raquo;</a>", BuildPageUrl(baseUrl, totalPages)));
 
         return string.Join("", links);
+    }
+
+    private string BuildPaginationInfo(int totalItems)
+    {
+        if (totalItems == 0)
+        {
+            return "Hiển thị 0 trong tổng số 0 yêu cầu";
+        }
+        int start = (_currentPage - 1) * PageSize + 1;
+        int end = Math.Min(_currentPage * PageSize, totalItems);
+        return string.Format("Hiển thị {0}-{1} trong tổng số {2} yêu cầu", start, end, totalItems);
     }
 
     private string BuildBaseUrl()

@@ -39,7 +39,7 @@
                 <ul class="seller-nav">
                     <asp:Repeater ID="SellerMenuRepeater" runat="server">
                         <ItemTemplate>
-                            <li class="menu-item <%# ((System.Collections.Generic.List<SellerMenuItem>)Eval("Children")).Count > 0 ? "has-children" : "" %>">
+                            <li class="menu-item <%# ((System.Collections.Generic.List<SellerMenuItem>)Eval("Children")).Count > 0 ? "has-children" : "" %> <%# (bool)Eval("IsOpen") ? "open" : "" %> <%# (bool)Eval("IsActive") ? "active" : "" %>">
                                 <button class="menu-button" type="button">
                                     <span>
                                         <%# string.IsNullOrWhiteSpace((string)Eval("Icon")) ? "" : "<i class='" + Eval("Icon") + "'></i>" %>
@@ -52,7 +52,7 @@
                                         <asp:Repeater ID="ChildMenuRepeater" runat="server" DataSource='<%# Eval("Children") %>'>
                                             <ItemTemplate>
                                                 <li>
-                                                    <a href="<%# Eval("Url") %>"><%# Eval("MenuName") %></a>
+                                                    <a href="<%# Eval("Url") %>" class="<%# (bool)Eval("IsActive") ? "active" : "" %>"><%# Eval("MenuName") %></a>
                                                 </li>
                                             </ItemTemplate>
                                         </asp:Repeater>
@@ -73,6 +73,11 @@
             btn.addEventListener("click", function () {
                 var parent = btn.closest(".menu-item");
                 if (!parent) return;
+                document.querySelectorAll(".menu-item.open").forEach(function (item) {
+                    if (item !== parent) {
+                        item.classList.remove("open");
+                    }
+                });
                 parent.classList.toggle("open");
             });
         });

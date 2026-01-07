@@ -1,0 +1,61 @@
+    private static void CreateShopOrders(BeautyStoryContext db, CfOrder order, List<CfOrderItem> orderItems, Dictionary<int, CfProduct> productLookup, Dictionary<int, ShopFeeSummary> shopFeeLookup)
+    {
+        if (db == null || order == null || orderItems == null || orderItems.Count == 0)
+        {
+            return;
+        }
+
+        var productIds = orderItems.Select(i => i.ProductId).Distinct().ToList();
+        var productShopMap = db.CfProducts
+            .Where(p => productIds.Contains(p.Id))
+            .Select(p => new { p.Id, p.ShopId })
+            .ToList()
+            .ToDictionary(p => p.Id, p => p.ShopId ?? 0);
+
+        var grouped = orderItems
+            .GroupBy(i => productShopMap.ContainsKey(i.ProductId) ? productShopMap[i.ProductId] : 0)
+            .Where(g => g.Key > 0)
+            .ToList();
+
+        if (grouped.Count == 0)
+        {
+            return;
+        }
+
+        foreach (var group in grouped)
+        {
+            var subtotal = group.Sum(i => i.LineTotal);
+            var shopOrder = new CfShopOrder
+            {
+                OrderId = order.Id,
+                ShopId = group.Key,
+                ShippingMethod = order.ShippingMethod,
+                ShippingFee = order.ShippingFee,
+                ShippingEta = order.ShippingEta,
+                PaymentStatus = order.PaymentStatus,
+                OrderStatus = order.OrderStatus,
+                Subtotal = subtotal,
+                Discount = 0,
+                Total = subtotal + order.ShippingFee,
+                Status = true,
+                CreatedAt = DateTime.Now,
+                SortOrder = 0
+            };
+
+            db.CfShopOrders.Add(shopOrder);
+            db.SaveChanges();
+
+            db.CfShopOrderHistories.Add(new CfShopOrderHistory
+            {
+                ShopOrderId = shopOrder.Id,
+                Action = "Create",
+                Note = "Khởi tạo đơn hàng shop",
+                Status = true,
+                CreatedAt = DateTime.Now,
+                SortOrder = 0
+            });
+        }
+
+        db.SaveChanges();
+    }
+

@@ -208,9 +208,9 @@ body.admin-dashboard {
 .admin-nav .dropdown-menu {
     min-width: 200px;
     border-radius: 12px;
-    background: #1f2937;
-    border: 1px solid rgba(255, 255, 255, 0.12);
-    box-shadow: 0 12px 24px rgba(0, 0, 0, 0.18);
+    background: #ffffff;
+    border: 1px solid #e5e7eb;
+    box-shadow: 0 12px 24px rgba(0, 0, 0, 0.12);
 }
 
 .admin-user-btn {
@@ -223,18 +223,18 @@ body.admin-dashboard {
     display: flex;
     align-items: center;
     gap: 8px;
-    color: #ffffff;
+    color: #111827;
 }
 
 .admin-nav .dropdown-item i {
     font-size: 14px;
-    color: #f9a8d4;
+    color: #9f1239;
 }
 
 .admin-nav .dropdown-item:hover,
 .admin-nav .dropdown-item:focus {
-    background: rgba(255, 255, 255, 0.08);
-    color: #ffffff;
+    background: #f3f4f6;
+    color: #111827;
 }
 
 .content {

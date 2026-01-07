@@ -77,6 +77,9 @@ public class BeautyStoryContext : DbContext
     public DbSet<CfCommunityMessage> CfCommunityMessages { get; set; }
     public DbSet<CfCommunityNotification> CfCommunityNotifications { get; set; }
     public DbSet<CfCommunityActionLog> CfCommunityActionLogs { get; set; }
+    public DbSet<CfPlatformFeeConfig> CfPlatformFeeConfigs { get; set; }
+    public DbSet<CfPlatformFeeCategory> CfPlatformFeeCategories { get; set; }
+    public DbSet<CfCustomerOrderLimit> CfCustomerOrderLimits { get; set; }
 
     protected override void OnModelCreating(DbModelBuilder modelBuilder)
     {

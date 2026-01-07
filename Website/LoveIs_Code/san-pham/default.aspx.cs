@@ -608,23 +608,7 @@ public partial class ProductDefault : System.Web.UI.Page
 
         if (variantId > 0)
         {
-            CartService.AddVariant(variantId, quantity);
-            using (var db = new BeautyStoryContext())
-            {
-                var productId = db.CfProductVariants.AsNoTracking()
-                    .Where(v => v.Id == variantId)
-                    .Select(v => v.ProductId)
-                    .FirstOrDefault();
-                if (productId > 0)
-                {
-                    var product = db.CfProducts.FirstOrDefault(p => p.Id == productId);
-                    if (product != null)
-                    {
-                        product.AddToCartCount += quantity;
-                        db.SaveChanges();
-                    }
-                }
-            }
+            CartService.AddVariantWithResult(variantId, quantity);
             Response.Redirect("/gio-hang");
         }
     }

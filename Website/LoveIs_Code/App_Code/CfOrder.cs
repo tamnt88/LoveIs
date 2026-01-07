@@ -23,15 +23,22 @@ public class CfOrder
     public int? ShippingMethodId { get; set; }
     public string ShippingMethod { get; set; }
     public decimal ShippingFee { get; set; }
+    public decimal? ShippingFeePercent { get; set; }
+    public decimal? ShippingFeeAmount { get; set; }
     public string ShippingEta { get; set; }
     public int? PaymentMethodId { get; set; }
     public string PaymentMethod { get; set; }
     public int? PaymentStatusId { get; set; }
     public string PaymentStatus { get; set; }
+    public decimal? PaymentFeePercent { get; set; }
+    public decimal? PaymentFeeAmount { get; set; }
     public int? OrderStatusId { get; set; }
     public string OrderStatus { get; set; }
     public decimal Subtotal { get; set; }
     public decimal Discount { get; set; }
+    public decimal? PlatformFeePercent { get; set; }
+    public decimal? PlatformFeeAmount { get; set; }
+    public decimal? InfrastructureFee { get; set; }
     public decimal Total { get; set; }
     public bool Status { get; set; }
     public DateTime CreatedAt { get; set; }

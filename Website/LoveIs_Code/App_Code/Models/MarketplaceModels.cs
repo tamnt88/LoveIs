@@ -142,12 +142,16 @@ public class CfShopOrder
     public string ShippingMethod { get; set; }
 
     public decimal ShippingFee { get; set; }
+    public decimal? ShippingFeePercent { get; set; }
+    public decimal? ShippingFeeAmount { get; set; }
 
     [StringLength(100)]
     public string ShippingEta { get; set; }
 
     [StringLength(50)]
     public string PaymentStatus { get; set; }
+    public decimal? PaymentFeePercent { get; set; }
+    public decimal? PaymentFeeAmount { get; set; }
 
     [StringLength(50)]
     public string OrderStatus { get; set; }
@@ -155,6 +159,9 @@ public class CfShopOrder
     public decimal Subtotal { get; set; }
 
     public decimal Discount { get; set; }
+    public decimal? PlatformFeePercent { get; set; }
+    public decimal? PlatformFeeAmount { get; set; }
+    public decimal? InfrastructureFee { get; set; }
 
     public decimal Total { get; set; }
 

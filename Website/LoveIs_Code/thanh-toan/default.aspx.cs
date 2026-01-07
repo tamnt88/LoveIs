@@ -24,6 +24,12 @@ public partial class CheckoutDefault : System.Web.UI.Page
         public string TotalText { get; set; }
     }
 
+    private class ShopFeeSummary
+    {
+        public decimal Subtotal { get; set; }
+        public decimal PlatformFeeAmount { get; set; }
+    }
+
     protected void Page_Load(object sender, EventArgs e)
     {
         Response.ContentEncoding = Encoding.UTF8;
@@ -406,6 +412,19 @@ public partial class CheckoutDefault : System.Web.UI.Page
             return;
         }
 
+        var limit = CartService.GetOrderLimitForCustomer();
+        if (limit != null)
+        {
+            var totalQty = cart.Sum(i => i.Quantity);
+            var overItemLimit = totalQty > limit.MaxItemsPerOrder;
+            var overQtyLimit = cart.Any(i => i.Quantity > limit.MaxQtyPerItem);
+            if (overItemLimit || overQtyLimit)
+            {
+                CheckoutMessage.Text = string.Format("Don h?ng vu?t gi?i h?n. T?i d? {0} s?n ph?m/ don, m?i s?n ph?m t?i d? {1}.", limit.MaxItemsPerOrder, limit.MaxQtyPerItem);
+                return;
+            }
+        }
+
         var customerName = (CustomerNameInput.Text ?? string.Empty).Trim();
         var phone = (PhoneInput.Text ?? string.Empty).Trim();
         var addressLine = (AddressInput.Text ?? string.Empty).Trim();
@@ -503,6 +522,9 @@ public partial class CheckoutDefault : System.Web.UI.Page
 
             var orderItems = new List<CfOrderItem>();
             decimal subtotal = 0;
+            var categoryParentLookup = db.CfCategories.AsNoTracking()
+                .Select(c => new { c.Id, c.ParentId })
+                .ToDictionary(c => c.Id, c => c.ParentId);
 
             foreach (var item in cart)
             {
@@ -559,6 +581,19 @@ public partial class CheckoutDefault : System.Web.UI.Page
                 ? db.CfPaymentMethods.FirstOrDefault(m => m.Id == paymentMethodValue.Value)
                 : null;
 
+            var config = GetPlatformFeeConfig(db);
+            var shippingFeePercent = config != null ? config.ShippingFeePercent : 0m;
+            var paymentFeePercent = config != null ? config.PaymentFeePercent : 0m;
+            var infrastructureFee = config != null ? config.InfrastructureFee : 0m;
+
+            var feeBase = subtotal + shippingFee;
+            var shippingFeeAmount = feeBase * shippingFeePercent / 100m;
+            var paymentFeeAmount = feeBase * paymentFeePercent / 100m;
+
+            var feeCategoryLookup = GetPlatformFeeCategoryLookup(db, categoryParentLookup, products);
+            var platformFeeAmount = CalculatePlatformFee(orderItems, productLookup, categoryParentLookup, feeCategoryLookup);
+            var platformFeePercent = subtotal > 0 ? Math.Round(platformFeeAmount / subtotal * 100m, 2) : 0m;
+
             var orderStatus = db.CfOrderStatuses.FirstOrDefault(s => s.IsDefault) ?? db.CfOrderStatuses.FirstOrDefault();
             var paymentStatus = db.CfPaymentStatuses.FirstOrDefault(s => s.IsDefault) ?? db.CfPaymentStatuses.FirstOrDefault();
 
@@ -591,6 +626,13 @@ public partial class CheckoutDefault : System.Web.UI.Page
                 OrderStatus = orderStatus != null ? orderStatus.Name : string.Empty,
                 Subtotal = subtotal,
                 Discount = 0,
+                ShippingFeePercent = shippingFeePercent,
+                ShippingFeeAmount = shippingFeeAmount,
+                PaymentFeePercent = paymentFeePercent,
+                PaymentFeeAmount = paymentFeeAmount,
+                PlatformFeePercent = platformFeePercent,
+                PlatformFeeAmount = platformFeeAmount,
+                InfrastructureFee = infrastructureFee,
                 Total = total,
                 Status = true,
                 CreatedAt = DateTime.Now,
@@ -609,7 +651,8 @@ public partial class CheckoutDefault : System.Web.UI.Page
 
             db.SaveChanges();
 
-            CreateShopOrders(db, order, orderItems);
+            var shopFeeLookup = BuildShopFeeLookup(orderItems, productLookup, categoryParentLookup, feeCategoryLookup);
+            CreateShopOrders(db, order, orderItems, productLookup, shopFeeLookup);
 
             db.CfOrderHistories.Add(new CfOrderHistory
             {
@@ -655,19 +698,16 @@ private static string GenerateOrderCode()
         return GetEffectivePrice(variant.Price, variant.SalePrice);
     }
 
-    private static void CreateShopOrders(BeautyStoryContext db, CfOrder order, List<CfOrderItem> orderItems)
+    private static void CreateShopOrders(BeautyStoryContext db, CfOrder order, List<CfOrderItem> orderItems, Dictionary<int, CfProduct> productLookup, Dictionary<int, ShopFeeSummary> shopFeeLookup)
     {
-        if (db == null || order == null || orderItems == null || orderItems.Count == 0)
+        if (db == null || order == null || orderItems == null || orderItems.Count == 0 || productLookup == null)
         {
             return;
         }
 
-        var productIds = orderItems.Select(i => i.ProductId).Distinct().ToList();
-        var productShopMap = db.CfProducts
-            .Where(p => productIds.Contains(p.Id))
-            .Select(p => new { p.Id, p.ShopId })
-            .ToList()
-            .ToDictionary(p => p.Id, p => p.ShopId ?? 0);
+        var productShopMap = productLookup
+            .Where(kv => kv.Value != null)
+            .ToDictionary(kv => kv.Key, kv => kv.Value.ShopId ?? 0);
 
         var grouped = orderItems
             .GroupBy(i => productShopMap.ContainsKey(i.ProductId) ? productShopMap[i.ProductId] : 0)
@@ -682,18 +722,38 @@ private static string GenerateOrderCode()
         foreach (var group in grouped)
         {
             var subtotal = group.Sum(i => i.LineTotal);
+            var share = order.Subtotal > 0 ? subtotal / order.Subtotal : 0m;
+            var shippingFee = order.ShippingFee * share;
+            var shippingFeeAmount = (order.ShippingFeeAmount ?? 0m) * share;
+            var paymentFeeAmount = (order.PaymentFeeAmount ?? 0m) * share;
+            var infrastructureFee = (order.InfrastructureFee ?? 0m) * share;
+
+            var platformFeeAmount = 0m;
+            if (shopFeeLookup != null && shopFeeLookup.ContainsKey(group.Key))
+            {
+                platformFeeAmount = shopFeeLookup[group.Key].PlatformFeeAmount;
+            }
+            var platformFeePercent = subtotal > 0 ? Math.Round(platformFeeAmount / subtotal * 100m, 2) : 0m;
+
             var shopOrder = new CfShopOrder
             {
                 OrderId = order.Id,
                 ShopId = group.Key,
                 ShippingMethod = order.ShippingMethod,
-                ShippingFee = order.ShippingFee,
+                ShippingFee = shippingFee,
+                ShippingFeePercent = order.ShippingFeePercent,
+                ShippingFeeAmount = shippingFeeAmount,
                 ShippingEta = order.ShippingEta,
                 PaymentStatus = order.PaymentStatus,
+                PaymentFeePercent = order.PaymentFeePercent,
+                PaymentFeeAmount = paymentFeeAmount,
                 OrderStatus = order.OrderStatus,
                 Subtotal = subtotal,
                 Discount = 0,
-                Total = subtotal + order.ShippingFee,
+                PlatformFeePercent = platformFeePercent,
+                PlatformFeeAmount = platformFeeAmount,
+                InfrastructureFee = infrastructureFee,
+                Total = subtotal + shippingFee,
                 Status = true,
                 CreatedAt = DateTime.Now,
                 SortOrder = 0
@@ -706,7 +766,7 @@ private static string GenerateOrderCode()
             {
                 ShopOrderId = shopOrder.Id,
                 Action = "Create",
-                Note = "Khởi tạo đơn hàng shop",
+                Note = "Kh??Yi t???o ?`??n hA?ng shop",
                 Status = true,
                 CreatedAt = DateTime.Now,
                 SortOrder = 0
@@ -715,6 +775,7 @@ private static string GenerateOrderCode()
 
         db.SaveChanges();
     }
+
 
     private static decimal GetEffectivePrice(decimal price, decimal? salePrice)
     {
@@ -725,6 +786,140 @@ private static string GenerateOrderCode()
         }
 
         return price > 0 ? price : 0;
+    }
+
+    private static CfPlatformFeeConfig GetPlatformFeeConfig(BeautyStoryContext db)
+    {
+        if (db == null)
+        {
+            return null;
+        }
+
+        return db.CfPlatformFeeConfigs
+            .Where(c => c.Status)
+            .OrderBy(c => c.SortOrder)
+            .ThenBy(c => c.Id)
+            .FirstOrDefault();
+    }
+
+    private static Dictionary<int, decimal> GetPlatformFeeCategoryLookup(
+        BeautyStoryContext db,
+        Dictionary<int, int?> parentLookup,
+        List<CfProduct> products)
+    {
+        if (db == null || parentLookup == null || products == null || products.Count == 0)
+        {
+            return new Dictionary<int, decimal>();
+        }
+
+        var rootIds = products
+            .Select(p => GetRootCategoryId(p.CategoryId, parentLookup))
+            .Distinct()
+            .ToList();
+
+        return db.CfPlatformFeeCategories.AsNoTracking()
+            .Where(f => f.Status && rootIds.Contains(f.CategoryId))
+            .ToDictionary(f => f.CategoryId, f => f.PlatformFeePercent);
+    }
+
+    private static decimal CalculatePlatformFee(
+        List<CfOrderItem> orderItems,
+        Dictionary<int, CfProduct> productLookup,
+        Dictionary<int, int?> parentLookup,
+        Dictionary<int, decimal> feeLookup)
+    {
+        if (orderItems == null || productLookup == null || parentLookup == null || feeLookup == null)
+        {
+            return 0m;
+        }
+
+        decimal total = 0m;
+        foreach (var item in orderItems)
+        {
+            if (!productLookup.ContainsKey(item.ProductId))
+            {
+                continue;
+            }
+
+            var product = productLookup[item.ProductId];
+            var rootId = GetRootCategoryId(product.CategoryId, parentLookup);
+            var percent = feeLookup.ContainsKey(rootId) ? feeLookup[rootId] : 0m;
+            if (percent <= 0)
+            {
+                continue;
+            }
+
+            total += item.LineTotal * percent / 100m;
+        }
+
+        return total;
+    }
+
+    private static Dictionary<int, ShopFeeSummary> BuildShopFeeLookup(
+        List<CfOrderItem> orderItems,
+        Dictionary<int, CfProduct> productLookup,
+        Dictionary<int, int?> parentLookup,
+        Dictionary<int, decimal> feeLookup)
+    {
+        var result = new Dictionary<int, ShopFeeSummary>();
+        if (orderItems == null || productLookup == null || parentLookup == null || feeLookup == null)
+        {
+            return result;
+        }
+
+        foreach (var item in orderItems)
+        {
+            if (!productLookup.ContainsKey(item.ProductId))
+            {
+                continue;
+            }
+
+            var product = productLookup[item.ProductId];
+            var shopId = product.ShopId.HasValue ? product.ShopId.Value : 0;
+            if (shopId <= 0)
+            {
+                continue;
+            }
+
+            if (!result.ContainsKey(shopId))
+            {
+                result[shopId] = new ShopFeeSummary();
+            }
+
+            var summary = result[shopId];
+            summary.Subtotal += item.LineTotal;
+
+            var rootId = GetRootCategoryId(product.CategoryId, parentLookup);
+            var percent = feeLookup.ContainsKey(rootId) ? feeLookup[rootId] : 0m;
+            if (percent > 0)
+            {
+                summary.PlatformFeeAmount += item.LineTotal * percent / 100m;
+            }
+        }
+
+        return result;
+    }
+
+    private static int GetRootCategoryId(int categoryId, Dictionary<int, int?> parentLookup)
+    {
+        if (parentLookup == null || categoryId <= 0)
+        {
+            return categoryId;
+        }
+
+        var current = categoryId;
+        var guard = 0;
+        while (parentLookup.ContainsKey(current) && parentLookup[current].HasValue)
+        {
+            current = parentLookup[current].Value;
+            guard++;
+            if (guard > 10)
+            {
+                break;
+            }
+        }
+
+        return current;
     }
 
     private static void SendOrderNotification(CfOrder order, List<CfOrderItem> items)

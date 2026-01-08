@@ -369,6 +369,14 @@ public class CfProductReview
 
     public string Content { get; set; }
 
+    public string ImageUrls { get; set; }
+
+    public int HelpfulCount { get; set; }
+
+    public string ReplyContent { get; set; }
+
+    public DateTime? ReplyAt { get; set; }
+
     public bool IsVerified { get; set; }
 
     public bool Status { get; set; }
@@ -398,6 +406,20 @@ public class CfShopReview
     public int Rating { get; set; }
 
     public string Content { get; set; }
+
+    public int QualityRating { get; set; }
+
+    public int DescriptionRating { get; set; }
+
+    public int ShippingRating { get; set; }
+
+    public int ServiceRating { get; set; }
+
+    public int HelpfulCount { get; set; }
+
+    public string ReplyContent { get; set; }
+
+    public DateTime? ReplyAt { get; set; }
 
     public bool IsVerified { get; set; }
 

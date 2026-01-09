@@ -2,11 +2,10 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
-using System.Text;
-using System.IO.Compression;
 using System.Linq;
+using System.Data;
+using System.Data.OleDb;
 using System.Web;
-using System.Xml;
 
 public partial class SellerProducts : System.Web.UI.Page
 {
@@ -147,9 +146,9 @@ public partial class SellerProducts : System.Web.UI.Page
         }
 
         var extension = Path.GetExtension(ImportFileUpload.FileName);
-        if (!string.Equals(extension, ".csv", StringComparison.OrdinalIgnoreCase))
+        if (!string.Equals(extension, ".xlsx", StringComparison.OrdinalIgnoreCase))
         {
-            ImportMessageLiteral.Text = "<div class=\"alert alert-warning mt-3\">File không hợp lệ. Vui lòng dùng file CSV.</div>";
+            ImportMessageLiteral.Text = "<div class=\"alert alert-warning mt-3\">File không hợp lệ. Vui lòng dùng file .xlsx.</div>";
             return;
         }
 
@@ -471,24 +470,14 @@ public partial class SellerProducts : System.Web.UI.Page
         rows = new List<ImportRow>();
         errors = new List<string>();
 
-        string content;
-        using (var reader = new StreamReader(ImportFileUpload.PostedFile.InputStream, Encoding.UTF8, true))
-        {
-            content = reader.ReadToEnd();
-        }
-
-        var lines = content
-            .Split(new[] { "\r\n", "\n" }, StringSplitOptions.None)
-            .Where(l => l != null)
-            .ToList();
-
+        var lines = ReadExcelRows(ImportFileUpload.PostedFile.InputStream);
         if (lines.Count == 0)
         {
             errors.Add("Thiếu dòng tiêu đề.");
             return false;
         }
 
-        var headers = SplitCsvLine(lines[0]);
+        var headers = lines[0];
         var headerMap = headers
             .Select((h, i) => new { Header = (h ?? string.Empty).Trim(), Index = i })
             .Where(h => !string.IsNullOrWhiteSpace(h.Header))
@@ -516,6 +505,7 @@ public partial class SellerProducts : System.Web.UI.Page
                 .ToList()
                 .GroupBy(c => c.CategoryName ?? string.Empty, StringComparer.OrdinalIgnoreCase)
                 .ToDictionary(g => g.Key, g => g.First().Id, StringComparer.OrdinalIgnoreCase);
+            var defaultCategoryId = categories.Values.FirstOrDefault();
 
             var brands = db.CfBrands
                 .Where(b => b.Status)
@@ -534,16 +524,15 @@ public partial class SellerProducts : System.Web.UI.Page
                 .ToList()
                 .GroupBy(s => s.ShopName ?? string.Empty, StringComparer.OrdinalIgnoreCase)
                 .ToDictionary(g => g.Key, g => g.First().Id, StringComparer.OrdinalIgnoreCase);
+            var defaultShopId = shops.Values.FirstOrDefault();
 
             for (var i = 1; i < lines.Count; i++)
             {
-                var line = lines[i];
-                if (string.IsNullOrWhiteSpace(line))
+                var values = lines[i];
+                if (values.All(string.IsNullOrWhiteSpace))
                 {
                     continue;
                 }
-
-                var values = SplitCsvLine(line);
                 var productName = GetField(values, headerMap, "ProductName");
                 var categoryName = GetField(values, headerMap, "CategoryName");
                 var shopName = GetField(values, headerMap, "ShopName");
@@ -557,14 +546,52 @@ public partial class SellerProducts : System.Web.UI.Page
                     rowErrors.Add("thiếu ProductName");
                 }
 
-                if (string.IsNullOrWhiteSpace(categoryName) || !categories.ContainsKey(categoryName))
+                int categoryId;
+                if (!string.IsNullOrWhiteSpace(categoryName) && categories.ContainsKey(categoryName))
                 {
-                    rowErrors.Add("CategoryName không hợp lệ");
+                    categoryId = categories[categoryName];
+                }
+                else
+                {
+                    var categoryIdRaw = GetField(values, headerMap, "CategoryId");
+                    int parsedCategoryId;
+                    if (int.TryParse(categoryIdRaw, out parsedCategoryId) && parsedCategoryId > 0)
+                    {
+                        categoryId = parsedCategoryId;
+                    }
+                    else if (defaultCategoryId > 0)
+                    {
+                        categoryId = defaultCategoryId;
+                    }
+                    else
+                    {
+                        rowErrors.Add("CategoryName/CategoryId không hợp lệ");
+                        categoryId = 0;
+                    }
                 }
 
-                if (string.IsNullOrWhiteSpace(shopName) || !shops.ContainsKey(shopName))
+                int shopId;
+                if (!string.IsNullOrWhiteSpace(shopName) && shops.ContainsKey(shopName))
                 {
-                    rowErrors.Add("ShopName không hợp lệ");
+                    shopId = shops[shopName];
+                }
+                else
+                {
+                    var shopIdRaw = GetField(values, headerMap, "ShopId");
+                    int parsedShopId;
+                    if (int.TryParse(shopIdRaw, out parsedShopId) && parsedShopId > 0)
+                    {
+                        shopId = parsedShopId;
+                    }
+                    else if (defaultShopId > 0)
+                    {
+                        shopId = defaultShopId;
+                    }
+                    else
+                    {
+                        rowErrors.Add("ShopName/ShopId không hợp lệ");
+                        shopId = 0;
+                    }
                 }
 
                 var price = ParseDecimal(priceRaw);
@@ -627,8 +654,8 @@ public partial class SellerProducts : System.Web.UI.Page
                 rows.Add(new ImportRow
                 {
                     ProductName = productName,
-                    CategoryId = categories[categoryName],
-                    ShopId = shops[shopName],
+                    CategoryId = categoryId,
+                    ShopId = shopId,
                     BrandId = brandId,
                     OriginId = originId,
                     Price = price,
@@ -654,46 +681,89 @@ public partial class SellerProducts : System.Web.UI.Page
         return true;
     }
 
-    private static List<string> SplitCsvLine(string line)
+    private static List<List<string>> ReadExcelRows(Stream stream)
     {
-        var result = new List<string>();
-        if (line == null)
+        var rows = new List<List<string>>();
+        if (stream == null)
         {
-            return result;
+            return rows;
         }
 
-        var sb = new StringBuilder();
-        var inQuotes = false;
-
-        for (int i = 0; i < line.Length; i++)
+        var tempPath = Path.GetTempFileName();
+        var tempFile = Path.ChangeExtension(tempPath, ".xlsx");
+        try
         {
-            var c = line[i];
-            if (c == '\"')
+            using (var fileStream = File.Create(tempFile))
             {
-                if (inQuotes && i + 1 < line.Length && line[i + 1] == '\"')
-                {
-                    sb.Append('\"');
-                    i++;
-                }
-                else
-                {
-                    inQuotes = !inQuotes;
-                }
-                continue;
+                stream.Position = 0;
+                stream.CopyTo(fileStream);
             }
 
-            if (c == ',' && !inQuotes)
+            var connectionString = "Provider=Microsoft.ACE.OLEDB.12.0;Data Source=" + tempFile + ";Extended Properties='Excel 12.0 Xml;HDR=YES;IMEX=1';";
+            using (var connection = new OleDbConnection(connectionString))
             {
-                result.Add(sb.ToString());
-                sb.Clear();
-                continue;
-            }
+                connection.Open();
+                var schema = connection.GetOleDbSchemaTable(OleDbSchemaGuid.Tables, null);
+                if (schema == null || schema.Rows.Count == 0)
+                {
+                    return rows;
+                }
 
-            sb.Append(c);
+                var sheetName = schema.Rows[0]["TABLE_NAME"].ToString();
+                if (string.IsNullOrWhiteSpace(sheetName))
+                {
+                    return rows;
+                }
+
+                var commandText = "SELECT * FROM [" + sheetName + "]";
+                using (var adapter = new OleDbDataAdapter(commandText, connection))
+                {
+                    var table = new DataTable();
+                    adapter.Fill(table);
+
+                    var headers = new List<string>();
+                    foreach (DataColumn col in table.Columns)
+                    {
+                        headers.Add(col.ColumnName ?? string.Empty);
+                    }
+                    rows.Add(headers);
+
+                    foreach (DataRow row in table.Rows)
+                    {
+                        var values = new List<string>();
+                        foreach (var item in row.ItemArray)
+                        {
+                            values.Add(item == null ? string.Empty : item.ToString());
+                        }
+                        rows.Add(values);
+                    }
+                }
+            }
+        }
+        catch
+        {
+            return new List<List<string>>();
+        }
+        finally
+        {
+            try
+            {
+                if (File.Exists(tempFile))
+                {
+                    File.Delete(tempFile);
+                }
+                else if (File.Exists(tempPath))
+                {
+                    File.Delete(tempPath);
+                }
+            }
+            catch
+            {
+                // Ignore cleanup failures.
+            }
         }
 
-        result.Add(sb.ToString());
-        return result;
+        return rows;
     }
 
     private static string GetField(List<string> values, Dictionary<string, int> headerMap, string key)
@@ -746,6 +816,11 @@ public partial class SellerProducts : System.Web.UI.Page
 
     private class ImportRow
     {
+        public ImportRow()
+        {
+            ImageUrls = new List<string>();
+        }
+
         public string ProductName { get; set; }
         public int CategoryId { get; set; }
         public int ShopId { get; set; }
@@ -757,7 +832,7 @@ public partial class SellerProducts : System.Web.UI.Page
         public string Description { get; set; }
         public string Sku { get; set; }
         public string VideoUrl { get; set; }
-        public List<string> ImageUrls { get; set; } = new List<string>();
+        public List<string> ImageUrls { get; set; }
         public decimal? WeightGrams { get; set; }
         public decimal? LengthCm { get; set; }
         public decimal? WidthCm { get; set; }

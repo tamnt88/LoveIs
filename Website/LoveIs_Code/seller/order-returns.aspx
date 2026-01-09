@@ -45,13 +45,13 @@
             <div class="return-table-head">
                 <div>Mã trả hàng</div>
                 <div>Mã ĐH</div>
-                <div>Khách Hàng</div>
+                <div>Khách hàng</div>
                 <div>Sản phẩm</div>
                 <div>Lý do</div>
                 <div>Giá trị</div>
                 <div>Ngày YC</div>
-                <div>Tr?ng Thái</div>
-                <div>Thao Tác</div>
+                <div>Trạng thái</div>
+                <div>Thao tác</div>
             </div>
             <asp:Repeater ID="ReturnRepeater" runat="server">
                 <ItemTemplate>
@@ -75,5 +75,3 @@
         </div>
     </div>
 </asp:Content>
-
-

@@ -70,6 +70,9 @@ public class CfProduct
     [StringLength(300)]
     public string CanonicalUrl { get; set; }
 
+    [StringLength(300)]
+    public string VideoUrl { get; set; }
+
     [StringLength(50)]
     public string Robots { get; set; }
 

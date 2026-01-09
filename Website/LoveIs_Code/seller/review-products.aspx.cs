@@ -221,7 +221,7 @@ public partial class SellerProductReviews : System.Web.UI.Page
         }
 
         var links = new List<string>();
-        var baseUrl = "/seller/product-reviews.aspx";
+        var baseUrl = "/seller/review-products.aspx";
 
         links.Add(string.Format("<a class=\"page-link\" href=\"{0}\">&laquo;</a>", BuildPageUrl(baseUrl, 1)));
         if (_currentPage > 1)

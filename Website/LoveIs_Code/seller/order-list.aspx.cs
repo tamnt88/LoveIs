@@ -369,9 +369,9 @@ public partial class SellerOrders : System.Web.UI.Page
 
         if (query.Count == 0)
         {
-            return "/seller/orders.aspx";
+            return "/seller/order-list.aspx";
         }
-        return "/seller/orders.aspx?" + string.Join("&", query);
+        return "/seller/order-list.aspx?" + string.Join("&", query);
     }
 
     private static string BuildPageUrl(string baseUrl, int page)
@@ -411,3 +411,4 @@ public partial class SellerOrders : System.Web.UI.Page
         return _statusNameLookup.TryGetValue(statusCode, out name) ? name : statusCode;
     }
 }
+

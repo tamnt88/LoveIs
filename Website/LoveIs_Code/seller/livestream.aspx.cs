@@ -1,6 +1,6 @@
 using System;
 
-public partial class SellerSettings : System.Web.UI.Page
+public partial class SellerLivestreamList : System.Web.UI.Page
 {
     protected void Page_Load(object sender, EventArgs e)
     {

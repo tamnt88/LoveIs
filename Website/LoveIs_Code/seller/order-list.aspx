@@ -1,4 +1,4 @@
-<%@ Page Language="C#" AutoEventWireup="true" CodeFile="orders.aspx.cs" Inherits="SellerOrders" MasterPageFile="~/seller/Seller.master" ContentType="text/html; charset=utf-8" ResponseEncoding="utf-8" %>
+<%@ Page Language="C#" AutoEventWireup="true" CodeFile="order-list.aspx.cs" Inherits="SellerOrders" MasterPageFile="~/seller/Seller.master" ContentType="text/html; charset=utf-8" ResponseEncoding="utf-8" %>
 <asp:Content ID="TitleContent" ContentPlaceHolderID="TitleContent" runat="server">Đơn hàng</asp:Content>
 <asp:Content ID="MainContent" ContentPlaceHolderID="MainContent" runat="server">
     <div class="seller-orders">
@@ -7,12 +7,12 @@
             <p class="order-subtitle" runat="server" id="OrderSubtitle"></p>
         </div>
         <div class="order-tabs">
-            <a class="tab <%# GetTabClass("all") %>" href="/seller/orders.aspx?status=all">Tất cả</a>
-            <a class="tab <%# GetTabClass("NEW") %>" href="/seller/orders.aspx?status=NEW">Chờ xác nhận</a>
-            <a class="tab <%# GetTabClass("CONFIRMED") %>" href="/seller/orders.aspx?status=CONFIRMED">Chờ lấy hàng</a>
-            <a class="tab <%# GetTabClass("SHIPPING") %>" href="/seller/orders.aspx?status=SHIPPING">Đang giao</a>
-            <a class="tab <%# GetTabClass("COMPLETED") %>" href="/seller/orders.aspx?status=COMPLETED">Đã giao</a>
-            <a class="tab <%# GetTabClass("CANCELLED") %>" href="/seller/orders.aspx?status=CANCELLED">Trả hàng/Hoàn tiền/Hủy</a>
+            <a class="tab <%# GetTabClass("all") %>" href="/seller/order-list.aspx?status=all">Tất cả</a>
+            <a class="tab <%# GetTabClass("NEW") %>" href="/seller/order-list.aspx?status=NEW">Chờ xác nhận</a>
+            <a class="tab <%# GetTabClass("CONFIRMED") %>" href="/seller/order-list.aspx?status=CONFIRMED">Chờ lấy hàng</a>
+            <a class="tab <%# GetTabClass("SHIPPING") %>" href="/seller/order-list.aspx?status=SHIPPING">Đang giao</a>
+            <a class="tab <%# GetTabClass("COMPLETED") %>" href="/seller/order-list.aspx?status=COMPLETED">Đã giao</a>
+            <a class="tab <%# GetTabClass("CANCELLED") %>" href="/seller/order-list.aspx?status=CANCELLED">Trả hàng/Hoàn tiền/Hủy</a>
         </div>
         <div class="order-filters card">
             <div class="order-filters-row">
@@ -92,3 +92,4 @@
         </div>
     </div>
 </asp:Content>
+

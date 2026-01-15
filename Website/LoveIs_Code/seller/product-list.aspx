@@ -1,4 +1,6 @@
-﻿<%@ Page Language="C#" AutoEventWireup="true" CodeFile="product-list.aspx.cs" Inherits="SellerProducts" MasterPageFile="~/seller/Seller.master" ContentType="text/html; charset=utf-8" ResponseEncoding="utf-8" %>
+<%@ Page Language="C#" AutoEventWireup="true" CodeFile="product-list.aspx.cs" Inherits="SellerProducts" MasterPageFile="~/seller/Seller.master" ContentType="text/html; charset=utf-8" ResponseEncoding="utf-8" %>
+<%@ Assembly Name="System.IO.Compression" %>
+<%@ Assembly Name="System.IO.Compression.FileSystem" %>
 <asp:Content ID="TitleContent" ContentPlaceHolderID="TitleContent" runat="server">Quản lý sản phẩm</asp:Content>
 <asp:Content ID="MainContent" ContentPlaceHolderID="MainContent" runat="server">
     <div class="seller-products">
@@ -25,6 +27,7 @@
             </div>
         </div>
         <asp:Literal ID="ImportMessageLiteral" runat="server" />
+        <asp:Literal ID="ActionMessageLiteral" runat="server" />
         <div class="product-summary-grid">
             <div class="summary-card">
                 <div class="summary-label">Tổng sản phẩm</div>
@@ -57,10 +60,10 @@
             <div class="product-toolbar">
                 <div class="return-search">
                     <i class="fa-solid fa-magnifying-glass"></i>
-                    <input type="text" placeholder="Tìm kiếm theo tên sản phẩm, SKU, danh mục..." />
+                    <asp:TextBox ID="SearchTextBox" runat="server" Placeholder="Tìm kiếm theo tên sản phẩm, SKU, danh mục.."></asp:TextBox>
                 </div>
-                <button class="btn-outline" type="button"><i class="fa-solid fa-filter"></i> Bộ lọc</button>
-                <button class="btn-outline" type="button"><i class="fa-solid fa-download"></i> Xuất file</button>
+                <asp:LinkButton ID="ApplyFiltersButton" runat="server" CssClass="btn-outline" OnClick="ApplyFiltersButton_Click"><i class="fa-solid fa-filter"></i> Bộ lọc</asp:LinkButton>
+                <asp:LinkButton ID="ExportButton" runat="server" CssClass="btn-outline" OnClick="ExportButton_Click"><i class="fa-solid fa-download"></i> Xuất file</asp:LinkButton>
             </div>
             <div class="product-table">
                 <div class="product-table-head">
@@ -73,7 +76,7 @@
                     <div>Trạng thái</div>
                     <div>Thao tác</div>
                 </div>
-                <asp:Repeater ID="ProductRepeater" runat="server">
+                <asp:Repeater ID="ProductRepeater" runat="server" OnItemCommand="ProductRepeater_ItemCommand">
                     <ItemTemplate>
                         <div class="product-row">
                             <div class="product-cell">
@@ -97,7 +100,9 @@
                             <div class="product-actions">
                                 <a href="<%# Eval("ViewUrl") %>" title="Xem"><i class="fa-regular fa-eye"></i></a>
                                 <a href="<%# Eval("EditUrl") %>" title="Sửa"><i class="fa-regular fa-pen-to-square"></i></a>
-                                <a href="#" title="Xóa"><i class="fa-regular fa-trash-can"></i></a>
+                                <asp:LinkButton ID="DeleteButton" runat="server" CommandName="DeleteProduct" CommandArgument='<%# Eval("ProductId") %>' CssClass="btn-link-icon" OnClientClick="return confirm('Bạn có chắc chắn muốn xóa sản phẩm này?');" ToolTip="Xóa">
+                                    <i class="fa-regular fa-trash-can"></i>
+                                </asp:LinkButton>
                             </div>
                         </div>
                     </ItemTemplate>
@@ -126,3 +131,4 @@
         })();
     </script>
 </asp:Content>
+

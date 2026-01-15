@@ -2,9 +2,11 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
+using System.IO.Compression;
 using System.Linq;
 using System.Data;
 using System.Data.OleDb;
+using System.Text;
 using System.Web;
 
 public partial class SellerProducts : System.Web.UI.Page
@@ -21,11 +23,13 @@ public partial class SellerProducts : System.Web.UI.Page
     private const int PageSize = 10;
     private int _currentPage = 1;
     private string _statusKey = "all";
+    private string _searchText = string.Empty;
 
     private void BindProducts()
     {
         _statusKey = (Request.QueryString["status"] ?? "all").Trim().ToLowerInvariant();
         _currentPage = ParsePage(Request.QueryString["page"]);
+        _searchText = (Request.QueryString["q"] ?? string.Empty).Trim();
 
         var sellerId = SellerAuth.GetSellerId();
         if (!sellerId.HasValue)
@@ -85,6 +89,17 @@ public partial class SellerProducts : System.Web.UI.Page
             TabOutLiteral.Text = outOfStockCount.ToString();
 
             var filtered = FilterProducts(products, variants, _statusKey);
+            if (!string.IsNullOrWhiteSpace(_searchText))
+            {
+                filtered = filtered
+                    .Where(p =>
+                    {
+                        var categoryName = categories.ContainsKey(p.CategoryId) ? categories[p.CategoryId] : string.Empty;
+                        return (!string.IsNullOrWhiteSpace(p.ProductName) && p.ProductName.IndexOf(_searchText, StringComparison.OrdinalIgnoreCase) >= 0)
+                            || (!string.IsNullOrWhiteSpace(categoryName) && categoryName.IndexOf(_searchText, StringComparison.OrdinalIgnoreCase) >= 0);
+                    })
+                    .ToList();
+            }
             var totalPages = (int)Math.Ceiling(filtered.Count / (double)PageSize);
             if (_currentPage > totalPages && totalPages > 0)
             {
@@ -118,8 +133,9 @@ public partial class SellerProducts : System.Web.UI.Page
                     ImageUrl = imageUrl,
                     StatusLabel = ResolveStatusLabel(p, stockQty),
                     StatusClass = ResolveStatusClass(p, stockQty),
-                    ViewUrl = "/san-pham/" + p.Id,
-                    EditUrl = "/seller/products/edit.aspx?id=" + p.Id
+                    ProductId = p.Id,
+                    ViewUrl = "/seller/product-add.aspx?id=" + p.Id + "&mode=view",
+                    EditUrl = "/seller/product-add.aspx?id=" + p.Id + "&mode=edit"
                 };
             }).ToList();
 
@@ -128,6 +144,91 @@ public partial class SellerProducts : System.Web.UI.Page
 
             PaginationLiteral.Text = BuildPagination(totalPages);
             PaginationInfoLiteral.Text = BuildPaginationInfo(filtered.Count);
+
+            SearchTextBox.Text = _searchText;
+        }
+    }
+
+    protected void ApplyFiltersButton_Click(object sender, EventArgs e)
+    {
+        Response.Redirect(BuildFilterUrl(resetPage: true, clearFilters: false));
+    }
+
+    protected void ExportButton_Click(object sender, EventArgs e)
+    {
+        var sellerId = SellerAuth.GetSellerId();
+        if (!sellerId.HasValue)
+        {
+            Response.Redirect("/seller/login.aspx");
+            return;
+        }
+
+        _statusKey = (Request.QueryString["status"] ?? "all").Trim().ToLowerInvariant();
+        _searchText = (SearchTextBox.Text ?? string.Empty).Trim();
+
+        using (var db = new BeautyStoryContext())
+        {
+            var shopIds = db.CfShops
+                .Where(s => s.SellerId == sellerId.Value)
+                .Select(s => s.Id)
+                .ToList();
+
+            if (shopIds.Count == 0)
+            {
+                return;
+            }
+
+            var products = db.CfProducts
+                .Where(p => shopIds.Contains(p.ShopId ?? 0))
+                .ToList();
+
+            var productIds = products.Select(p => p.Id).ToList();
+            var categories = db.CfCategories
+                .Where(c => c.Status)
+                .ToList()
+                .ToDictionary(c => c.Id, c => c.CategoryName);
+
+            var variants = db.CfProductVariants
+                .Where(v => productIds.Contains(v.ProductId) && v.Status)
+                .ToList();
+
+            var filtered = FilterProducts(products, variants, _statusKey);
+            if (!string.IsNullOrWhiteSpace(_searchText))
+            {
+                filtered = filtered
+                    .Where(p =>
+                    {
+                        var categoryName = categories.ContainsKey(p.CategoryId) ? categories[p.CategoryId] : string.Empty;
+                        return (!string.IsNullOrWhiteSpace(p.ProductName) && p.ProductName.IndexOf(_searchText, StringComparison.OrdinalIgnoreCase) >= 0)
+                            || (!string.IsNullOrWhiteSpace(categoryName) && categoryName.IndexOf(_searchText, StringComparison.OrdinalIgnoreCase) >= 0);
+                    })
+                    .ToList();
+            }
+
+            var rows = filtered.Select(p =>
+            {
+                var stockQty = GetStockQty(variants, p.Id);
+                var rating = p.RatingAvg;
+                var reviewCount = p.RatingCount;
+                var categoryName = categories.ContainsKey(p.CategoryId) ? categories[p.CategoryId] : "-";
+                var statusLabel = ResolveStatusLabel(p, stockQty);
+                var actions = string.Format("Xem: {0} | Sửa: {1}", "/san-pham/" + p.Id, "/seller/products/edit.aspx?id=" + p.Id);
+
+                return new ExportRow
+                {
+                    ProductName = p.ProductName,
+                    CategoryName = categoryName,
+                    StockLabel = stockQty.ToString(CultureInfo.InvariantCulture),
+                    SoldLabel = p.Sold30d.ToString(CultureInfo.InvariantCulture),
+                    RatingLabel = string.Format("{0:0.0} ({1} đánh giá)", rating, reviewCount),
+                    ViewLabel = p.ViewCount.ToString("N0", CultureInfo.InvariantCulture),
+                    StatusLabel = statusLabel,
+                    Actions = actions
+                };
+            }).ToList();
+
+            var fileName = "tat-ca-san-pham-" + DateTime.Now.ToString("yyyyMMddHHmmss", CultureInfo.InvariantCulture) + ".xlsx";
+            WriteXlsxResponse(rows, fileName);
         }
     }
 
@@ -434,10 +535,108 @@ public partial class SellerProducts : System.Web.UI.Page
             query.Add("status=" + HttpUtility.UrlEncode(_statusKey));
         }
 
+        if (!string.IsNullOrWhiteSpace(_searchText))
+        {
+            query.Add("q=" + HttpUtility.UrlEncode(_searchText));
+        }
+
         if (query.Count == 0)
         {
             return "/seller/product-list.aspx";
         }
+        return "/seller/product-list.aspx?" + string.Join("&", query);
+    }
+
+    protected void ProductRepeater_ItemCommand(object source, System.Web.UI.WebControls.RepeaterCommandEventArgs e)
+    {
+        if (!string.Equals(e.CommandName, "DeleteProduct", StringComparison.OrdinalIgnoreCase))
+        {
+            return;
+        }
+
+        int productId;
+        if (!int.TryParse(e.CommandArgument.ToString(), out productId))
+        {
+            ActionMessageLiteral.Text = "<div class=\"alert alert-warning mt-3\">Sản phẩm không hợp lệ.</div>";
+            return;
+        }
+
+        var sellerId = SellerAuth.GetSellerId();
+        if (!sellerId.HasValue)
+        {
+            Response.Redirect("/seller/login.aspx");
+            return;
+        }
+
+        using (var db = new BeautyStoryContext())
+        {
+            var shopIds = db.CfShops
+                .Where(s => s.SellerId == sellerId.Value)
+                .Select(s => s.Id)
+                .ToList();
+
+            var product = db.CfProducts.FirstOrDefault(p => p.Id == productId && p.ShopId.HasValue && shopIds.Contains(p.ShopId.Value));
+            if (product == null)
+            {
+                ActionMessageLiteral.Text = "<div class=\"alert alert-warning mt-3\">Không tìm thấy sản phẩm.</div>";
+                return;
+            }
+
+            product.Status = false;
+            product.UpdatedAt = DateTime.Now;
+            product.UpdatedBy = "Seller:" + sellerId.Value.ToString(CultureInfo.InvariantCulture);
+
+            var variants = db.CfProductVariants.Where(v => v.ProductId == productId).ToList();
+            foreach (var variant in variants)
+            {
+                variant.Status = false;
+                variant.UpdatedAt = DateTime.Now;
+                variant.UpdatedBy = "Seller:" + sellerId.Value.ToString(CultureInfo.InvariantCulture);
+            }
+
+            var images = db.CfProductImages.Where(i => i.ProductId == productId).ToList();
+            foreach (var image in images)
+            {
+                image.Status = false;
+                image.UpdatedAt = DateTime.Now;
+                image.UpdatedBy = "Seller:" + sellerId.Value.ToString(CultureInfo.InvariantCulture);
+            }
+
+            db.SaveChanges();
+        }
+
+        ActionMessageLiteral.Text = "<div class=\"alert alert-success mt-3\">Đã xóa sản phẩm.</div>";
+        BindProducts();
+        DataBind();
+    }
+
+    private string BuildFilterUrl(bool resetPage, bool clearFilters)
+    {
+        var query = new List<string>();
+        if (!string.IsNullOrWhiteSpace(_statusKey))
+        {
+            query.Add("status=" + HttpUtility.UrlEncode(_statusKey));
+        }
+
+        if (!clearFilters)
+        {
+            var search = (SearchTextBox.Text ?? string.Empty).Trim();
+            if (!string.IsNullOrWhiteSpace(search))
+            {
+                query.Add("q=" + HttpUtility.UrlEncode(search));
+            }
+        }
+
+        if (!resetPage && _currentPage > 1)
+        {
+            query.Add("page=" + _currentPage);
+        }
+
+        if (query.Count == 0)
+        {
+            return "/seller/product-list.aspx";
+        }
+
         return "/seller/product-list.aspx?" + string.Join("&", query);
     }
 
@@ -447,8 +646,161 @@ public partial class SellerProducts : System.Web.UI.Page
         return baseUrl + separator + "page=" + page;
     }
 
+    private void WriteXlsxResponse(List<ExportRow> rows, string fileName)
+    {
+        var bytes = BuildXlsx(rows);
+        Response.Clear();
+        Response.Buffer = true;
+        Response.ContentType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+        Response.AddHeader("Content-Disposition", "attachment;filename=" + fileName);
+        Response.BinaryWrite(bytes);
+        Response.End();
+    }
+
+    private static byte[] BuildXlsx(List<ExportRow> rows)
+    {
+        var headers = new[]
+        {
+            "Sản phẩm", "Danh mục", "Kho", "Đã bán", "Đánh giá", "Lượt xem", "Trạng thái", "Thao tác"
+        };
+        var data = new List<string[]>
+        {
+            headers
+        };
+
+        foreach (var row in rows)
+        {
+            data.Add(new[]
+            {
+                row.ProductName ?? string.Empty,
+                row.CategoryName ?? string.Empty,
+                row.StockLabel ?? string.Empty,
+                row.SoldLabel ?? string.Empty,
+                row.RatingLabel ?? string.Empty,
+                row.ViewLabel ?? string.Empty,
+                row.StatusLabel ?? string.Empty,
+                row.Actions ?? string.Empty
+            });
+        }
+
+        using (var stream = new MemoryStream())
+        {
+            using (var archive = new ZipArchive(stream, ZipArchiveMode.Create, true))
+            {
+                AddZipEntry(archive, "[Content_Types].xml", BuildContentTypesXml());
+                AddZipEntry(archive, "_rels/.rels", BuildRootRelsXml());
+                AddZipEntry(archive, "xl/workbook.xml", BuildWorkbookXml());
+                AddZipEntry(archive, "xl/_rels/workbook.xml.rels", BuildWorkbookRelsXml());
+                AddZipEntry(archive, "xl/worksheets/sheet1.xml", BuildWorksheetXml(data));
+            }
+
+            return stream.ToArray();
+        }
+    }
+
+    private static void AddZipEntry(ZipArchive archive, string path, string content)
+    {
+        var entry = archive.CreateEntry(path, CompressionLevel.Fastest);
+        using (var writer = new StreamWriter(entry.Open(), Encoding.UTF8))
+        {
+            writer.Write(content);
+        }
+    }
+
+    private static string BuildContentTypesXml()
+    {
+        return "<?xml version=\"1.0\" encoding=\"UTF-8\"?>"
+            + "<Types xmlns=\"http://schemas.openxmlformats.org/package/2006/content-types\">"
+            + "<Default Extension=\"rels\" ContentType=\"application/vnd.openxmlformats-package.relationships+xml\"/>"
+            + "<Default Extension=\"xml\" ContentType=\"application/xml\"/>"
+            + "<Override PartName=\"/xl/workbook.xml\" ContentType=\"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml\"/>"
+            + "<Override PartName=\"/xl/worksheets/sheet1.xml\" ContentType=\"application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml\"/>"
+            + "</Types>";
+    }
+
+    private static string BuildRootRelsXml()
+    {
+        return "<?xml version=\"1.0\" encoding=\"UTF-8\"?>"
+            + "<Relationships xmlns=\"http://schemas.openxmlformats.org/package/2006/relationships\">"
+            + "<Relationship Id=\"rId1\" Type=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument\" Target=\"xl/workbook.xml\"/>"
+            + "</Relationships>";
+    }
+
+    private static string BuildWorkbookXml()
+    {
+        return "<?xml version=\"1.0\" encoding=\"UTF-8\"?>"
+            + "<workbook xmlns=\"http://schemas.openxmlformats.org/spreadsheetml/2006/main\" "
+            + "xmlns:r=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships\">"
+            + "<sheets><sheet name=\"Products\" sheetId=\"1\" r:id=\"rId1\"/></sheets>"
+            + "</workbook>";
+    }
+
+    private static string BuildWorkbookRelsXml()
+    {
+        return "<?xml version=\"1.0\" encoding=\"UTF-8\"?>"
+            + "<Relationships xmlns=\"http://schemas.openxmlformats.org/package/2006/relationships\">"
+            + "<Relationship Id=\"rId1\" Type=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet\" Target=\"worksheets/sheet1.xml\"/>"
+            + "</Relationships>";
+    }
+
+    private static string BuildWorksheetXml(List<string[]> rows)
+    {
+        var builder = new StringBuilder();
+        builder.Append("<?xml version=\"1.0\" encoding=\"UTF-8\"?>");
+        builder.Append("<worksheet xmlns=\"http://schemas.openxmlformats.org/spreadsheetml/2006/main\">");
+        builder.Append("<sheetData>");
+
+        for (var i = 0; i < rows.Count; i++)
+        {
+            var rowIndex = i + 1;
+            builder.Append("<row r=\"").Append(rowIndex).Append("\">");
+            var cols = rows[i];
+            for (var c = 0; c < cols.Length; c++)
+            {
+                var cellRef = ColumnName(c) + rowIndex.ToString(CultureInfo.InvariantCulture);
+                builder.Append("<c r=\"").Append(cellRef).Append("\" t=\"inlineStr\"><is><t xml:space=\"preserve\">");
+                builder.Append(EscapeXml(cols[c] ?? string.Empty));
+                builder.Append("</t></is></c>");
+            }
+            builder.Append("</row>");
+        }
+
+        builder.Append("</sheetData>");
+        builder.Append("</worksheet>");
+        return builder.ToString();
+    }
+
+    private static string ColumnName(int index)
+    {
+        var dividend = index + 1;
+        var name = string.Empty;
+        while (dividend > 0)
+        {
+            var modulo = (dividend - 1) % 26;
+            name = Convert.ToChar(65 + modulo) + name;
+            dividend = (dividend - modulo) / 26;
+        }
+        return name;
+    }
+
+    private static string EscapeXml(string value)
+    {
+        if (string.IsNullOrEmpty(value))
+        {
+            return string.Empty;
+        }
+
+        return value
+            .Replace("&", "&amp;")
+            .Replace("<", "&lt;")
+            .Replace(">", "&gt;")
+            .Replace("\"", "&quot;")
+            .Replace("'", "&apos;");
+    }
+
     public class ProductRowViewModel
     {
+        public int ProductId { get; set; }
         public string ProductName { get; set; }
         public string Sku { get; set; }
         public string PriceLabel { get; set; }
@@ -837,6 +1189,18 @@ public partial class SellerProducts : System.Web.UI.Page
         public decimal? LengthCm { get; set; }
         public decimal? WidthCm { get; set; }
         public decimal? HeightCm { get; set; }
+    }
+
+    private class ExportRow
+    {
+        public string ProductName { get; set; }
+        public string CategoryName { get; set; }
+        public string StockLabel { get; set; }
+        public string SoldLabel { get; set; }
+        public string RatingLabel { get; set; }
+        public string ViewLabel { get; set; }
+        public string StatusLabel { get; set; }
+        public string Actions { get; set; }
     }
 }
 

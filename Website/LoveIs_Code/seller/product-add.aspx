@@ -2,16 +2,18 @@
 <asp:Content ID="TitleContent" ContentPlaceHolderID="TitleContent" runat="server">Thêm Sản Phẩm</asp:Content>
 <asp:Content ID="MainContent" ContentPlaceHolderID="MainContent" runat="server">
     <div class="seller-product-add">
-        <div class="product-add-card card">
+            <div class="product-add-card card">
             <div class="product-add-header">
-                <h2>Thêm Sản Phẩm Mới</h2>
+                <h2><asp:Literal ID="FormTitleLiteral" runat="server" Text="Thêm Sản Phẩm Mới" /></h2>
             </div>
             <div class="product-section">
                 <h4>Thông tin cơ bản</h4>
                 <div class="form-group">
                     <label>Hình ảnh sản phẩm <span class="text-danger">*</span></label>
                     <div class="upload-box" id="imageUploadBox">
-                        <div class="upload-previews" id="imagePreviewList"></div>
+                        <div class="upload-previews" id="imagePreviewList">
+                            <asp:Literal ID="ImagePreviewLiteral" runat="server" />
+                        </div>
                         <div class="upload-placeholder" id="imageUploadPlaceholder">
                             <i class="fa-solid fa-plus"></i>
                             <span>Thêm hình</span>
@@ -101,7 +103,7 @@
                     </div>
                     <div class="form-group">
                         <label>Tình trạng sản phẩm</label>
-                        <select class="form-control"><option>Vui lòng chọn</option></select>
+                        <asp:DropDownList ID="ProductConditionDropdown" runat="server" CssClass="form-control" />
                     </div>
                 </div>
             </div>
@@ -113,6 +115,12 @@
                 <div class="form-group">
                     <label>Phân loại hàng</label>
                     <button type="button" class="btn-outline"><i class="fa-solid fa-plus"></i> Thêm phân loại hàng</button>
+                    <div class="variant-inputs">
+                        <asp:TextBox ID="VariantGroup1NameInput" runat="server" CssClass="form-control" placeholder="Nhóm phân loại 1 (ví dụ: Màu sắc)" />
+                        <asp:TextBox ID="VariantGroup1ValuesInput" runat="server" CssClass="form-control" placeholder="Giá trị (ví dụ: Đỏ, Trắng)" />
+                        <asp:TextBox ID="VariantGroup2NameInput" runat="server" CssClass="form-control" placeholder="Nhóm phân loại 2 (ví dụ: Kích cỡ)" />
+                        <asp:TextBox ID="VariantGroup2ValuesInput" runat="server" CssClass="form-control" placeholder="Giá trị (ví dụ: S, M, L)" />
+                    </div>
                     <div class="helper-text">Bạn có thể thêm tối đa 2 nhóm phân loại (Ví dụ: Màu sắc, Kích cỡ)</div>
                 </div>
                 <div class="form-grid two-col">
@@ -175,7 +183,7 @@
                 <h4>Thông tin khác</h4>
                 <div class="form-group">
                     <label>Tình trạng</label>
-                    <select class="form-control"><option>Vui lòng chọn</option></select>
+                    <asp:DropDownList ID="ListingStatusDropdown" runat="server" CssClass="form-control" />
                 </div>
                 <div class="form-group">
                     <label>SKU Người bán</label>
@@ -184,7 +192,7 @@
             </div>
 
             <div class="product-actions-footer">
-                <asp:Button ID="CancelButton" runat="server" CssClass="btn-outline" Text="Hủy" CausesValidation="false" />
+                <asp:Button ID="CancelButton" runat="server" CssClass="btn-outline" Text="Hủy" CausesValidation="false" OnClick="CancelButton_Click" />
                 <div class="action-gap"></div>
                 <asp:Button ID="SaveDraftButton" runat="server" CssClass="btn-outline" Text="Lưu & Ẩn" OnClick="SaveDraftButton_Click" />
                 <asp:Button ID="SavePublishButton" runat="server" CssClass="btn-primary" Text="Lưu & Hiển thị" OnClick="SavePublishButton_Click" />

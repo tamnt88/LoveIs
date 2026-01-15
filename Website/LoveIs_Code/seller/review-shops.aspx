@@ -128,25 +128,26 @@
 
             <div class="card review-panel">
                 <div class="review-tabs">
-                    <a class="review-tab active" href="#"><asp:Literal ID="TotalCountLiteral" runat="server" /></a>
-                    <a class="review-tab" href="#"><asp:Literal ID="NeedReplyLiteral" runat="server" /></a>
-                    <a class="review-tab" href="#"><asp:Literal ID="RepliedLiteral" runat="server" /></a>
+                    <a class="review-tab <%# GetTabClass("all") %>" href="/seller/review-shops.aspx?tab=all"><asp:Literal ID="TotalCountLiteral" runat="server" /></a>
+                    <a class="review-tab <%# GetTabClass("need-reply") %>" href="/seller/review-shops.aspx?tab=need-reply"><asp:Literal ID="NeedReplyLiteral" runat="server" /></a>
+                    <a class="review-tab <%# GetTabClass("replied") %>" href="/seller/review-shops.aspx?tab=replied"><asp:Literal ID="RepliedLiteral" runat="server" /></a>
                 </div>
                 <div class="review-filters">
                     <div class="review-pill-row">
                         <span class="review-pill-label">Số sao đánh giá:</span>
-                        <button class="review-pill active" type="button"><asp:Literal ID="RatingAllLiteral" runat="server" /></button>
-                        <button class="review-pill" type="button"><i class="fa-solid fa-star"></i> <asp:Literal ID="Rating5Literal" runat="server" /></button>
-                        <button class="review-pill" type="button"><i class="fa-solid fa-star"></i> <asp:Literal ID="Rating4Literal" runat="server" /></button>
-                        <button class="review-pill" type="button"><i class="fa-solid fa-star"></i> <asp:Literal ID="Rating3Literal" runat="server" /></button>
-                        <button class="review-pill" type="button"><i class="fa-solid fa-star"></i> <asp:Literal ID="Rating2Literal" runat="server" /></button>
-                        <button class="review-pill" type="button"><i class="fa-solid fa-star"></i> <asp:Literal ID="Rating1Literal" runat="server" /></button>
+                        <a class="review-pill <%# GetRatingClass(0) %>" href="<%# BuildRatingUrl(0) %>"><asp:Literal ID="RatingAllLiteral" runat="server" /></a>
+                        <a class="review-pill <%# GetRatingClass(5) %>" href="<%# BuildRatingUrl(5) %>"><i class="fa-solid fa-star"></i> <asp:Literal ID="Rating5Literal" runat="server" /></a>
+                        <a class="review-pill <%# GetRatingClass(4) %>" href="<%# BuildRatingUrl(4) %>"><i class="fa-solid fa-star"></i> <asp:Literal ID="Rating4Literal" runat="server" /></a>
+                        <a class="review-pill <%# GetRatingClass(3) %>" href="<%# BuildRatingUrl(3) %>"><i class="fa-solid fa-star"></i> <asp:Literal ID="Rating3Literal" runat="server" /></a>
+                        <a class="review-pill <%# GetRatingClass(2) %>" href="<%# BuildRatingUrl(2) %>"><i class="fa-solid fa-star"></i> <asp:Literal ID="Rating2Literal" runat="server" /></a>
+                        <a class="review-pill <%# GetRatingClass(1) %>" href="<%# BuildRatingUrl(1) %>"><i class="fa-solid fa-star"></i> <asp:Literal ID="Rating1Literal" runat="server" /></a>
                     </div>
                     <div class="review-toolbar">
                         <div class="review-search">
                             <i class="fa-solid fa-magnifying-glass"></i>
-                            <input type="text" placeholder="Tìm kiếm theo tên người mua, nội dung đánh giá..." />
+                            <asp:TextBox ID="SearchTextBox" runat="server" Placeholder="Tìm kiếm theo tên người mua, nội dung đánh giá..." />
                         </div>
+                        <asp:LinkButton ID="ApplyFiltersButton" runat="server" CssClass="btn-outline" OnClick="ApplyFiltersButton_Click">Lọc</asp:LinkButton>
                     </div>
                 </div>
             </div>

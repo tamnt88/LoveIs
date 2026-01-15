@@ -1,4 +1,6 @@
 <%@ Page Language="C#" AutoEventWireup="true" CodeFile="order-list.aspx.cs" Inherits="SellerOrders" MasterPageFile="~/seller/Seller.master" ContentType="text/html; charset=utf-8" ResponseEncoding="utf-8" %>
+<%@ Assembly Name="System.IO.Compression" %>
+<%@ Assembly Name="System.IO.Compression.FileSystem" %>
 <asp:Content ID="TitleContent" ContentPlaceHolderID="TitleContent" runat="server">Đơn hàng</asp:Content>
 <asp:Content ID="MainContent" ContentPlaceHolderID="MainContent" runat="server">
     <div class="seller-orders">
@@ -17,25 +19,51 @@
         <div class="order-filters card">
             <div class="order-filters-row">
                 <div class="search-box">
-                    <input type="text" placeholder="Mã đơn hàng" />
+                    <asp:TextBox ID="OrderCodeTextBox" runat="server" Placeholder="Mã đơn hàng"></asp:TextBox>
                     <i class="fa-solid fa-magnifying-glass"></i>
                 </div>
                 <select>
                     <option>Mã phiếu đơn hàng</option>
                 </select>
-                <button class="btn-outline" type="button">Xuất</button>
-                <button class="btn-outline" type="button">Lịch sử Xuất Báo cáo</button>
+                <asp:LinkButton ID="ExportButton" runat="server" CssClass="btn-outline" OnClick="ExportButton_Click">Xuất</asp:LinkButton>
+                <asp:LinkButton ID="ExportHistoryButton" runat="server" CssClass="btn-outline" OnClick="ExportHistoryButton_Click">Lịch sử Xuất Báo cáo</asp:LinkButton>
             </div>
             <div class="order-filters-row">
                 <label>Đơn vị vận chuyển</label>
-                <select>
-                    <option>Tất cả vị VN/VC</option>
-                </select>
+                <asp:DropDownList ID="ShippingMethodDropDown" runat="server"></asp:DropDownList>
                 <div class="spacer"></div>
-                <button class="btn-primary" type="button">Áp dụng</button>
-                <button class="btn-outline" type="button">Đặt lại</button>
+                <asp:LinkButton ID="ApplyFiltersButton" runat="server" CssClass="btn-primary" OnClick="ApplyFiltersButton_Click">Áp dụng</asp:LinkButton>
+                <asp:LinkButton ID="ResetFiltersButton" runat="server" CssClass="btn-outline" OnClick="ResetFiltersButton_Click">Đặt lại</asp:LinkButton>
             </div>
         </div>
+        <asp:Panel ID="ExportHistoryPanel" runat="server" CssClass="export-history-modal" Visible="false">
+            <div class="export-history-card">
+                <div class="export-history-header">
+                    <div>Lịch sử xuất báo cáo</div>
+                    <asp:HyperLink ID="ExportHistoryCloseLink" runat="server" CssClass="btn-primary small">Đóng</asp:HyperLink>
+                </div>
+                <div class="export-history-body">
+                    <asp:Repeater ID="ExportHistoryRepeater" runat="server">
+                        <HeaderTemplate>
+                            <div class="export-history-table-head">
+                                <div>Thời gian xuất</div>
+                                <div>Tổng đơn hàng</div>
+                                <div>Tên file</div>
+                                <div>Thao tác</div>
+                            </div>
+                        </HeaderTemplate>
+                        <ItemTemplate>
+                            <div class="export-history-row">
+                                <div><%# Eval("CreatedAtText") %></div>
+                                <div><%# Eval("TotalOrders") %></div>
+                                <div><%# Eval("FileName") %></div>
+                                <div><a class="btn-primary small" href="<%# Eval("DownloadUrl") %>">Tải lại</a></div>
+                            </div>
+                        </ItemTemplate>
+                    </asp:Repeater>
+                </div>
+            </div>
+        </asp:Panel>
         <div class="order-summary">
             <asp:Literal ID="OrderSummaryLiteral" runat="server" />
         </div>

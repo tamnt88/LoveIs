@@ -18,12 +18,14 @@ public partial class SellerReturns : System.Web.UI.Page
     private const int PageSize = 10;
     private int _currentPage = 1;
     private string _statusKey = "all";
+    private string _searchText = string.Empty;
     private Dictionary<string, string> _statusNameLookup = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
 
     private void BindReturns()
     {
         _statusKey = (Request.QueryString["status"] ?? "all").Trim();
         _currentPage = ParsePage(Request.QueryString["page"]);
+        _searchText = (Request.QueryString["q"] ?? string.Empty).Trim();
 
         var sellerId = SellerAuth.GetSellerId();
         if (!sellerId.HasValue)
@@ -77,6 +79,18 @@ public partial class SellerReturns : System.Web.UI.Page
             var filtered = string.Equals(_statusKey, "all", StringComparison.OrdinalIgnoreCase)
                 ? requests
                 : requests.Where(r => IsStatusMatch(r.Status, _statusKey)).ToList();
+
+            if (!string.IsNullOrWhiteSpace(_searchText))
+            {
+                var matchedOrderIds = db.CfOrders
+                    .Where(o => o.OrderCode.Contains(_searchText))
+                    .Select(o => o.Id)
+                    .ToList();
+
+                filtered = filtered
+                    .Where(r => matchedOrderIds.Contains(r.OrderId) || BuildRequestCode(r.Id).IndexOf(_searchText, StringComparison.OrdinalIgnoreCase) >= 0)
+                    .ToList();
+            }
             var filteredCount = filtered.Count;
 
             var totalPages = (int)Math.Ceiling(filteredCount / (double)PageSize);
@@ -143,7 +157,7 @@ public partial class SellerReturns : System.Web.UI.Page
 
                 rows.Add(new ReturnRowViewModel
                 {
-                    RequestCode = "TR" + request.Id.ToString("D6"),
+                    RequestCode = BuildRequestCode(request.Id),
                     OrderCode = order != null ? order.OrderCode : "-",
                     CustomerName = order != null ? order.CustomerName : "-",
                     ProductName = firstItem != null ? firstItem.ProductName : "-",
@@ -160,12 +174,19 @@ public partial class SellerReturns : System.Web.UI.Page
             ReturnRepeater.DataBind();
             PaginationLiteral.Text = BuildPagination(totalPages);
             PaginationInfoLiteral.Text = BuildPaginationInfo(filteredCount);
+
+            SearchTextBox.Text = _searchText;
         }
     }
 
     public string GetTabClass(string key)
     {
         return string.Equals(_statusKey, key, StringComparison.OrdinalIgnoreCase) ? "active" : string.Empty;
+    }
+
+    protected void ApplyFiltersButton_Click(object sender, EventArgs e)
+    {
+        Response.Redirect(BuildBaseUrl(resetPage: true));
     }
 
     private static bool IsStatusMatch(string rawStatus, string statusKey)
@@ -283,17 +304,45 @@ public partial class SellerReturns : System.Web.UI.Page
             query.Add("status=" + HttpUtility.UrlEncode(_statusKey));
         }
 
+        var search = (SearchTextBox.Text ?? string.Empty).Trim();
+        if (!string.IsNullOrWhiteSpace(search))
+        {
+            query.Add("q=" + HttpUtility.UrlEncode(search));
+        }
+
         if (query.Count == 0)
         {
-            return "/seller/returns.aspx";
+            return "/seller/order-returns.aspx";
         }
-        return "/seller/returns.aspx?" + string.Join("&", query);
+        return "/seller/order-returns.aspx?" + string.Join("&", query);
+    }
+
+    private string BuildBaseUrl(bool resetPage)
+    {
+        if (resetPage)
+        {
+            return BuildBaseUrl();
+        }
+
+        var baseUrl = BuildBaseUrl();
+        if (_currentPage <= 1)
+        {
+            return baseUrl;
+        }
+
+        var separator = baseUrl.Contains("?") ? "&" : "?";
+        return baseUrl + separator + "page=" + _currentPage;
     }
 
     private static string BuildPageUrl(string baseUrl, int page)
     {
         var separator = baseUrl.Contains("?") ? "&" : "?";
         return baseUrl + separator + "page=" + page;
+    }
+
+    private static string BuildRequestCode(int requestId)
+    {
+        return "TR" + requestId.ToString("D6");
     }
 
     public class ReturnRowViewModel

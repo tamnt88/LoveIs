@@ -19,6 +19,11 @@ public class CfSeller
     [StringLength(30)]
     public string Phone { get; set; }
 
+    public DateTime? BirthDate { get; set; }
+
+    [StringLength(300)]
+    public string AvatarUrl { get; set; }
+
     [Required]
     public byte[] PasswordHash { get; set; }
 
@@ -28,6 +33,8 @@ public class CfSeller
     public int PasswordIterations { get; set; }
 
     public DateTime? LastLoginAt { get; set; }
+
+    public DateTime? PasswordChangedAt { get; set; }
 
     public DateTime? LockedUntil { get; set; }
 
@@ -59,6 +66,12 @@ public class CfShop
     [Required, StringLength(200)]
     public string ShopName { get; set; }
 
+    [StringLength(30)]
+    public string Phone { get; set; }
+
+    [StringLength(200)]
+    public string Email { get; set; }
+
     [StringLength(300)]
     public string LogoUrl { get; set; }
 
@@ -66,6 +79,12 @@ public class CfShop
     public string BannerUrl { get; set; }
 
     public string Description { get; set; }
+
+    [StringLength(100)]
+    public string BusinessType { get; set; }
+
+    [StringLength(50)]
+    public string TaxCode { get; set; }
 
     [StringLength(300)]
     public string AddressLine { get; set; }
@@ -362,6 +381,8 @@ public class CfProductReview
     public int Id { get; set; }
 
     public int ProductId { get; set; }
+
+    public int? OrderId { get; set; }
 
     public int CustomerId { get; set; }
 

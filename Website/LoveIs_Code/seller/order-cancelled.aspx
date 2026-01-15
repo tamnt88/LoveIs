@@ -1,4 +1,6 @@
 <%@ Page Language="C#" AutoEventWireup="true" CodeFile="order-cancelled.aspx.cs" Inherits="SellerCancelledOrders" MasterPageFile="~/seller/Seller.master" ContentType="text/html; charset=utf-8" ResponseEncoding="utf-8" %>
+<%@ Assembly Name="System.IO.Compression" %>
+<%@ Assembly Name="System.IO.Compression.FileSystem" %>
 <asp:Content ID="TitleContent" ContentPlaceHolderID="TitleContent" runat="server">Đơn Hàng Đã Hủy</asp:Content>
 <asp:Content ID="MainContent" ContentPlaceHolderID="MainContent" runat="server">
     <div class="seller-orders">
@@ -27,11 +29,11 @@
         <div class="cancel-toolbar card">
             <div class="cancel-search">
                 <i class="fa-solid fa-magnifying-glass"></i>
-                <input type="text" placeholder="Tìm kiếm theo mã đơn hàng, tên khách hàng..." />
+                <asp:TextBox ID="SearchTextBox" runat="server" Placeholder="Mã đơn hàng hoặc tên khách hàng"></asp:TextBox>
             </div>
-            <button class="btn-outline" type="button"><i class="fa-solid fa-filter"></i> Bộ lọc</button>
-            <button class="btn-outline" type="button"><i class="fa-solid fa-download"></i> Xuất File</button>
-            <button class="btn-primary" type="button"><i class="fa-solid fa-rotate-right"></i> Làm Mới</button>
+            <asp:LinkButton ID="ApplyFiltersButton" runat="server" CssClass="btn-outline" OnClick="ApplyFiltersButton_Click"><i class="fa-solid fa-filter"></i> Bộ lọc</asp:LinkButton>
+            <asp:LinkButton ID="ExportButton" runat="server" CssClass="btn-outline" OnClick="ExportButton_Click"><i class="fa-solid fa-download"></i> Xuất File</asp:LinkButton>
+            <asp:LinkButton ID="ResetFiltersButton" runat="server" CssClass="btn-primary" OnClick="ResetFiltersButton_Click"><i class="fa-solid fa-rotate-right"></i> Làm Mới</asp:LinkButton>
         </div>
         <div class="cancel-table card">
             <div class="cancel-table-head">

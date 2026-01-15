@@ -1,4 +1,4 @@
-﻿<%@ Page Language="C#" AutoEventWireup="true" CodeFile="order-returns.aspx.cs" Inherits="SellerReturns" MasterPageFile="~/seller/Seller.master" ContentType="text/html; charset=utf-8" ResponseEncoding="utf-8" %>
+<%@ Page Language="C#" AutoEventWireup="true" CodeFile="order-returns.aspx.cs" Inherits="SellerReturns" MasterPageFile="~/seller/Seller.master" ContentType="text/html; charset=utf-8" ResponseEncoding="utf-8" %>
 <asp:Content ID="TitleContent" ContentPlaceHolderID="TitleContent" runat="server">Trả hàng / Hoàn tiền</asp:Content>
 <asp:Content ID="MainContent" ContentPlaceHolderID="MainContent" runat="server">
     <div class="seller-returns">
@@ -37,9 +37,9 @@
         <div class="return-toolbar card">
             <div class="return-search">
                 <i class="fa-solid fa-magnifying-glass"></i>
-                <input type="text" placeholder="Tìm kiếm theo mã đơn, mã trả hàng..." />
+                <asp:TextBox ID="SearchTextBox" runat="server" Placeholder="Tìm kiếm theo mã đơn, mã trả hàng..."></asp:TextBox>
             </div>
-            <button class="btn-outline" type="button"><i class="fa-solid fa-filter"></i> Bộ lọc</button>
+            <asp:LinkButton ID="ApplyFiltersButton" runat="server" CssClass="btn-outline" OnClick="ApplyFiltersButton_Click"><i class="fa-solid fa-filter"></i> Bộ lọc</asp:LinkButton>
         </div>
         <div class="return-table card">
             <div class="return-table-head">
@@ -75,3 +75,8 @@
         </div>
     </div>
 </asp:Content>
+
+
+
+
+

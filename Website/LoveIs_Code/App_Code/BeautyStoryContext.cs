@@ -46,6 +46,7 @@ public class BeautyStoryContext : DbContext
     public DbSet<CfShopUser> CfShopUsers { get; set; }
     public DbSet<CfShopOrder> CfShopOrders { get; set; }
     public DbSet<CfShopOrderHistory> CfShopOrderHistories { get; set; }
+    public DbSet<CfShopAddress> CfShopAddresses { get; set; }
     public DbSet<CfReturnRequest> CfReturnRequests { get; set; }
     public DbSet<CfReturnItem> CfReturnItems { get; set; }
     public DbSet<CfReturnStatus> CfReturnStatuses { get; set; }
@@ -53,6 +54,7 @@ public class BeautyStoryContext : DbContext
     public DbSet<CfShippingTracking> CfShippingTrackings { get; set; }
     public DbSet<CfProductReview> CfProductReviews { get; set; }
     public DbSet<CfShopReview> CfShopReviews { get; set; }
+    public DbSet<CfOrderExportHistory> CfOrderExportHistories { get; set; }
     public DbSet<CfSystemSetting> CfSystemSettings { get; set; }
     public DbSet<CfContactInfo> CfContactInfos { get; set; }
     public DbSet<CfContactMessage> CfContactMessages { get; set; }

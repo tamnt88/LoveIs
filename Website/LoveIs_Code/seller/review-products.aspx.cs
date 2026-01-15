@@ -9,18 +9,25 @@ public partial class SellerProductReviews : System.Web.UI.Page
 {
     private const int PageSize = 5;
     private int _currentPage = 1;
+    private string _statusTab = "all";
+    private int _ratingFilter = 0;
+    private string _searchText = string.Empty;
 
     protected void Page_Load(object sender, EventArgs e)
     {
         if (!IsPostBack)
         {
             BindReviews();
+            DataBind();
         }
     }
 
     private void BindReviews()
     {
         _currentPage = ParsePage(Request.QueryString["page"]);
+        _statusTab = (Request.QueryString["tab"] ?? "all").Trim();
+        _ratingFilter = ParseRating(Request.QueryString["rating"]);
+        _searchText = (Request.QueryString["q"] ?? string.Empty).Trim();
 
         var sellerId = SellerAuth.GetSellerId();
         if (!sellerId.HasValue)
@@ -54,8 +61,46 @@ public partial class SellerProductReviews : System.Web.UI.Page
             }
 
             var reviewsQuery = db.CfProductReviews
-                .Where(r => r.Status && productIds.Contains(r.ProductId))
-                .OrderByDescending(r => r.CreatedAt);
+                .Where(r => r.Status && productIds.Contains(r.ProductId));
+
+            if (_ratingFilter > 0)
+            {
+                reviewsQuery = reviewsQuery.Where(r => r.Rating == _ratingFilter);
+            }
+
+            if (string.Equals(_statusTab, "need-reply", StringComparison.OrdinalIgnoreCase))
+            {
+                reviewsQuery = reviewsQuery.Where(r => r.ReplyContent == null || r.ReplyContent == "");
+            }
+            else if (string.Equals(_statusTab, "replied", StringComparison.OrdinalIgnoreCase))
+            {
+                reviewsQuery = reviewsQuery.Where(r => r.ReplyContent != null && r.ReplyContent != "");
+            }
+
+            if (!string.IsNullOrWhiteSpace(_searchText))
+            {
+                var matchedProductIds = db.CfProducts
+                    .Where(p => p.Status && productIds.Contains(p.Id) && p.ProductName.Contains(_searchText))
+                    .Select(p => p.Id)
+                    .ToList();
+
+                var matchedCustomerIds = db.CfCustomers
+                    .Where(c => c.DisplayName.Contains(_searchText) || c.Username.Contains(_searchText))
+                    .Select(c => c.Id)
+                    .ToList();
+
+                var matchedOrderIds = db.CfOrders
+                    .Where(o => o.OrderCode.Contains(_searchText))
+                    .Select(o => o.Id)
+                    .ToList();
+
+                reviewsQuery = reviewsQuery.Where(r =>
+                    matchedProductIds.Contains(r.ProductId)
+                    || matchedCustomerIds.Contains(r.CustomerId)
+                    || (r.OrderId.HasValue && matchedOrderIds.Contains(r.OrderId.Value)));
+            }
+
+            reviewsQuery = reviewsQuery.OrderByDescending(r => r.CreatedAt);
 
             var totalReviews = reviewsQuery.Count();
             var totalPages = (int)Math.Ceiling(totalReviews / (double)PageSize);
@@ -80,6 +125,12 @@ public partial class SellerProductReviews : System.Web.UI.Page
                 .ToList()
                 .ToDictionary(c => c.Id, c => c);
 
+            var orderIds = reviews.Where(r => r.OrderId.HasValue).Select(r => r.OrderId.Value).Distinct().ToList();
+            var orderLookup = db.CfOrders
+                .Where(o => orderIds.Contains(o.Id))
+                .ToList()
+                .ToDictionary(o => o.Id, o => o);
+
             var imageLookup = db.CfProductImages
                 .Where(i => i.Status && productIds.Contains(i.ProductId))
                 .OrderByDescending(i => i.IsPrimary)
@@ -97,15 +148,27 @@ public partial class SellerProductReviews : System.Web.UI.Page
                 CfCustomer customer;
                 customerLookup.TryGetValue(review.CustomerId, out customer);
 
+                CfOrder order;
+                if (review.OrderId.HasValue)
+                {
+                    orderLookup.TryGetValue(review.OrderId.Value, out order);
+                }
+                else
+                {
+                    order = null;
+                }
+
                 var imageUrl = imageLookup.ContainsKey(review.ProductId) ? imageLookup[review.ProductId] : "/images/fav.png";
                 var buyerName = customer != null
                     ? (!string.IsNullOrWhiteSpace(customer.DisplayName) ? customer.DisplayName : customer.Username)
                     : "-";
+                var orderCode = order != null ? order.OrderCode : "-";
+                var productMeta = "Đơn: " + orderCode;
 
                 viewModels.Add(new ProductReviewViewModel
                 {
                     ProductName = product != null ? product.ProductName : "-",
-                    ProductMeta = "-",
+                    ProductMeta = productMeta,
                     ProductImageUrl = imageUrl,
                     BuyerName = buyerName,
                     BuyerAvatarUrl = "/images/fav.png",
@@ -123,24 +186,27 @@ public partial class SellerProductReviews : System.Web.UI.Page
             ProductReviewRepeater.DataSource = viewModels;
             ProductReviewRepeater.DataBind();
 
-            BindCounts(productIds, totalReviews);
+            BindCounts(productIds);
             PaginationLiteral.Text = BuildPagination(totalPages);
             PaginationInfoLiteral.Text = BuildPaginationInfo(totalReviews);
+            SearchTextBox.Text = _searchText;
         }
     }
 
-    private void BindCounts(List<int> productIds, int totalReviews)
+    private void BindCounts(List<int> productIds)
     {
         using (var db = new BeautyStoryContext())
         {
-            var counts = db.CfProductReviews
-                .Where(r => r.Status && productIds.Contains(r.ProductId))
+            var baseQuery = db.CfProductReviews
+                .Where(r => r.Status && productIds.Contains(r.ProductId));
+
+            var counts = baseQuery
                 .GroupBy(r => r.Rating)
                 .Select(g => new RatingCount { Rating = g.Key, Count = g.Count() })
                 .ToList();
 
-            var repliedCount = db.CfProductReviews
-                .Count(r => r.Status && productIds.Contains(r.ProductId) && r.ReplyContent != null && r.ReplyContent != "");
+            var totalReviews = baseQuery.Count();
+            var repliedCount = baseQuery.Count(r => r.ReplyContent != null && r.ReplyContent != "");
             var needReplyCount = totalReviews - repliedCount;
 
             TotalCountLiteral.Text = string.Format("Tất cả ({0})", totalReviews);
@@ -221,7 +287,7 @@ public partial class SellerProductReviews : System.Web.UI.Page
         }
 
         var links = new List<string>();
-        var baseUrl = "/seller/review-products.aspx";
+        var baseUrl = BuildBaseUrl(resetPage: false);
 
         links.Add(string.Format("<a class=\"page-link\" href=\"{0}\">&laquo;</a>", BuildPageUrl(baseUrl, 1)));
         if (_currentPage > 1)
@@ -266,7 +332,8 @@ public partial class SellerProductReviews : System.Web.UI.Page
 
     private static string BuildPageUrl(string baseUrl, int page)
     {
-        return baseUrl + "?page=" + page;
+        var separator = baseUrl.Contains("?") ? "&" : "?";
+        return baseUrl + separator + "page=" + page;
     }
 
     public class ProductReviewViewModel
@@ -290,5 +357,84 @@ public partial class SellerProductReviews : System.Web.UI.Page
     {
         public int Rating { get; set; }
         public int Count { get; set; }
+    }
+
+    protected void ApplyFiltersButton_Click(object sender, EventArgs e)
+    {
+        Response.Redirect(BuildBaseUrl(resetPage: true));
+    }
+
+    public string GetTabClass(string key)
+    {
+        return string.Equals(_statusTab, key, StringComparison.OrdinalIgnoreCase) ? "active" : string.Empty;
+    }
+
+    public string GetRatingClass(int rating)
+    {
+        return _ratingFilter == rating ? "active" : string.Empty;
+    }
+
+    public string BuildRatingUrl(int rating)
+    {
+        var query = BuildQueryParams();
+        if (rating > 0)
+        {
+            query["rating"] = rating.ToString(CultureInfo.InvariantCulture);
+        }
+        else
+        {
+            query.Remove("rating");
+        }
+
+        return BuildUrl(query);
+    }
+
+    private string BuildBaseUrl(bool resetPage)
+    {
+        var query = BuildQueryParams();
+        if (!resetPage && _currentPage > 1)
+        {
+            query["page"] = _currentPage.ToString(CultureInfo.InvariantCulture);
+        }
+        return BuildUrl(query);
+    }
+
+    private Dictionary<string, string> BuildQueryParams()
+    {
+        var query = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        if (!string.IsNullOrWhiteSpace(_statusTab))
+        {
+            query["tab"] = _statusTab;
+        }
+        if (_ratingFilter > 0)
+        {
+            query["rating"] = _ratingFilter.ToString(CultureInfo.InvariantCulture);
+        }
+        if (!string.IsNullOrWhiteSpace(_searchText))
+        {
+            query["q"] = _searchText;
+        }
+        return query;
+    }
+
+    private string BuildUrl(Dictionary<string, string> query)
+    {
+        if (query == null || query.Count == 0)
+        {
+            return "/seller/review-products.aspx";
+        }
+
+        var parts = query.Select(kv => kv.Key + "=" + HttpUtility.UrlEncode(kv.Value));
+        return "/seller/review-products.aspx?" + string.Join("&", parts);
+    }
+
+    private static int ParseRating(string raw)
+    {
+        int value;
+        if (int.TryParse(raw, out value) && value >= 1 && value <= 5)
+        {
+            return value;
+        }
+        return 0;
     }
 }

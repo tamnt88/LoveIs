@@ -3460,12 +3460,57 @@ body {
     display: block;
 }
 
+.data-line-tooltip {
+    position: absolute;
+    padding: 6px 10px;
+    border-radius: 999px;
+    background: #2e1a22;
+    color: #fff;
+    font-size: 12px;
+    font-weight: 600;
+    pointer-events: none;
+    opacity: 0;
+    transform: translate(-50%, -120%);
+    transition: opacity 150ms ease;
+    white-space: nowrap;
+}
+
+.data-line-tooltip.show {
+    opacity: 1;
+}
+
+.data-pie-tooltip {
+    position: absolute;
+    padding: 6px 10px;
+    border-radius: 999px;
+    background: #2e1a22;
+    color: #fff;
+    font-size: 12px;
+    font-weight: 600;
+    pointer-events: none;
+    opacity: 0;
+    transform: translate(-50%, -120%);
+    transition: opacity 150ms ease;
+    white-space: nowrap;
+}
+
+.data-pie-tooltip.show {
+    opacity: 1;
+}
+
 .pie-legend-item {
     display: flex;
     align-items: center;
     gap: 8px;
     font-size: 13px;
     color: #5f5a5d;
+}
+
+.pie-legend {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-top: 16px;
 }
 
 .pie-legend-color {

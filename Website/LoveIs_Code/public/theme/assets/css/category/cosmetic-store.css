@@ -327,6 +327,7 @@ h6,
             border: 0;
             padding-left: 0;
             color: #434343;
+            border-radius: 0 !important;
         }
 
             .ecommerce-header .product-search-one .search-box .search-field:focus {

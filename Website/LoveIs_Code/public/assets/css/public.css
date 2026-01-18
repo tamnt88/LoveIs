@@ -4437,7 +4437,7 @@ input#MainContent_PlaceOrderButton {
     position: relative;
     padding-bottom: 10px;
     padding-top: 0;
-    z-index: 9999;
+    z-index: 2;
 }
 
 /*.ecommerce-header .main-nav::after {

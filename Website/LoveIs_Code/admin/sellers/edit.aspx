@@ -335,3 +335,500 @@
     <link href="/admin/assets/vendor/datatables/css/dataTables.bootstrap5.min.css" rel="stylesheet" />
     <link href="/admin/assets/vendor/select2/select2.min.css" rel="stylesheet" />
 </asp:Content>
+<asp:Content ID="PageScripts" ContentPlaceHolderID="PageScripts" runat="server">
+    <script src="/admin/assets/vendor/datatables/js/jquery.dataTables.min.js"></script>
+    <script src="/admin/assets/vendor/datatables/js/dataTables.bootstrap5.min.js"></script>
+    <script src="/admin/assets/vendor/select2/select2.min.js"></script>
+    <script>
+        (function ($) {
+            if (!$.fn.DataTable) {
+                return;
+            }
+
+            var sellerId = $("#<%= SellerId.ClientID %>").val();
+            var shopLoaded = false;
+            var shopAddressLoaded = false;
+            var warehouseLoaded = false;
+            var returnLoaded = false;
+            var productLoaded = false;
+            var orderLoaded = false;
+            var reviewLoaded = false;
+            var productReviewLoaded = false;
+
+            var $category = $("#<%= FilterCategory.ClientID %>");
+            var $brand = $("#<%= FilterBrand.ClientID %>");
+            var $origin = $("#<%= FilterOrigin.ClientID %>");
+            var $shop = $("#<%= FilterShop.ClientID %>");
+
+            if ($.fn.select2) {
+                $category.select2({ width: "100%" });
+                $brand.select2({ width: "100%" });
+                $origin.select2({ width: "100%" });
+                $shop.select2({ width: "100%" });
+            }
+
+            function initShopTable() {
+                if (shopLoaded) return;
+                shopLoaded = true;
+                $("#shopTable").DataTable({
+                    pageLength: 10,
+                    serverSide: true,
+                    processing: true,
+                    autoWidth: false,
+                    ajax: {
+                        url: "edit.aspx/GetSellerShops",
+                        type: "POST",
+                        contentType: "application/json; charset=utf-8",
+                        dataType: "json",
+                        data: function (d) {
+                            return JSON.stringify({
+                                draw: d.draw,
+                                start: d.start,
+                                length: d.length,
+                                sellerId: sellerId
+                            });
+                        },
+                        dataFilter: function (data) {
+                            try {
+                                var parsed = JSON.parse(data);
+                                return JSON.stringify(parsed.d ? parsed.d : parsed);
+                            } catch (e) {
+                                return data;
+                            }
+                        },
+                        dataSrc: "data"
+                    },
+                    columns: [
+                        { data: "ShopName" },
+                        { data: "StatusHtml", orderable: false, searchable: false },
+                        { data: "RatingText" },
+                        { data: "CompletedOrders" },
+                        { data: "FollowerCount" },
+                        { data: "CreatedAt" }
+                    ],
+                    columnDefs: [
+                        { targets: [1], width: "16%", render: function (data) { return data; } }
+                    ],
+                    searching: false,
+                    lengthChange: false,
+                    ordering: false,
+                    language: {
+                        info: "Hiển thị _START_ đến _END_ của _TOTAL_ mục",
+                        infoEmpty: "Không có dữ liệu",
+                        zeroRecords: "Không có dữ liệu"
+                    }
+                });
+            }
+
+            function initShopAddressTable() {
+                if (shopAddressLoaded) return;
+                shopAddressLoaded = true;
+                $("#shopAddressTable").DataTable({
+                    pageLength: 10,
+                    serverSide: true,
+                    processing: true,
+                    autoWidth: false,
+                    ajax: {
+                        url: "edit.aspx/GetSellerShopAddresses",
+                        type: "POST",
+                        contentType: "application/json; charset=utf-8",
+                        dataType: "json",
+                        data: function (d) {
+                            return JSON.stringify({
+                                draw: d.draw,
+                                start: d.start,
+                                length: d.length,
+                                sellerId: sellerId
+                            });
+                        },
+                        dataFilter: function (data) {
+                            try {
+                                var parsed = JSON.parse(data);
+                                return JSON.stringify(parsed.d ? parsed.d : parsed);
+                            } catch (e) {
+                                return data;
+                            }
+                        },
+                        dataSrc: "data"
+                    },
+                    columns: [
+                        { data: "ShopName" },
+                        { data: "ContactName" },
+                        { data: "Phone" },
+                        { data: "AddressText" },
+                        { data: "CreatedAt" }
+                    ],
+                    searching: false,
+                    lengthChange: false,
+                    ordering: false,
+                    language: {
+                        info: "Hiển thị _START_ đến _END_ của _TOTAL_ mục",
+                        infoEmpty: "Không có dữ liệu",
+                        zeroRecords: "Không có dữ liệu"
+                    }
+                });
+            }
+
+            function initWarehouseAddressTable() {
+                if (warehouseLoaded) return;
+                warehouseLoaded = true;
+                $("#warehouseAddressTable").DataTable({
+                    pageLength: 10,
+                    serverSide: true,
+                    processing: true,
+                    autoWidth: false,
+                    ajax: {
+                        url: "edit.aspx/GetSellerWarehouseAddresses",
+                        type: "POST",
+                        contentType: "application/json; charset=utf-8",
+                        dataType: "json",
+                        data: function (d) {
+                            return JSON.stringify({
+                                draw: d.draw,
+                                start: d.start,
+                                length: d.length,
+                                sellerId: sellerId
+                            });
+                        },
+                        dataFilter: function (data) {
+                            try {
+                                var parsed = JSON.parse(data);
+                                return JSON.stringify(parsed.d ? parsed.d : parsed);
+                            } catch (e) {
+                                return data;
+                            }
+                        },
+                        dataSrc: "data"
+                    },
+                    columns: [
+                        { data: "ShopName" },
+                        { data: "Title" },
+                        { data: "ContactName" },
+                        { data: "Phone" },
+                        { data: "AddressText" },
+                        { data: "IsDefaultText" }
+                    ],
+                    searching: false,
+                    lengthChange: false,
+                    ordering: false,
+                    language: {
+                        info: "Hiển thị _START_ đến _END_ của _TOTAL_ mục",
+                        infoEmpty: "Không có dữ liệu",
+                        zeroRecords: "Không có dữ liệu"
+                    }
+                });
+            }
+
+            function initReturnAddressTable() {
+                if (returnLoaded) return;
+                returnLoaded = true;
+                $("#returnAddressTable").DataTable({
+                    pageLength: 10,
+                    serverSide: true,
+                    processing: true,
+                    autoWidth: false,
+                    ajax: {
+                        url: "edit.aspx/GetSellerReturnAddresses",
+                        type: "POST",
+                        contentType: "application/json; charset=utf-8",
+                        dataType: "json",
+                        data: function (d) {
+                            return JSON.stringify({
+                                draw: d.draw,
+                                start: d.start,
+                                length: d.length,
+                                sellerId: sellerId
+                            });
+                        },
+                        dataFilter: function (data) {
+                            try {
+                                var parsed = JSON.parse(data);
+                                return JSON.stringify(parsed.d ? parsed.d : parsed);
+                            } catch (e) {
+                                return data;
+                            }
+                        },
+                        dataSrc: "data"
+                    },
+                    columns: [
+                        { data: "ShopName" },
+                        { data: "Title" },
+                        { data: "ContactName" },
+                        { data: "Phone" },
+                        { data: "AddressText" },
+                        { data: "IsDefaultText" }
+                    ],
+                    searching: false,
+                    lengthChange: false,
+                    ordering: false,
+                    language: {
+                        info: "Hiển thị _START_ đến _END_ của _TOTAL_ mục",
+                        infoEmpty: "Không có dữ liệu",
+                        zeroRecords: "Không có dữ liệu"
+                    }
+                });
+            }
+
+            function initProductTable() {
+                if (productLoaded) return;
+                productLoaded = true;
+                $("#productTable").DataTable({
+                    pageLength: 10,
+                    serverSide: true,
+                    processing: true,
+                    autoWidth: false,
+                    ajax: {
+                        url: "edit.aspx/GetSellerProducts",
+                        type: "POST",
+                        contentType: "application/json; charset=utf-8",
+                        dataType: "json",
+                        data: function (d) {
+                            return JSON.stringify({
+                                draw: d.draw,
+                                start: d.start,
+                                length: d.length,
+                                search: d.search ? d.search.value : "",
+                                orderColumn: d.order && d.order.length ? d.order[0].column : 1,
+                                orderDir: d.order && d.order.length ? d.order[0].dir : "asc",
+                                sellerId: sellerId,
+                                name: $("#filterProductName").val(),
+                                sku: $("#filterProductSku").val(),
+                                categoryId: $("#<%= FilterCategory.ClientID %>").val(),
+                                brandId: $("#<%= FilterBrand.ClientID %>").val(),
+                                originId: $("#<%= FilterOrigin.ClientID %>").val(),
+                                shopId: $("#<%= FilterShop.ClientID %>").val(),
+                                status: $("#filterProductStatus").val()
+                            });
+                        },
+                        dataFilter: function (data) {
+                            try {
+                                var parsed = JSON.parse(data);
+                                return JSON.stringify(parsed.d ? parsed.d : parsed);
+                            } catch (e) {
+                                return data;
+                            }
+                        },
+                        dataSrc: "data"
+                    },
+                    columns: [
+                        { data: "ImageHtml", orderable: false, searchable: false },
+                        { data: "ProductName" },
+                        { data: "Sku" },
+                        { data: "CategoryName" },
+                        { data: "ShopName" },
+                        { data: "BrandName" },
+                        { data: "OriginName" },
+                        { data: "MinPrice" },
+                        { data: "StockQty" },
+                        { data: "CreatedAt" },
+                        { data: "StatusHtml", orderable: false, searchable: false },
+                        { data: "ActionsHtml", orderable: false, searchable: false }
+                    ],
+                    columnDefs: [
+                        { targets: [11], className: "text-end", render: function (data) { return data; } },
+                        { targets: [10], render: function (data) { return data; } },
+                        { targets: [0], render: function (data) { return data; } }
+                    ],
+                    searching: false,
+                    lengthChange: false,
+                    language: {
+                        info: "Hiển thị _START_ đến _END_ của _TOTAL_ mục",
+                        infoEmpty: "Không có dữ liệu",
+                        zeroRecords: "Không có dữ liệu"
+                    }
+                });
+
+                $("#applyProductFilters").on("click", function () {
+                    $("#productTable").DataTable().ajax.reload();
+                });
+
+                $("#resetProductFilters").on("click", function () {
+                    $("#filterProductName").val("");
+                    $("#filterProductSku").val("");
+                    $category.val("").trigger("change");
+                    $brand.val("").trigger("change");
+                    $origin.val("").trigger("change");
+                    $shop.val("").trigger("change");
+                    $("#filterProductStatus").val("");
+                    $("#productTable").DataTable().ajax.reload();
+                });
+
+                $category.on("change", function () { $("#productTable").DataTable().ajax.reload(); });
+                $brand.on("change", function () { $("#productTable").DataTable().ajax.reload(); });
+                $origin.on("change", function () { $("#productTable").DataTable().ajax.reload(); });
+                $shop.on("change", function () { $("#productTable").DataTable().ajax.reload(); });
+            }
+
+            function initOrderTable() {
+                if (orderLoaded) return;
+                orderLoaded = true;
+                $("#orderTable").DataTable({
+                    pageLength: 10,
+                    serverSide: true,
+                    processing: true,
+                    autoWidth: false,
+                    ajax: {
+                        url: "edit.aspx/GetSellerOrders",
+                        type: "POST",
+                        contentType: "application/json; charset=utf-8",
+                        dataType: "json",
+                        data: function (d) {
+                            return JSON.stringify({
+                                draw: d.draw,
+                                start: d.start,
+                                length: d.length,
+                                sellerId: sellerId
+                            });
+                        },
+                        dataFilter: function (data) {
+                            try {
+                                var parsed = JSON.parse(data);
+                                return JSON.stringify(parsed.d ? parsed.d : parsed);
+                            } catch (e) {
+                                return data;
+                            }
+                        },
+                        dataSrc: "data"
+                    },
+                    columns: [
+                        { data: "OrderCode" },
+                        { data: "ShopName" },
+                        { data: "OrderStatusHtml", orderable: false, searchable: false },
+                        { data: "PaymentStatusHtml", orderable: false, searchable: false },
+                        { data: "TotalText" },
+                        { data: "CreatedAt" },
+                        { data: "ActionsHtml", orderable: false, searchable: false }
+                    ],
+                    columnDefs: [
+                        { targets: [2, 3], width: "14%", render: function (data) { return data; } },
+                        { targets: [6], width: "120px", className: "text-end", render: function (data) { return data; } }
+                    ],
+                    searching: false,
+                    lengthChange: false,
+                    ordering: false,
+                    language: {
+                        info: "Hiển thị _START_ đến _END_ của _TOTAL_ mục",
+                        infoEmpty: "Không có dữ liệu",
+                        zeroRecords: "Không có dữ liệu"
+                    }
+                });
+            }
+
+            function initReviewTable() {
+                if (reviewLoaded) return;
+                reviewLoaded = true;
+                $("#reviewTable").DataTable({
+                    pageLength: 10,
+                    serverSide: true,
+                    processing: true,
+                    autoWidth: false,
+                    ajax: {
+                        url: "edit.aspx/GetSellerReviews",
+                        type: "POST",
+                        contentType: "application/json; charset=utf-8",
+                        dataType: "json",
+                        data: function (d) {
+                            return JSON.stringify({
+                                draw: d.draw,
+                                start: d.start,
+                                length: d.length,
+                                sellerId: sellerId
+                            });
+                        },
+                        dataFilter: function (data) {
+                            try {
+                                var parsed = JSON.parse(data);
+                                return JSON.stringify(parsed.d ? parsed.d : parsed);
+                            } catch (e) {
+                                return data;
+                            }
+                        },
+                        dataSrc: "data"
+                    },
+                    columns: [
+                        { data: "ShopName" },
+                        { data: "RatingText" },
+                        { data: "Content" },
+                        { data: "CustomerName" },
+                        { data: "CreatedAt" }
+                    ],
+                    searching: false,
+                    lengthChange: false,
+                    ordering: false,
+                    language: {
+                        info: "Hiển thị _START_ đến _END_ của _TOTAL_ mục",
+                        infoEmpty: "Không có dữ liệu",
+                        zeroRecords: "Không có dữ liệu"
+                    }
+                });
+            }
+
+            function initProductReviewTable() {
+                if (productReviewLoaded) return;
+                productReviewLoaded = true;
+                $("#productReviewTable").DataTable({
+                    pageLength: 10,
+                    serverSide: true,
+                    processing: true,
+                    autoWidth: false,
+                    ajax: {
+                        url: "edit.aspx/GetSellerProductReviews",
+                        type: "POST",
+                        contentType: "application/json; charset=utf-8",
+                        dataType: "json",
+                        data: function (d) {
+                            return JSON.stringify({
+                                draw: d.draw,
+                                start: d.start,
+                                length: d.length,
+                                sellerId: sellerId
+                            });
+                        },
+                        dataFilter: function (data) {
+                            try {
+                                var parsed = JSON.parse(data);
+                                return JSON.stringify(parsed.d ? parsed.d : parsed);
+                            } catch (e) {
+                                return data;
+                            }
+                        },
+                        dataSrc: "data"
+                    },
+                    columns: [
+                        { data: "ProductName" },
+                        { data: "ShopName" },
+                        { data: "RatingText" },
+                        { data: "Content" },
+                        { data: "CustomerName" },
+                        { data: "CreatedAt" }
+                    ],
+                    searching: false,
+                    lengthChange: false,
+                    ordering: false,
+                    language: {
+                        info: "Hiển thị _START_ đến _END_ của _TOTAL_ mục",
+                        infoEmpty: "Không có dữ liệu",
+                        zeroRecords: "Không có dữ liệu"
+                    }
+                });
+            }
+
+            $("button[data-bs-toggle=\"tab\"]").on("shown.bs.tab", function (event) {
+                var target = $(event.target).data("bs-target");
+                if (target === "#tab-shop-pane") {
+                    initShopTable();
+                    initShopAddressTable();
+                    initWarehouseAddressTable();
+                    initReturnAddressTable();
+                } else if (target === "#tab-product-pane") {
+                    initProductTable();
+                } else if (target === "#tab-order-pane") {
+                    initOrderTable();
+                } else if (target === "#tab-review-pane") {
+                    initReviewTable();
+                    initProductReviewTable();
+                }
+            });
+        })(jQuery);
+    </script>
+</asp:Content>

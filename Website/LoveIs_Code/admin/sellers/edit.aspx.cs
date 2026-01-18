@@ -1,1 +1,906 @@
 ﻿
+using System;
+using System.Collections.Generic;
+using System.Globalization;
+using System.Linq;
+using System.Web.Script.Services;
+using System.Web.Services;
+
+public partial class AdminSellersEdit : AdminBasePage
+{
+    protected void Page_Load(object sender, EventArgs e)
+    {
+        if (!IsPostBack)
+        {
+            int sellerId;
+            if (!int.TryParse(Request.QueryString["id"], out sellerId))
+            {
+                Response.Redirect("/admin/sellers/default.aspx");
+                return;
+            }
+
+            SellerId.Value = sellerId.ToString();
+            LoadSeller(sellerId);
+            BindProductFilters(sellerId);
+        }
+    }
+
+    private void BindProductFilters(int sellerId)
+    {
+        using (var db = new BeautyStoryContext())
+        {
+            var categories = db.CfCategories
+                .OrderBy(c => c.SortOrder)
+                .ThenBy(c => c.CategoryName)
+                .Select(c => new { c.Id, c.CategoryName })
+                .ToList();
+
+            FilterCategory.Items.Clear();
+            FilterCategory.Items.Add(new System.Web.UI.WebControls.ListItem("Tất cả danh mục", ""));
+            foreach (var item in categories)
+            {
+                FilterCategory.Items.Add(new System.Web.UI.WebControls.ListItem(item.CategoryName, item.Id.ToString()));
+            }
+
+            var brands = db.CfBrands
+                .OrderBy(b => b.SortOrder)
+                .ThenBy(b => b.BrandName)
+                .Select(b => new { b.Id, b.BrandName })
+                .ToList();
+
+            FilterBrand.Items.Clear();
+            FilterBrand.Items.Add(new System.Web.UI.WebControls.ListItem("Tất cả thương hiệu", ""));
+            foreach (var item in brands)
+            {
+                FilterBrand.Items.Add(new System.Web.UI.WebControls.ListItem(item.BrandName, item.Id.ToString()));
+            }
+
+            var origins = db.CfOrigins
+                .OrderBy(o => o.SortOrder)
+                .ThenBy(o => o.OriginName)
+                .Select(o => new { o.Id, o.OriginName })
+                .ToList();
+
+            FilterOrigin.Items.Clear();
+            FilterOrigin.Items.Add(new System.Web.UI.WebControls.ListItem("Tất cả xuất xứ", ""));
+            foreach (var item in origins)
+            {
+                FilterOrigin.Items.Add(new System.Web.UI.WebControls.ListItem(item.OriginName, item.Id.ToString()));
+            }
+
+            var shops = db.CfShops
+                .Where(s => s.SellerId == sellerId)
+                .OrderBy(s => s.ShopName)
+                .Select(s => new { s.Id, s.ShopName })
+                .ToList();
+
+            FilterShop.Items.Clear();
+            FilterShop.Items.Add(new System.Web.UI.WebControls.ListItem("Tất cả cửa hàng", ""));
+            foreach (var item in shops)
+            {
+                FilterShop.Items.Add(new System.Web.UI.WebControls.ListItem(item.ShopName, item.Id.ToString()));
+            }
+        }
+    }
+
+    protected void SaveButton_Click(object sender, EventArgs e)
+    {
+        FormMessage.Text = string.Empty;
+        FormMessage.CssClass = "text-danger small d-block mb-2";
+
+        int sellerId;
+        if (!int.TryParse(SellerId.Value, out sellerId))
+        {
+            FormMessage.Text = "Không tìm thấy nhà bán hàng.";
+            return;
+        }
+
+        using (var db = new BeautyStoryContext())
+        {
+            var seller = db.CfSellers.FirstOrDefault(s => s.Id == sellerId);
+            if (seller == null)
+            {
+                FormMessage.Text = "Không tìm thấy nhà bán hàng.";
+                return;
+            }
+
+            seller.DisplayName = string.IsNullOrWhiteSpace(DisplayNameInput.Text) ? null : DisplayNameInput.Text.Trim();
+            seller.Email = string.IsNullOrWhiteSpace(EmailInput.Text) ? null : EmailInput.Text.Trim();
+            seller.Phone = string.IsNullOrWhiteSpace(PhoneInput.Text) ? null : PhoneInput.Text.Trim();
+            seller.Status = StatusInput.Checked;
+            seller.UpdatedAt = DateTime.UtcNow;
+            seller.UpdatedBy = Session["AdminUsername"] != null ? Session["AdminUsername"].ToString() : null;
+
+            db.SaveChanges();
+        }
+
+        LoadSeller(sellerId);
+        FormMessage.CssClass = "text-success small d-block mb-2";
+        FormMessage.Text = "Cập nhật thành công.";
+    }
+
+    protected void ChangePasswordButton_Click(object sender, EventArgs e)
+    {
+        FormMessage.Text = string.Empty;
+        FormMessage.CssClass = "text-danger small d-block mb-2";
+
+        int sellerId;
+        if (!int.TryParse(SellerId.Value, out sellerId))
+        {
+            FormMessage.Text = "Không tìm thấy nhà bán hàng.";
+            return;
+        }
+
+        string newPassword = NewPasswordInput.Text;
+        string confirmPassword = ConfirmPasswordInput.Text;
+
+        if (string.IsNullOrWhiteSpace(newPassword) || string.IsNullOrWhiteSpace(confirmPassword))
+        {
+            FormMessage.Text = "Vui lòng nhập đầy đủ mật khẩu mới.";
+            return;
+        }
+
+        if (newPassword != confirmPassword)
+        {
+            FormMessage.Text = "Xác nhận mật khẩu không khớp.";
+            return;
+        }
+
+        using (var db = new BeautyStoryContext())
+        {
+            var seller = db.CfSellers.FirstOrDefault(s => s.Id == sellerId);
+            if (seller == null)
+            {
+                FormMessage.Text = "Không tìm thấy nhà bán hàng.";
+                return;
+            }
+
+            int iterations = 10000;
+            byte[] salt;
+            byte[] hash;
+            Pbkdf2Hasher.Create(newPassword, iterations, out salt, out hash);
+
+            seller.PasswordSalt = salt;
+            seller.PasswordHash = hash;
+            seller.PasswordIterations = iterations;
+            seller.PasswordChangedAt = DateTime.UtcNow;
+            seller.UpdatedAt = DateTime.UtcNow;
+            seller.UpdatedBy = Session["AdminUsername"] != null ? Session["AdminUsername"].ToString() : null;
+
+            db.SaveChanges();
+        }
+
+        NewPasswordInput.Text = string.Empty;
+        ConfirmPasswordInput.Text = string.Empty;
+        FormMessage.CssClass = "text-success small d-block mb-2";
+        FormMessage.Text = "Đổi mật khẩu thành công.";
+    }
+
+    private void LoadSeller(int sellerId)
+    {
+        using (var db = new BeautyStoryContext())
+        {
+            var seller = db.CfSellers.FirstOrDefault(s => s.Id == sellerId);
+            if (seller == null)
+            {
+                Response.Redirect("/admin/sellers/default.aspx");
+                return;
+            }
+
+            SellerIdInput.Text = seller.Id.ToString();
+            UsernameInput.Text = seller.Username;
+            DisplayNameInput.Text = seller.DisplayName ?? string.Empty;
+            EmailInput.Text = seller.Email ?? string.Empty;
+            PhoneInput.Text = seller.Phone ?? string.Empty;
+            StatusInput.Checked = seller.Status;
+            CreatedAtInput.Text = FormatDateTime(seller.CreatedAt);
+            LastLoginInput.Text = seller.LastLoginAt.HasValue ? FormatDateTime(seller.LastLoginAt.Value) : "-";
+            LockedUntilInput.Text = seller.LockedUntil.HasValue ? FormatDateTime(seller.LockedUntil.Value) : "-";
+        }
+    }
+    [WebMethod]
+    [ScriptMethod(ResponseFormat = ResponseFormat.Json)]
+    public static DataTableResult<ShopRow> GetSellerShops(int draw, int start, int length, int sellerId)
+    {
+        using (var db = new BeautyStoryContext())
+        {
+            var query = db.CfShops.Where(s => s.SellerId == sellerId);
+            int total = query.Count();
+
+            var rows = query
+                .OrderByDescending(s => s.CreatedAt)
+                .Skip(start)
+                .Take(length)
+                .ToList()
+                .Select(s => new ShopRow
+                {
+                    ShopName = s.ShopName,
+                    StatusHtml = BuildStatusTag(BuildShopStatusLabel(s.Status), "status-shop"),
+                    RatingText = BuildRatingText(s.RatingAvg, s.RatingCount),
+                    CompletedOrders = s.CompletedOrders.ToString("N0"),
+                    FollowerCount = s.FollowerCount.ToString("N0"),
+                    CreatedAt = FormatDateTime(s.CreatedAt)
+                })
+                .ToList();
+
+            return new DataTableResult<ShopRow>
+            {
+                draw = draw,
+                recordsTotal = total,
+                recordsFiltered = total,
+                data = rows
+            };
+        }
+    }
+
+    [WebMethod]
+    [ScriptMethod(ResponseFormat = ResponseFormat.Json)]
+    public static DataTableResult<ShopAddressRow> GetSellerShopAddresses(int draw, int start, int length, int sellerId)
+    {
+        using (var db = new BeautyStoryContext())
+        {
+            var query = db.CfShops.Where(s => s.SellerId == sellerId);
+            int total = query.Count();
+
+            var rows = query
+                .OrderByDescending(s => s.CreatedAt)
+                .Skip(start)
+                .Take(length)
+                .ToList()
+                .Select(s => new ShopAddressRow
+                {
+                    ShopName = s.ShopName,
+                    ContactName = s.ShopName,
+                    Phone = string.IsNullOrWhiteSpace(s.Phone) ? "-" : s.Phone,
+                    AddressText = BuildAddressText(s.AddressLine, s.WardName, s.ProvinceName),
+                    CreatedAt = FormatDateTime(s.CreatedAt)
+                })
+                .ToList();
+
+            return new DataTableResult<ShopAddressRow>
+            {
+                draw = draw,
+                recordsTotal = total,
+                recordsFiltered = total,
+                data = rows
+            };
+        }
+    }
+
+    [WebMethod]
+    [ScriptMethod(ResponseFormat = ResponseFormat.Json)]
+    public static DataTableResult<WarehouseAddressRow> GetSellerWarehouseAddresses(int draw, int start, int length, int sellerId)
+    {
+        return GetSellerShopAddressesByType(draw, start, length, sellerId, AddressTypeGroup.Warehouse);
+    }
+
+    [WebMethod]
+    [ScriptMethod(ResponseFormat = ResponseFormat.Json)]
+    public static DataTableResult<WarehouseAddressRow> GetSellerReturnAddresses(int draw, int start, int length, int sellerId)
+    {
+        return GetSellerShopAddressesByType(draw, start, length, sellerId, AddressTypeGroup.Return);
+    }
+
+    private static DataTableResult<WarehouseAddressRow> GetSellerShopAddressesByType(int draw, int start, int length, int sellerId, AddressTypeGroup type)
+    {
+        using (var db = new BeautyStoryContext())
+        {
+            var shopIds = db.CfShops.Where(s => s.SellerId == sellerId).Select(s => s.Id).ToList();
+            var query = db.CfShopAddresses.Where(a => shopIds.Contains(a.ShopId) && a.Status);
+
+            query = ApplyAddressTypeFilter(query, type);
+
+            int total = query.Count();
+
+            var rows = query
+                .OrderByDescending(a => a.CreatedAt)
+                .Skip(start)
+                .Take(length)
+                .ToList()
+                .Select(a => new WarehouseAddressRow
+                {
+                    ShopName = db.CfShops.Where(s => s.Id == a.ShopId).Select(s => s.ShopName).FirstOrDefault(),
+                    Title = string.IsNullOrWhiteSpace(a.Title) ? "-" : a.Title,
+                    ContactName = string.IsNullOrWhiteSpace(a.ContactName) ? "-" : a.ContactName,
+                    Phone = string.IsNullOrWhiteSpace(a.Phone) ? "-" : a.Phone,
+                    AddressText = BuildAddressText(a.AddressLine, a.WardName, a.ProvinceName),
+                    IsDefaultText = a.IsDefault ? "Có" : "Không"
+                })
+                .ToList();
+
+            return new DataTableResult<WarehouseAddressRow>
+            {
+                draw = draw,
+                recordsTotal = total,
+                recordsFiltered = total,
+                data = rows
+            };
+        }
+    }
+
+    private static IQueryable<CfShopAddress> ApplyAddressTypeFilter(IQueryable<CfShopAddress> query, AddressTypeGroup type)
+    {
+        string[] warehouseTypes = { "Warehouse", "warehouse", "Kho", "KHO", "Storage", "storage" };
+        string[] returnTypes = { "Return", "return", "ReturnAddress", "return_address", "TraHang", "TRA_HANG" };
+
+        if (type == AddressTypeGroup.Warehouse)
+        {
+            return query.Where(a => a.AddressType != null && warehouseTypes.Contains(a.AddressType));
+        }
+
+        if (type == AddressTypeGroup.Return)
+        {
+            return query.Where(a => a.AddressType != null && returnTypes.Contains(a.AddressType));
+        }
+
+        return query;
+    }
+    [WebMethod]
+    [ScriptMethod(ResponseFormat = ResponseFormat.Json)]
+    public static DataTableResult<SellerProductRow> GetSellerProducts(int draw, int start, int length, string search, int orderColumn, string orderDir,
+        int sellerId, string name, string sku, string categoryId, string brandId, string originId, string shopId, string status)
+    {
+        using (var db = new BeautyStoryContext())
+        {
+            var shopIds = db.CfShops.Where(sh => sh.SellerId == sellerId).Select(sh => sh.Id).ToList();
+            if (shopIds.Count == 0)
+            {
+                return new DataTableResult<SellerProductRow>
+                {
+                    draw = draw,
+                    recordsTotal = 0,
+                    recordsFiltered = 0,
+                    data = new List<SellerProductRow>()
+                };
+            }
+
+            var productInfos = (from p in db.CfProducts
+                                join c in db.CfCategories on p.CategoryId equals c.Id
+                                join b in db.CfBrands on p.BrandId equals b.Id into bjoin
+                                from b in bjoin.DefaultIfEmpty()
+                                join o in db.CfOrigins on p.OriginId equals o.Id into ojoin
+                                from o in ojoin.DefaultIfEmpty()
+                                join s in db.CfShops on p.ShopId equals s.Id into sjoin
+                                from s in sjoin.DefaultIfEmpty()
+                                where p.ShopId.HasValue && shopIds.Contains(p.ShopId.Value)
+                                select new
+                                {
+                                    Product = p,
+                                    CategoryName = c.CategoryName,
+                                    BrandName = b != null ? b.BrandName : null,
+                                    OriginName = o != null ? o.OriginName : null,
+                                    ShopName = s != null ? s.ShopName : null
+                                }).ToList();
+
+            var slugs = db.CfSeoSlugs
+                .Where(s => s.EntityType == "Product")
+                .ToList();
+            var slugLookup = slugs.ToDictionary(s => s.EntityId, s => s.SeoSlug);
+
+            var variantPrices = db.CfProductVariants
+                .Where(v => v.Status && (v.Price > 0 || (v.SalePrice.HasValue && v.SalePrice.Value > 0)))
+                .GroupBy(v => v.ProductId)
+                .Select(g => new
+                {
+                    ProductId = g.Key,
+                    MinPrice = g.Min(v => v.SalePrice.HasValue && v.SalePrice.Value > 0 ? v.SalePrice.Value : v.Price),
+                    StockQty = g.Sum(v => v.StockQty)
+                })
+                .ToList();
+            var priceLookup = variantPrices.ToDictionary(v => v.ProductId, v => v.MinPrice);
+            var stockLookup = variantPrices.ToDictionary(v => v.ProductId, v => v.StockQty);
+
+            var skuLookup = db.CfProductVariants
+                .Where(v => v.Status)
+                .GroupBy(v => v.ProductId)
+                .Select(g => new
+                {
+                    ProductId = g.Key,
+                    Sku = g.OrderBy(v => v.Id).Select(v => v.Sku).FirstOrDefault()
+                })
+                .ToList()
+                .ToDictionary(v => v.ProductId, v => v.Sku);
+
+            var imageLookup = db.CfProductImages
+                .Where(i => i.Status)
+                .GroupBy(i => i.ProductId)
+                .Select(g => new
+                {
+                    ProductId = g.Key,
+                    ImageUrl = g.OrderByDescending(i => i.IsPrimary).ThenBy(i => i.SortOrder).Select(i => i.ImageUrl).FirstOrDefault()
+                })
+                .ToDictionary(i => i.ProductId, i => i.ImageUrl);
+
+            var filteredProducts = productInfos.AsEnumerable();
+
+            if (!string.IsNullOrWhiteSpace(search))
+            {
+                var keyword = search.Trim().ToLowerInvariant();
+                filteredProducts = filteredProducts.Where(p => !string.IsNullOrWhiteSpace(p.Product.ProductName) && p.Product.ProductName.ToLowerInvariant().Contains(keyword));
+            }
+
+            if (!string.IsNullOrWhiteSpace(name))
+            {
+                var keyword = name.Trim().ToLowerInvariant();
+                filteredProducts = filteredProducts.Where(p => !string.IsNullOrWhiteSpace(p.Product.ProductName) && p.Product.ProductName.ToLowerInvariant().Contains(keyword));
+            }
+
+            if (!string.IsNullOrWhiteSpace(sku))
+            {
+                var keyword = sku.Trim();
+                var skuProductIds = db.CfProductVariants
+                    .Where(v => v.Sku != null && v.Sku.Contains(keyword))
+                    .Select(v => v.ProductId)
+                    .Distinct()
+                    .ToList();
+                filteredProducts = filteredProducts.Where(p => skuProductIds.Contains(p.Product.Id));
+            }
+
+            int categoryFilterId;
+            if (!string.IsNullOrWhiteSpace(categoryId) && int.TryParse(categoryId, out categoryFilterId))
+            {
+                filteredProducts = filteredProducts.Where(p => p.Product.CategoryId == categoryFilterId);
+            }
+
+            int brandFilterId;
+            if (!string.IsNullOrWhiteSpace(brandId) && int.TryParse(brandId, out brandFilterId))
+            {
+                filteredProducts = filteredProducts.Where(p => p.Product.BrandId.HasValue && p.Product.BrandId.Value == brandFilterId);
+            }
+
+            int originFilterId;
+            if (!string.IsNullOrWhiteSpace(originId) && int.TryParse(originId, out originFilterId))
+            {
+                filteredProducts = filteredProducts.Where(p => p.Product.OriginId.HasValue && p.Product.OriginId.Value == originFilterId);
+            }
+
+            int shopFilterId;
+            if (!string.IsNullOrWhiteSpace(shopId) && int.TryParse(shopId, out shopFilterId))
+            {
+                filteredProducts = filteredProducts.Where(p => p.Product.ShopId.HasValue && p.Product.ShopId.Value == shopFilterId);
+            }
+
+            int statusFilter;
+            if (!string.IsNullOrWhiteSpace(status) && int.TryParse(status, out statusFilter))
+            {
+                bool statusValue = statusFilter == 1;
+                filteredProducts = filteredProducts.Where(p => p.Product.Status == statusValue);
+            }
+
+            var total = productInfos.Count();
+            var filtered = filteredProducts.Count();
+
+            var rows = filteredProducts.Select(p =>
+            {
+                var slug = slugLookup.ContainsKey(p.Product.Id) ? slugLookup[p.Product.Id] : string.Empty;
+                var slugHtml = string.IsNullOrWhiteSpace(slug) ? string.Empty : string.Format("<span class=\"slug-tag\">/{0}</span>", slug);
+                var productSku = skuLookup.ContainsKey(p.Product.Id) ? skuLookup[p.Product.Id] : "-";
+                decimal price = priceLookup.ContainsKey(p.Product.Id) ? priceLookup[p.Product.Id] : 0;
+                int stockQty = stockLookup.ContainsKey(p.Product.Id) ? stockLookup[p.Product.Id] : 0;
+                string imageUrl = imageLookup.ContainsKey(p.Product.Id) ? imageLookup[p.Product.Id] : "/images/logo_doc.png";
+
+                return new SellerProductRow
+                {
+                    Id = p.Product.Id,
+                    ImageHtml = string.Format("<img src=\"{0}\" alt=\"{1}\" class=\"table-thumb\" />", imageUrl, p.Product.ProductName),
+                    ProductName = string.Format("{0}<div class=\"slug-wrap\">{1}</div>", p.Product.ProductName, slugHtml),
+                    Sku = productSku,
+                    CategoryName = ProductTagHelper.FormatTag(p.CategoryName ?? "-", "info-tag-blue"),
+                    ShopName = ProductTagHelper.FormatTag(p.ShopName ?? "-", "info-tag-rose"),
+                    BrandName = ProductTagHelper.FormatTag(p.BrandName ?? "-", "info-tag-olive"),
+                    OriginName = ProductTagHelper.FormatTag(p.OriginName ?? "-", "info-tag-sand"),
+                    MinPriceValue = price,
+                    MinPrice = price > 0 ? string.Format(new CultureInfo("vi-VN"), "{0:C0}", price) : "-",
+                    StockQty = stockQty,
+                    CreatedAtValue = p.Product.CreatedAt,
+                    CreatedAt = p.Product.CreatedAt.ToString("dd/MM/yyyy HH:mm"),
+                    StatusValue = p.Product.Status ? 1 : 0,
+                    StatusHtml = p.Product.Status
+                        ? "<span class=\"status-tag status-on\">Hiển thị</span>"
+                        : "<span class=\"status-tag status-off\">Ẩn</span>",
+                    ActionsHtml = string.Format(
+                        "<div class=\"menu-actions justify-content-end\">" +
+                        "<a class=\"btn btn-sm btn-outline-primary btn-with-icon\" href=\"/admin/products/edit.aspx?id={0}\"><i class=\"fa fa-edit\"></i> Sửa</a>" +
+                        "</div>", p.Product.Id)
+                };
+            });
+
+            rows = SellerProductTableSorter.ApplyOrdering(rows, orderColumn, orderDir)
+                .Skip(start)
+                .Take(length);
+
+            return new DataTableResult<SellerProductRow>
+            {
+                draw = draw,
+                recordsTotal = total,
+                recordsFiltered = filtered,
+                data = rows.ToList()
+            };
+        }
+    }
+
+    [WebMethod]
+    [ScriptMethod(ResponseFormat = ResponseFormat.Json)]
+    public static DataTableResult<OrderRow> GetSellerOrders(int draw, int start, int length, int sellerId)
+    {
+        using (var db = new BeautyStoryContext())
+        {
+            var query = from so in db.CfShopOrders
+                        join sh in db.CfShops on so.ShopId equals sh.Id
+                        join o in db.CfOrders on so.OrderId equals o.Id
+                        where sh.SellerId == sellerId
+                        select new
+                        {
+                            so.OrderId,
+                            o.OrderCode,
+                            ShopName = sh.ShopName,
+                            so.OrderStatus,
+                            so.PaymentStatus,
+                            so.Total,
+                            so.CreatedAt
+                        };
+
+            int total = query.Count();
+
+            var rows = query
+                .OrderByDescending(o => o.CreatedAt)
+                .Skip(start)
+                .Take(length)
+                .ToList()
+                .Select(o => new OrderRow
+                {
+                    OrderCode = o.OrderCode,
+                    ShopName = o.ShopName,
+                    OrderStatusHtml = BuildStatusTag(string.IsNullOrWhiteSpace(o.OrderStatus) ? "Đang xử lý" : o.OrderStatus, string.Empty),
+                    PaymentStatusHtml = BuildStatusTag(string.IsNullOrWhiteSpace(o.PaymentStatus) ? "Chưa thanh toán" : o.PaymentStatus, string.Empty),
+                    TotalText = FormatMoney(o.Total),
+                    CreatedAt = FormatDateTime(o.CreatedAt),
+                    ActionsHtml = string.Format("<a class=\"btn btn-sm btn-outline-primary btn-with-icon\" href=\"/admin/orders/edit.aspx?id={0}\"><i class=\"fa-solid fa-eye\"></i> Xem</a>", o.OrderId)
+                })
+                .ToList();
+
+            return new DataTableResult<OrderRow>
+            {
+                draw = draw,
+                recordsTotal = total,
+                recordsFiltered = total,
+                data = rows
+            };
+        }
+    }
+
+    [WebMethod]
+    [ScriptMethod(ResponseFormat = ResponseFormat.Json)]
+    public static DataTableResult<ReviewRow> GetSellerReviews(int draw, int start, int length, int sellerId)
+    {
+        using (var db = new BeautyStoryContext())
+        {
+            var query = from r in db.CfShopReviews
+                        join sh in db.CfShops on r.ShopId equals sh.Id
+                        join c in db.CfCustomers on r.CustomerId equals c.Id into customers
+                        from c in customers.DefaultIfEmpty()
+                        where sh.SellerId == sellerId
+                        select new
+                        {
+                            ShopName = sh.ShopName,
+                            r.Rating,
+                            r.Content,
+                            CustomerName = c != null ? (c.DisplayName ?? c.Username) : null,
+                            r.CreatedAt
+                        };
+
+            int total = query.Count();
+
+            var rows = query
+                .OrderByDescending(r => r.CreatedAt)
+                .Skip(start)
+                .Take(length)
+                .ToList()
+                .Select(r => new ReviewRow
+                {
+                    ShopName = r.ShopName,
+                    RatingText = r.Rating.ToString("0"),
+                    Content = string.IsNullOrWhiteSpace(r.Content) ? "-" : r.Content,
+                    CustomerName = string.IsNullOrWhiteSpace(r.CustomerName) ? "-" : r.CustomerName,
+                    CreatedAt = FormatDateTime(r.CreatedAt)
+                })
+                .ToList();
+
+            return new DataTableResult<ReviewRow>
+            {
+                draw = draw,
+                recordsTotal = total,
+                recordsFiltered = total,
+                data = rows
+            };
+        }
+    }
+
+    [WebMethod]
+    [ScriptMethod(ResponseFormat = ResponseFormat.Json)]
+    public static DataTableResult<ProductReviewRow> GetSellerProductReviews(int draw, int start, int length, int sellerId)
+    {
+        using (var db = new BeautyStoryContext())
+        {
+            var query = from r in db.CfProductReviews
+                        join p in db.CfProducts on r.ProductId equals p.Id
+                        join sh in db.CfShops on p.ShopId equals sh.Id
+                        join c in db.CfCustomers on r.CustomerId equals c.Id into customers
+                        from c in customers.DefaultIfEmpty()
+                        where sh.SellerId == sellerId
+                        select new
+                        {
+                            ProductName = p.ProductName,
+                            ShopName = sh.ShopName,
+                            r.Rating,
+                            r.Content,
+                            CustomerName = c != null ? (c.DisplayName ?? c.Username) : null,
+                            r.CreatedAt
+                        };
+
+            int total = query.Count();
+
+            var rows = query
+                .OrderByDescending(r => r.CreatedAt)
+                .Skip(start)
+                .Take(length)
+                .ToList()
+                .Select(r => new ProductReviewRow
+                {
+                    ProductName = r.ProductName,
+                    ShopName = r.ShopName,
+                    RatingText = r.Rating.ToString("0"),
+                    Content = string.IsNullOrWhiteSpace(r.Content) ? "-" : r.Content,
+                    CustomerName = string.IsNullOrWhiteSpace(r.CustomerName) ? "-" : r.CustomerName,
+                    CreatedAt = FormatDateTime(r.CreatedAt)
+                })
+                .ToList();
+
+            return new DataTableResult<ProductReviewRow>
+            {
+                draw = draw,
+                recordsTotal = total,
+                recordsFiltered = total,
+                data = rows
+            };
+        }
+    }
+
+    private static string BuildRatingText(decimal ratingAvg, int ratingCount)
+    {
+        if (ratingCount <= 0)
+        {
+            return "-";
+        }
+
+        return string.Format("{0:0.0} ({1:N0})", ratingAvg, ratingCount);
+    }
+
+    private static string BuildShopStatusLabel(string status)
+    {
+        if (string.IsNullOrWhiteSpace(status))
+        {
+            return "-";
+        }
+
+        var key = status.Trim().ToLowerInvariant();
+        if (key == "active")
+        {
+            return "Hoạt động";
+        }
+
+        if (key == "pending")
+        {
+            return "Chờ duyệt";
+        }
+
+        if (key == "inactive")
+        {
+            return "Tạm dừng";
+        }
+
+        return status;
+    }
+
+    private static string BuildStatusTag(string label, string extraClass)
+    {
+        string cssClass = GetStatusCssClass(label);
+        string combined = string.IsNullOrWhiteSpace(extraClass) ? cssClass : string.Format("{0} {1}", cssClass, extraClass);
+        return string.Format("<span class=\"status-tag {0}\">{1}</span>", combined, label);
+    }
+
+    private static string GetStatusCssClass(string label)
+    {
+        if (string.IsNullOrWhiteSpace(label) || label == "-")
+        {
+            return "status-neutral";
+        }
+
+        string key = RemoveDiacritics(label).ToLowerInvariant();
+
+        if (key.Contains("hoat dong") || key.Contains("active") || key.Contains("thanh cong"))
+        {
+            return "status-success";
+        }
+
+        if (key.Contains("cho") || key.Contains("pending") || key.Contains("dang") || key.Contains("moi"))
+        {
+            return "status-warning";
+        }
+
+        if (key.Contains("tam") || key.Contains("khoa") || key.Contains("inactive") || key.Contains("huy"))
+        {
+            return "status-danger";
+        }
+
+        return "status-neutral";
+    }
+
+    private static string RemoveDiacritics(string value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return string.Empty;
+        }
+
+        var normalized = value.Normalize(System.Text.NormalizationForm.FormD);
+        var builder = new System.Text.StringBuilder();
+        foreach (var ch in normalized)
+        {
+            var category = CharUnicodeInfo.GetUnicodeCategory(ch);
+            if (category != UnicodeCategory.NonSpacingMark)
+            {
+                builder.Append(ch);
+            }
+        }
+
+        return builder.ToString().Normalize(System.Text.NormalizationForm.FormC);
+    }
+
+    private static string BuildAddressText(string addressLine, string ward, string province)
+    {
+        var parts = new List<string>();
+        if (!string.IsNullOrWhiteSpace(addressLine))
+        {
+            parts.Add(addressLine.Trim());
+        }
+
+        if (!string.IsNullOrWhiteSpace(ward))
+        {
+            parts.Add(ward.Trim());
+        }
+
+        if (!string.IsNullOrWhiteSpace(province))
+        {
+            parts.Add(province.Trim());
+        }
+
+        return parts.Count == 0 ? "-" : string.Join(", ", parts);
+    }
+
+    private static string FormatDateTime(DateTime value)
+    {
+        return value.ToString("dd/MM/yyyy HH:mm");
+    }
+
+    private static string FormatMoney(decimal value)
+    {
+        return string.Format("{0:N0} đ", value);
+    }
+
+    public class ShopRow
+    {
+        public string ShopName { get; set; }
+        public string StatusHtml { get; set; }
+        public string RatingText { get; set; }
+        public string CompletedOrders { get; set; }
+        public string FollowerCount { get; set; }
+        public string CreatedAt { get; set; }
+    }
+
+    public class ShopAddressRow
+    {
+        public string ShopName { get; set; }
+        public string ContactName { get; set; }
+        public string Phone { get; set; }
+        public string AddressText { get; set; }
+        public string CreatedAt { get; set; }
+    }
+
+    public class WarehouseAddressRow
+    {
+        public string ShopName { get; set; }
+        public string Title { get; set; }
+        public string ContactName { get; set; }
+        public string Phone { get; set; }
+        public string AddressText { get; set; }
+        public string IsDefaultText { get; set; }
+    }
+
+    public class SellerProductRow
+    {
+        public int Id { get; set; }
+        public string ImageHtml { get; set; }
+        public string ProductName { get; set; }
+        public string Sku { get; set; }
+        public string CategoryName { get; set; }
+        public string ShopName { get; set; }
+        public string BrandName { get; set; }
+        public string OriginName { get; set; }
+        public decimal MinPriceValue { get; set; }
+        public string MinPrice { get; set; }
+        public int StockQty { get; set; }
+        public DateTime CreatedAtValue { get; set; }
+        public string CreatedAt { get; set; }
+        public int StatusValue { get; set; }
+        public string StatusHtml { get; set; }
+        public string ActionsHtml { get; set; }
+    }
+
+    public class OrderRow
+    {
+        public string OrderCode { get; set; }
+        public string ShopName { get; set; }
+        public string OrderStatusHtml { get; set; }
+        public string PaymentStatusHtml { get; set; }
+        public string TotalText { get; set; }
+        public string CreatedAt { get; set; }
+        public string ActionsHtml { get; set; }
+    }
+
+    public class ReviewRow
+    {
+        public string ShopName { get; set; }
+        public string RatingText { get; set; }
+        public string Content { get; set; }
+        public string CustomerName { get; set; }
+        public string CreatedAt { get; set; }
+    }
+
+    public class ProductReviewRow
+    {
+        public string ProductName { get; set; }
+        public string ShopName { get; set; }
+        public string RatingText { get; set; }
+        public string Content { get; set; }
+        public string CustomerName { get; set; }
+        public string CreatedAt { get; set; }
+    }
+
+    public enum AddressTypeGroup
+    {
+        Warehouse,
+        Return
+    }
+}
+
+public static class SellerProductTableSorter
+{
+    public static IEnumerable<AdminSellersEdit.SellerProductRow> ApplyOrdering(IEnumerable<AdminSellersEdit.SellerProductRow> rows, int orderColumn, string orderDir)
+    {
+        bool desc = string.Equals(orderDir, "desc", StringComparison.OrdinalIgnoreCase);
+        switch (orderColumn)
+        {
+            case 1:
+                return desc ? rows.OrderByDescending(r => r.ProductName) : rows.OrderBy(r => r.ProductName);
+            case 2:
+                return desc ? rows.OrderByDescending(r => r.Sku) : rows.OrderBy(r => r.Sku);
+            case 3:
+                return desc ? rows.OrderByDescending(r => r.CategoryName) : rows.OrderBy(r => r.CategoryName);
+            case 4:
+                return desc ? rows.OrderByDescending(r => r.ShopName) : rows.OrderBy(r => r.ShopName);
+            case 5:
+                return desc ? rows.OrderByDescending(r => r.BrandName) : rows.OrderBy(r => r.BrandName);
+            case 6:
+                return desc ? rows.OrderByDescending(r => r.OriginName) : rows.OrderBy(r => r.OriginName);
+            case 7:
+                return desc ? rows.OrderByDescending(r => r.MinPriceValue) : rows.OrderBy(r => r.MinPriceValue);
+            case 8:
+                return desc ? rows.OrderByDescending(r => r.StockQty) : rows.OrderBy(r => r.StockQty);
+            case 9:
+                return desc ? rows.OrderByDescending(r => r.CreatedAtValue) : rows.OrderBy(r => r.CreatedAtValue);
+            default:
+                return desc ? rows.OrderByDescending(r => r.ProductName) : rows.OrderBy(r => r.ProductName);
+        }
+    }
+}

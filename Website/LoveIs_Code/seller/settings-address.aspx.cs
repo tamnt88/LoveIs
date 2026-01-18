@@ -84,7 +84,6 @@ public partial class SellerSettingsAddress : System.Web.UI.Page
             address.Phone = (PhoneInput.Text ?? string.Empty).Trim();
             address.AddressLine = (AddressLineInput.Text ?? string.Empty).Trim();
             address.WardName = (WardInput.Text ?? string.Empty).Trim();
-            address.DistrictName = (DistrictInput.Text ?? string.Empty).Trim();
             address.ProvinceName = (ProvinceInput.Text ?? string.Empty).Trim();
 
             if (DefaultCheckBox.Checked)
@@ -225,7 +224,6 @@ public partial class SellerSettingsAddress : System.Web.UI.Page
                 PhoneInput.Text = address.Phone;
                 AddressLineInput.Text = address.AddressLine;
                 WardInput.Text = address.WardName;
-                DistrictInput.Text = address.DistrictName;
                 ProvinceInput.Text = address.ProvinceName;
                 DefaultCheckBox.Checked = address.IsDefault;
             }
@@ -238,7 +236,6 @@ public partial class SellerSettingsAddress : System.Web.UI.Page
                 PhoneInput.Text = string.Empty;
                 AddressLineInput.Text = string.Empty;
                 WardInput.Text = string.Empty;
-                DistrictInput.Text = string.Empty;
                 ProvinceInput.Text = string.Empty;
                 DefaultCheckBox.Checked = false;
             }
@@ -335,10 +332,6 @@ public partial class SellerSettingsAddress : System.Web.UI.Page
         if (!string.IsNullOrWhiteSpace(address.WardName))
         {
             parts.Add(address.WardName);
-        }
-        if (!string.IsNullOrWhiteSpace(address.DistrictName))
-        {
-            parts.Add(address.DistrictName);
         }
         if (!string.IsNullOrWhiteSpace(address.ProvinceName))
         {

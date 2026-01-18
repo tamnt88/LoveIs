@@ -7,7 +7,6 @@ CREATE TABLE [dbo].[cf_shop_address] (
     [Phone] NVARCHAR(30) NULL,
     [AddressLine] NVARCHAR(300) NULL,
     [WardName] NVARCHAR(120) NULL,
-    [DistrictName] NVARCHAR(120) NULL,
     [ProvinceName] NVARCHAR(120) NULL,
     [IsDefault] BIT NOT NULL DEFAULT 0,
     [Status] BIT NOT NULL DEFAULT 1,

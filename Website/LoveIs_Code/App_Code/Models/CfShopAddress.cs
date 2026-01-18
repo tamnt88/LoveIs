@@ -9,6 +9,10 @@ public class CfShopAddress
 
     public int ShopId { get; set; }
 
+    public int? WardId { get; set; }
+
+    public int? ProvinceId { get; set; }
+
     [StringLength(200)]
     public string Title { get; set; }
 
@@ -26,9 +30,6 @@ public class CfShopAddress
 
     [StringLength(120)]
     public string WardName { get; set; }
-
-    [StringLength(120)]
-    public string DistrictName { get; set; }
 
     [StringLength(120)]
     public string ProvinceName { get; set; }

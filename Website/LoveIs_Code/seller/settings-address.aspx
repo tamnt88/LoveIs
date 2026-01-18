@@ -102,10 +102,6 @@
                         <asp:TextBox ID="WardInput" runat="server" CssClass="form-control" />
                     </div>
                     <div class="form-group">
-                        <label>Quận/Huyện</label>
-                        <asp:TextBox ID="DistrictInput" runat="server" CssClass="form-control" />
-                    </div>
-                    <div class="form-group">
                         <label>Tỉnh/Thành phố</label>
                         <asp:TextBox ID="ProvinceInput" runat="server" CssClass="form-control" />
                     </div>

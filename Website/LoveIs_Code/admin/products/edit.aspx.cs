@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 
 using System.Globalization;
 
@@ -90,7 +90,7 @@ public partial class AdminProductsEdit : AdminBasePage
 
             CategoryInput.Items.Clear();
 
-            CategoryInput.Items.Add(new ListItem("-- Chá»n danh má»¥c --", ""));
+            CategoryInput.Items.Add(new ListItem("-- Chọn danh mục --", ""));
 
             AddCategoryOptions(CategoryInput, categories, null, 0);
 
@@ -110,7 +110,7 @@ public partial class AdminProductsEdit : AdminBasePage
 
             BrandInput.Items.Clear();
 
-            BrandInput.Items.Add(new ListItem("KhÃ´ng chá»n", ""));
+            BrandInput.Items.Add(new ListItem("Không chọn", ""));
 
             foreach (var item in brands)
 
@@ -136,7 +136,7 @@ public partial class AdminProductsEdit : AdminBasePage
 
             OriginInput.Items.Clear();
 
-            OriginInput.Items.Add(new ListItem("KhÃ´ng chá»n", ""));
+            OriginInput.Items.Add(new ListItem("Không chọn", ""));
 
             foreach (var item in origins)
 
@@ -222,7 +222,7 @@ public partial class AdminProductsEdit : AdminBasePage
 
             FilterGroupRepeater.DataBind();
 
-            FilterMessage.Text = "Vui lÃ²ng chá»n danh má»¥c Ä‘á»ƒ hiá»ƒn thá»‹ bá»™ lá»c.";
+            FilterMessage.Text = "Vui lòng chọn danh mục để hiển thị bộ lọc.";
 
             return;
 
@@ -360,7 +360,7 @@ public partial class AdminProductsEdit : AdminBasePage
 
             {
 
-                FilterMessage.Text = "Danh má»¥c chÆ°a Ä‘Æ°á»£c gÃ¡n bá»™ lá»c. Äang hiá»ƒn thá»‹ táº¥t cáº£ bá»™ lá»c.";
+                FilterMessage.Text = "Danh mục chưa được gán bộ lọc. Đang hiển thị tất cả bộ lọc.";
 
             }
 
@@ -440,7 +440,7 @@ public partial class AdminProductsEdit : AdminBasePage
 
         {
 
-            FormMessage.Text = "Vui lÃ²ng nháº­p tÃªn sáº£n pháº©m.";
+            FormMessage.Text = "Vui lòng nhập tên sản phẩm.";
 
             return;
 
@@ -452,7 +452,7 @@ public partial class AdminProductsEdit : AdminBasePage
 
         {
 
-            FormMessage.Text = "Vui lÃ²ng nháº­p slug cho sáº£n pháº©m.";
+            FormMessage.Text = "Vui lòng nhập slug cho sản phẩm.";
 
             return;
 
@@ -472,7 +472,7 @@ int categoryId;
 
         {
 
-            FormMessage.Text = "Vui lÃ²ng chá»n danh má»¥c.";
+            FormMessage.Text = "Vui lòng chọn danh mục.";
 
             return;
 
@@ -538,7 +538,7 @@ int categoryId;
 
                 {
 
-                    FormMessage.Text = "Sáº£n pháº©m khÃ´ng tá»“n táº¡i.";
+                    FormMessage.Text = "Sản phẩm không tồn tại.";
 
                     return;
 
@@ -637,7 +637,7 @@ int categoryId;
 
             {
 
-                FormMessage.Text = "Slug Ä‘Ã£ tá»“n táº¡i. Vui lÃ²ng chá»n slug khÃ¡c.";
+                FormMessage.Text = "Slug đã tồn tại. Vui lòng chọn slug khác.";
 
                 return;
 
@@ -701,7 +701,7 @@ int categoryId;
 
         FormMessage.CssClass = "text-success small d-block mb-2";
 
-        FormMessage.Text = "LÆ°u thÃ nh cÃ´ng.";
+        FormMessage.Text = "Lưu thành công.";
 
         BindImages();
 
@@ -771,7 +771,7 @@ int categoryId;
 
         {
 
-            FilterMessage.Text = "Vui lÃ²ng lÆ°u sáº£n pháº©m trÆ°á»›c khi chá»n bá»™ lá»c.";
+            FilterMessage.Text = "Vui lòng lưu sản phẩm trước khi chọn bộ lọc.";
 
             return;
 
@@ -785,7 +785,7 @@ int categoryId;
 
         {
 
-            FilterMessage.Text = "Vui lÃ²ng chá»n danh má»¥c.";
+            FilterMessage.Text = "Vui lòng chọn danh mục.";
 
             return;
 
@@ -909,7 +909,7 @@ int categoryId;
 
         FilterMessage.CssClass = "text-success small d-block mb-2";
 
-        FilterMessage.Text = "ÄÃ£ lÆ°u bá»™ lá»c thÃ nh cÃ´ng.";
+        FilterMessage.Text = "Đã lưu bộ lọc thành công.";
 
         BindFilterGroups();
 
@@ -931,7 +931,7 @@ int categoryId;
 
         {
 
-            MatrixMessage.Text = "Vui lÃ²ng chá»n thuá»™c tÃ­nh.";
+            MatrixMessage.Text = "Vui lòng chọn thuộc tính.";
 
             return;
 
@@ -953,7 +953,7 @@ int categoryId;
 
         {
 
-            MatrixMessage.Text = "Vui lÃ²ng chá»n giÃ¡ trá»‹ thuá»™c tÃ­nh.";
+            MatrixMessage.Text = "Vui lòng chọn giá trị thuộc tính.";
 
             return;
 
@@ -967,7 +967,7 @@ int categoryId;
 
         {
 
-            MatrixMessage.Text = "Thuá»™c tÃ­nh Ä‘Ã£ Ä‘Æ°á»£c chá»n.";
+            MatrixMessage.Text = "Thuộc tính đã được chọn.";
 
             return;
 
@@ -979,7 +979,7 @@ int categoryId;
 
         {
 
-            MatrixMessage.Text = "Tá»‘i Ä‘a 5 thuá»™c tÃ­nh cho má»™t matrix.";
+            MatrixMessage.Text = "Tối đa 5 thuộc tính cho một matrix.";
 
             return;
 
@@ -1179,7 +1179,7 @@ int categoryId;
 
         {
 
-            MatrixMessage.Text = "Vui lÃ²ng lÆ°u sáº£n pháº©m trÆ°á»›c khi táº¡o biáº¿n thá»ƒ.";
+            MatrixMessage.Text = "Vui lòng lưu sản phẩm trước khi tạo biến thể.";
 
             return;
 
@@ -1195,7 +1195,7 @@ int categoryId;
 
         {
 
-            MatrixMessage.Text = "Vui lÃ²ng chá»n Ã­t nháº¥t 1 thuá»™c tÃ­nh.";
+            MatrixMessage.Text = "Vui lòng chọn ít nhất 1 thuộc tính.";
 
             return;
 
@@ -1207,7 +1207,7 @@ int categoryId;
 
         {
 
-            MatrixMessage.Text = "Tá»‘i Ä‘a 5 thuá»™c tÃ­nh cho má»™t matrix.";
+            MatrixMessage.Text = "Tối đa 5 thuộc tính cho một matrix.";
 
             return;
 
@@ -1405,7 +1405,7 @@ int categoryId;
 
         MatrixMessage.CssClass = "text-success small d-block mb-2";
 
-        MatrixMessage.Text = "LÆ°u biáº¿n thá»ƒ theo matrix thÃ nh cÃ´ng.";
+        MatrixMessage.Text = "Lưu biến thể theo matrix thành công.";
 
         BindVariants();
 
@@ -1449,7 +1449,7 @@ int categoryId;
 
         {
 
-            ImageMessage.Text = "Vui lÃ²ng lÆ°u sáº£n pháº©m trÆ°á»›c khi táº£i áº£nh.";
+            ImageMessage.Text = "Vui lòng lưu sản phẩm trước khi tải ảnh.";
 
             return;
 
@@ -1461,7 +1461,7 @@ int categoryId;
 
         {
 
-            ImageMessage.Text = "Vui lÃ²ng chá»n áº£nh Ä‘á»ƒ táº£i.";
+            ImageMessage.Text = "Vui lòng chọn ảnh để tải.";
 
             return;
 
@@ -1545,7 +1545,7 @@ int categoryId;
 
         ImageMessage.CssClass = "text-success small d-block mt-2";
 
-        ImageMessage.Text = "Táº£i áº£nh thÃ nh cÃ´ng.";
+        ImageMessage.Text = "Tải ảnh thành công.";
 
         ResetImageForm();
 
@@ -1619,7 +1619,7 @@ int categoryId;
 
         {
 
-            VariantMessage.Text = "Vui lÃ²ng lÆ°u sáº£n pháº©m trÆ°á»›c khi thÃªm biáº¿n thá»ƒ.";
+            VariantMessage.Text = "Vui lòng lưu sản phẩm trước khi thêm biến thể.";
 
             return;
 
@@ -1647,7 +1647,7 @@ int categoryId;
 
         {
 
-            VariantMessage.Text = "Vui lÃ²ng nháº­p tÃªn biáº¿n thá»ƒ.";
+            VariantMessage.Text = "Vui lòng nhập tên biến thể.";
 
             return;
 
@@ -1661,7 +1661,7 @@ int categoryId;
 
         {
 
-            VariantMessage.Text = "GiÃ¡ khÃ´ng há»£p lá»‡.";
+            VariantMessage.Text = "Giá không hợp lệ.";
 
             return;
 
@@ -1681,7 +1681,7 @@ int categoryId;
 
             {
 
-                VariantMessage.Text = "GiÃ¡ khuyáº¿n mÃ£i khÃ´ng há»£p lá»‡.";
+                VariantMessage.Text = "Giá khuyến mãi không hợp lệ.";
 
                 return;
 
@@ -1735,7 +1735,7 @@ int categoryId;
 
                 {
 
-                    VariantMessage.Text = "Biáº¿n thá»ƒ khÃ´ng tá»“n táº¡i.";
+                    VariantMessage.Text = "Biến thể không tồn tại.";
 
                     return;
 
@@ -1787,7 +1787,7 @@ int categoryId;
 
         VariantMessage.CssClass = "text-success small d-block mb-2";
 
-        VariantMessage.Text = "LÆ°u biáº¿n thá»ƒ thÃ nh cÃ´ng.";
+        VariantMessage.Text = "Lưu biến thể thành công.";
 
         ResetVariantForm();
 
@@ -1843,7 +1843,7 @@ int categoryId;
 
             VariantAttrMessage.CssClass = "text-success small d-block mb-2";
 
-            VariantAttrMessage.Text = "ÄÃ£ chá»n biáº¿n thá»ƒ Ä‘á»ƒ gÃ¡n thuá»™c tÃ­nh.";
+            VariantAttrMessage.Text = "Đã chọn biến thể để gán thuộc tính.";
 
         }
 
@@ -2037,9 +2037,9 @@ int categoryId;
 
                     IsPrimaryTag = i.IsPrimary
 
-                        ? "<span class=\"status-tag status-on\">ChÃ­nh</span>"
+                        ? "<span class=\"status-tag status-on\">Chính</span>"
 
-                        : "<span class=\"status-tag status-off\">Phá»¥</span>"
+                        : "<span class=\"status-tag status-off\">Phụ</span>"
 
                 })
 
@@ -2167,7 +2167,7 @@ int categoryId;
 
             MatrixAttributeSelect.Items.Clear();
 
-            MatrixAttributeSelect.Items.Add(new ListItem(HttpUtility.HtmlDecode("-- Chá»n thuá»™c tÃ­nh. --"), ""));
+            MatrixAttributeSelect.Items.Add(new ListItem(HttpUtility.HtmlDecode("-- Chọn thuộc tính. --"), ""));
 
 
 
@@ -2551,7 +2551,7 @@ int categoryId;
 
         {
 
-            MatrixMessage.Text = "Vui lÃ²ng chá»n Ã­t nháº¥t 1 thuá»™c tÃ­nh.";
+            MatrixMessage.Text = "Vui lòng chọn ít nhất 1 thuộc tính.";
 
             return;
 
@@ -2563,7 +2563,7 @@ int categoryId;
 
         {
 
-            MatrixMessage.Text = "Tá»‘i Ä‘a 5 thuá»™c tÃ­nh cho má»™t matrix.";
+            MatrixMessage.Text = "Tối đa 5 thuộc tính cho một matrix.";
 
             return;
 
@@ -2643,7 +2643,7 @@ int categoryId;
 
         {
 
-            MatrixMessage.Text = "Vui lÃ²ng chá»n giÃ¡ trá»‹ cho táº¥t cáº£ thuá»™c tÃ­nh.";
+            MatrixMessage.Text = "Vui lòng chọn giá trị cho tất cả thuộc tính.";
 
             MatrixRepeater.DataSource = null;
 
@@ -2949,15 +2949,15 @@ int categoryId;
 
             VariantSelectInput.Items.Clear();
 
-            VariantSelectInput.Items.Add(new ListItem("-- Chá»n biáº¿n thá»ƒ --", ""));
+            VariantSelectInput.Items.Add(new ListItem("-- Chọn biến thể --", ""));
 
             AttributeSelectInput.Items.Clear();
 
-            AttributeSelectInput.Items.Add(new ListItem("-- Chá»n thuá»™c tÃ­nh --", ""));
+            AttributeSelectInput.Items.Add(new ListItem("-- Chọn thuộc tính --", ""));
 
             ValueSelectInput.Items.Clear();
 
-            ValueSelectInput.Items.Add(new ListItem("-- Chá»n giÃ¡ trá»‹ --", ""));
+            ValueSelectInput.Items.Add(new ListItem("-- Chọn giá trị --", ""));
 
             return;
 
@@ -2985,13 +2985,13 @@ int categoryId;
 
             VariantSelectInput.Items.Clear();
 
-            VariantSelectInput.Items.Add(new ListItem("-- Chá»n biáº¿n thá»ƒ --", ""));
+            VariantSelectInput.Items.Add(new ListItem("-- Chọn biến thể --", ""));
 
             foreach (var v in variants)
 
             {
 
-                VariantSelectInput.Items.Add(new ListItem(v.VariantName ?? ("Biáº¿n thá»ƒ " + v.Id), v.Id.ToString()));
+                VariantSelectInput.Items.Add(new ListItem(v.VariantName ?? ("Biến thể " + v.Id), v.Id.ToString()));
 
             }
 
@@ -3021,7 +3021,7 @@ int categoryId;
 
             AttributeSelectInput.Items.Clear();
 
-            AttributeSelectInput.Items.Add(new ListItem("-- Chá»n thuá»™c tÃ­nh --", ""));
+            AttributeSelectInput.Items.Add(new ListItem("-- Chọn thuộc tính --", ""));
 
             foreach (var a in attributes)
 
@@ -3053,7 +3053,7 @@ int categoryId;
 
             ValueSelectInput.Items.Clear();
 
-            ValueSelectInput.Items.Add(new ListItem("-- Chá»n giÃ¡ trá»‹ --", ""));
+            ValueSelectInput.Items.Add(new ListItem("-- Chọn giá trị --", ""));
 
             return;
 
@@ -3081,7 +3081,7 @@ int categoryId;
 
             ValueSelectInput.Items.Clear();
 
-            ValueSelectInput.Items.Add(new ListItem("-- Chá»n giÃ¡ trá»‹ --", ""));
+            ValueSelectInput.Items.Add(new ListItem("-- Chọn giá trị --", ""));
 
             foreach (var v in values)
 
@@ -3145,7 +3145,7 @@ int categoryId;
 
                             va.VariantId,
 
-                            VariantName = v.VariantName ?? ("Biáº¿n thá»ƒ " + v.Id),
+                            VariantName = v.VariantName ?? ("Biến thể " + v.Id),
 
                             AttributeName = a.AttributeName,
 
@@ -3203,7 +3203,7 @@ int categoryId;
 
         {
 
-            VariantAttrMessage.Text = "Vui lÃ²ng lÆ°u sáº£n pháº©m trÆ°á»›c khi thÃªm thuá»™c tÃ­nh.";
+            VariantAttrMessage.Text = "Vui lòng lưu sản phẩm trước khi thêm thuộc tính.";
 
             return;
 
@@ -3217,7 +3217,7 @@ int categoryId;
 
         {
 
-            VariantAttrMessage.Text = "Vui lÃ²ng chá»n biáº¿n thá»ƒ.";
+            VariantAttrMessage.Text = "Vui lòng chọn biến thể.";
 
             return;
 
@@ -3231,7 +3231,7 @@ int categoryId;
 
         {
 
-            VariantAttrMessage.Text = "Vui lÃ²ng chá»n thuá»™c tÃ­nh.";
+            VariantAttrMessage.Text = "Vui lòng chọn thuộc tính.";
 
             return;
 
@@ -3245,7 +3245,7 @@ int categoryId;
 
         {
 
-            VariantAttrMessage.Text = "Vui lÃ²ng chá»n giÃ¡ trá»‹.";
+            VariantAttrMessage.Text = "Vui lòng chọn giá trị.";
 
             return;
 
@@ -3271,7 +3271,7 @@ int categoryId;
 
             {
 
-                VariantAttrMessage.Text = "Biáº¿n thá»ƒ khÃ´ng tá»“n táº¡i.";
+                VariantAttrMessage.Text = "Biến thể không tồn tại.";
 
                 return;
 
@@ -3285,7 +3285,7 @@ int categoryId;
 
             {
 
-                VariantAttrMessage.Text = "GiÃ¡ trá»‹ khÃ´ng há»£p lá»‡.";
+                VariantAttrMessage.Text = "Giá trị không hợp lệ.";
 
                 return;
 
@@ -3307,7 +3307,7 @@ int categoryId;
 
                 {
 
-                    VariantAttrMessage.Text = "Thuá»™c tÃ­nh biáº¿n thá»ƒ khÃ´ng tá»“n táº¡i.";
+                    VariantAttrMessage.Text = "Thuộc tính biến thể không tồn tại.";
 
                     return;
 
@@ -3327,7 +3327,7 @@ int categoryId;
 
                 {
 
-                    VariantAttrMessage.Text = "Thuá»™c tÃ­nh nÃ y Ä‘Ã£ tá»“n táº¡i cho biáº¿n thá»ƒ.";
+                    VariantAttrMessage.Text = "Thuộc tính này đã tồn tại cho biến thể.";
 
                     return;
 
@@ -3373,7 +3373,7 @@ int categoryId;
 
         VariantAttrMessage.CssClass = "text-success small d-block mb-2";
 
-        VariantAttrMessage.Text = "LÆ°u thuá»™c tÃ­nh biáº¿n thá»ƒ thÃ nh cÃ´ng.";
+        VariantAttrMessage.Text = "Lưu thuộc tính biến thể thành công.";
 
         ResetVariantAttrForm();
 
@@ -3489,7 +3489,7 @@ int categoryId;
 
             {
 
-                VariantAttrMessage.Text = "Thuá»™c tÃ­nh biáº¿n thá»ƒ khÃ´ng tá»“n táº¡i.";
+                VariantAttrMessage.Text = "Thuộc tính biến thể không tồn tại.";
 
                 return;
 
@@ -3507,7 +3507,7 @@ int categoryId;
 
         VariantAttrMessage.CssClass = "text-success small d-block mb-2";
 
-        VariantAttrMessage.Text = "XÃ³a thuá»™c tÃ­nh biáº¿n thá»ƒ thÃ nh cÃ´ng.";
+        VariantAttrMessage.Text = "Xóa thuộc tính biến thể thành công.";
 
         ResetVariantAttrForm();
 
@@ -3575,7 +3575,7 @@ int categoryId;
 
             {
 
-                VariantMessage.Text = "Biáº¿n thá»ƒ khÃ´ng tá»“n táº¡i.";
+                VariantMessage.Text = "Biến thể không tồn tại.";
 
                 return;
 
@@ -3591,7 +3591,7 @@ int categoryId;
 
             {
 
-                VariantMessage.Text = "KhÃ´ng thá»ƒ xÃ³a biáº¿n thá»ƒ Ä‘ang Ä‘Æ°á»£c sá»­ dá»¥ng.";
+                VariantMessage.Text = "Không thể xóa biến thể đang được sử dụng.";
 
                 return;
 
@@ -3609,7 +3609,7 @@ int categoryId;
 
         VariantMessage.CssClass = "text-success small d-block mb-2";
 
-        VariantMessage.Text = "XÃ³a biáº¿n thá»ƒ thÃ nh cÃ´ng.";
+        VariantMessage.Text = "Xóa biến thể thành công.";
 
         ResetVariantForm();
 
@@ -3635,7 +3635,7 @@ int categoryId;
 
             {
 
-                ImageMessage.Text = "áº¢nh khÃ´ng tá»“n táº¡i.";
+                ImageMessage.Text = "Ảnh không tồn tại.";
 
                 return;
 
@@ -3653,7 +3653,7 @@ int categoryId;
 
         ImageMessage.CssClass = "text-success small d-block mt-2";
 
-        ImageMessage.Text = "XÃ³a áº£nh thÃ nh cÃ´ng.";
+        ImageMessage.Text = "Xóa ảnh thành công.";
 
     }
 

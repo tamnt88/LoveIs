@@ -1,3 +1,4 @@
+﻿
 <%@ Page Language="C#" AutoEventWireup="true" CodeFile="edit.aspx.cs" Inherits="AdminSellersEdit" MasterPageFile="~/admin/admin.master" %>
 
 <asp:Content ID="TitleContent" ContentPlaceHolderID="PageTitle" runat="server">
@@ -127,20 +128,122 @@
                     </table>
                 </div>
             </div>
+            <div class="card-kpi p-3 bg-white mt-3">
+                <h6 class="mb-3 section-title">Địa chỉ shop</h6>
+                <div class="table-responsive">
+                    <table id="shopAddressTable" class="table table-striped align-middle">
+                        <thead>
+                            <tr>
+                                <th>Shop</th>
+                                <th>Liên hệ</th>
+                                <th>Số điện thoại</th>
+                                <th>Địa chỉ</th>
+                                <th>Ngày tạo</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="card-kpi p-3 bg-white mt-3">
+                <h6 class="mb-3 section-title">Địa chỉ kho</h6>
+                <div class="table-responsive">
+                    <table id="warehouseAddressTable" class="table table-striped align-middle">
+                        <thead>
+                            <tr>
+                                <th>Shop</th>
+                                <th>Tiêu đề</th>
+                                <th>Liên hệ</th>
+                                <th>Số điện thoại</th>
+                                <th>Địa chỉ</th>
+                                <th>Mặc định</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="card-kpi p-3 bg-white mt-3">
+                <h6 class="mb-3 section-title">Địa chỉ trả hàng</h6>
+                <div class="table-responsive">
+                    <table id="returnAddressTable" class="table table-striped align-middle">
+                        <thead>
+                            <tr>
+                                <th>Shop</th>
+                                <th>Tiêu đề</th>
+                                <th>Liên hệ</th>
+                                <th>Số điện thoại</th>
+                                <th>Địa chỉ</th>
+                                <th>Mặc định</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </div>
         </div>
         <div class="tab-pane fade" id="tab-product-pane" role="tabpanel">
             <div class="card-kpi p-3 bg-white">
                 <h6 class="mb-3 section-title">Sản phẩm</h6>
+                <div class="admin-filters mb-3">
+                    <div class="row g-2 align-items-end">
+                        <div class="col-lg-2 col-md-4">
+                            <label class="form-label">Tên sản phẩm</label>
+                            <input type="text" id="filterProductName" class="form-control" placeholder="Nhập tên sản phẩm" />
+                        </div>
+                        <div class="col-lg-2 col-md-4">
+                            <label class="form-label">SKU</label>
+                            <input type="text" id="filterProductSku" class="form-control" placeholder="Nhập SKU" />
+                        </div>
+                        <div class="col-lg-2 col-md-4">
+                            <label class="form-label">Danh mục</label>
+                            <asp:DropDownList ID="FilterCategory" runat="server" CssClass="form-select"></asp:DropDownList>
+                        </div>
+                        <div class="col-lg-2 col-md-4">
+                            <label class="form-label">Thương hiệu</label>
+                            <asp:DropDownList ID="FilterBrand" runat="server" CssClass="form-select"></asp:DropDownList>
+                        </div>
+                        <div class="col-lg-2 col-md-4">
+                            <label class="form-label">Xuất xứ</label>
+                            <asp:DropDownList ID="FilterOrigin" runat="server" CssClass="form-select"></asp:DropDownList>
+                        </div>
+                        <div class="col-lg-2 col-md-4">
+                            <label class="form-label">Cửa hàng</label>
+                            <asp:DropDownList ID="FilterShop" runat="server" CssClass="form-select"></asp:DropDownList>
+                        </div>
+                        <div class="col-lg-2 col-md-4">
+                            <label class="form-label">Trạng thái</label>
+                            <select id="filterProductStatus" class="form-select">
+                                <option value="">Tất cả trạng thái</option>
+                                <option value="1">Hiển thị</option>
+                                <option value="0">Ẩn</option>
+                            </select>
+                        </div>
+                        <div class="col-lg-3 col-md-6 d-flex gap-2 align-items-end">
+                            <button type="button" class="btn btn-outline-dark btn-with-icon" id="applyProductFilters">
+                                <i class="fa-solid fa-filter"></i> Lọc
+                            </button>
+                            <button type="button" class="btn btn-outline-secondary btn-with-icon" id="resetProductFilters">
+                                <i class="fa-solid fa-rotate-left"></i> Làm mới
+                            </button>
+                        </div>
+                    </div>
+                </div>
                 <div class="table-responsive">
                     <table id="productTable" class="table table-striped align-middle">
                         <thead>
                             <tr>
+                                <th>Ảnh</th>
                                 <th>Sản phẩm</th>
-                                <th>Shop</th>
-                                <th>Đánh giá</th>
+                                <th>SKU</th>
+                                <th>Danh mục</th>
+                                <th>Cửa hàng</th>
+                                <th>Thương hiệu</th>
+                                <th>Xuất xứ</th>
+                                <th>Giá từ</th>
                                 <th>Tồn kho</th>
-                                <th>Trạng thái</th>
                                 <th>Ngày tạo</th>
+                                <th>Trạng thái</th>
                                 <th class="text-end">Thao tác</th>
                             </tr>
                         </thead>
@@ -188,6 +291,24 @@
                     </table>
                 </div>
             </div>
+            <div class="card-kpi p-3 bg-white mt-3">
+                <h6 class="mb-3 section-title">Đánh giá sản phẩm</h6>
+                <div class="table-responsive">
+                    <table id="productReviewTable" class="table table-striped align-middle">
+                        <thead>
+                            <tr>
+                                <th>Sản phẩm</th>
+                                <th>Shop</th>
+                                <th>Điểm</th>
+                                <th>Nội dung</th>
+                                <th>Khách hàng</th>
+                                <th>Ngày tạo</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </div>
         </div>
         <div class="tab-pane fade" id="tab-password-pane" role="tabpanel">
             <div class="card-kpi p-3 bg-white">
@@ -212,246 +333,5 @@
 <asp:Content ID="HeadContent" ContentPlaceHolderID="HeadContent" runat="server">
     <link href="/admin/assets/vendor/datatables/css/jquery.dataTables.min.css" rel="stylesheet" />
     <link href="/admin/assets/vendor/datatables/css/dataTables.bootstrap5.min.css" rel="stylesheet" />
-</asp:Content>
-<asp:Content ID="PageScripts" ContentPlaceHolderID="PageScripts" runat="server">
-    <script src="/admin/assets/vendor/datatables/js/jquery.dataTables.min.js"></script>
-    <script src="/admin/assets/vendor/datatables/js/dataTables.bootstrap5.min.js"></script>
-    <script>
-        (function ($) {
-            if (!$.fn.DataTable) {
-                return;
-            }
-
-            var sellerId = $("#<%= SellerId.ClientID %>").val();
-            var shopLoaded = false;
-            var productLoaded = false;
-            var orderLoaded = false;
-            var reviewLoaded = false;
-
-            function initShopTable() {
-                if (shopLoaded) return;
-                shopLoaded = true;
-                $("#shopTable").DataTable({
-                    pageLength: 10,
-                    serverSide: true,
-                    processing: true,
-                    autoWidth: false,
-                    ajax: {
-                        url: "edit.aspx/GetSellerShops",
-                        type: "POST",
-                        contentType: "application/json; charset=utf-8",
-                        dataType: "json",
-                        data: function (d) {
-                            return JSON.stringify({
-                                draw: d.draw,
-                                start: d.start,
-                                length: d.length,
-                                sellerId: sellerId
-                            });
-                        },
-                        dataFilter: function (data) {
-                            try {
-                                var parsed = JSON.parse(data);
-                                return JSON.stringify(parsed.d ? parsed.d : parsed);
-                            } catch (e) {
-                                return data;
-                            }
-                        },
-                        dataSrc: "data"
-                    },
-                    columns: [
-                        { data: "ShopName" },
-                        { data: "StatusHtml", orderable: false, searchable: false },
-                        { data: "RatingText" },
-                        { data: "CompletedOrders" },
-                        { data: "FollowerCount" },
-                        { data: "CreatedAt" }
-                    ],
-                    columnDefs: [
-                        { targets: [1], width: "16%", render: function (data) { return data; } }
-                    ],
-                    searching: false,
-                    lengthChange: false,
-                    ordering: false,
-                    language: {
-                        info: "Hiển thị _START_ đến _END_ của _TOTAL_ mục",
-                        infoEmpty: "Không có dữ liệu",
-                        zeroRecords: "Không có dữ liệu"
-                    }
-                });
-            }
-
-            function initProductTable() {
-                if (productLoaded) return;
-                productLoaded = true;
-                $("#productTable").DataTable({
-                    pageLength: 10,
-                    serverSide: true,
-                    processing: true,
-                    autoWidth: false,
-                    ajax: {
-                        url: "edit.aspx/GetSellerProducts",
-                        type: "POST",
-                        contentType: "application/json; charset=utf-8",
-                        dataType: "json",
-                        data: function (d) {
-                            return JSON.stringify({
-                                draw: d.draw,
-                                start: d.start,
-                                length: d.length,
-                                sellerId: sellerId
-                            });
-                        },
-                        dataFilter: function (data) {
-                            try {
-                                var parsed = JSON.parse(data);
-                                return JSON.stringify(parsed.d ? parsed.d : parsed);
-                            } catch (e) {
-                                return data;
-                            }
-                        },
-                        dataSrc: "data"
-                    },
-                    columns: [
-                        { data: "ProductName" },
-                        { data: "ShopName" },
-                        { data: "RatingText" },
-                        { data: "StockText" },
-                        { data: "StatusHtml", orderable: false, searchable: false },
-                        { data: "CreatedAt" },
-                        { data: "ActionsHtml", orderable: false, searchable: false }
-                    ],
-                    columnDefs: [
-                        { targets: [4], width: "14%", render: function (data) { return data; } },
-                        { targets: [6], width: "120px", className: "text-end", render: function (data) { return data; } }
-                    ],
-                    searching: false,
-                    lengthChange: false,
-                    ordering: false,
-                    language: {
-                        info: "Hiển thị _START_ đến _END_ của _TOTAL_ mục",
-                        infoEmpty: "Không có dữ liệu",
-                        zeroRecords: "Không có dữ liệu"
-                    }
-                });
-            }
-
-            function initOrderTable() {
-                if (orderLoaded) return;
-                orderLoaded = true;
-                $("#orderTable").DataTable({
-                    pageLength: 10,
-                    serverSide: true,
-                    processing: true,
-                    autoWidth: false,
-                    ajax: {
-                        url: "edit.aspx/GetSellerOrders",
-                        type: "POST",
-                        contentType: "application/json; charset=utf-8",
-                        dataType: "json",
-                        data: function (d) {
-                            return JSON.stringify({
-                                draw: d.draw,
-                                start: d.start,
-                                length: d.length,
-                                sellerId: sellerId
-                            });
-                        },
-                        dataFilter: function (data) {
-                            try {
-                                var parsed = JSON.parse(data);
-                                return JSON.stringify(parsed.d ? parsed.d : parsed);
-                            } catch (e) {
-                                return data;
-                            }
-                        },
-                        dataSrc: "data"
-                    },
-                    columns: [
-                        { data: "OrderCode" },
-                        { data: "ShopName" },
-                        { data: "OrderStatusHtml", orderable: false, searchable: false },
-                        { data: "PaymentStatusHtml", orderable: false, searchable: false },
-                        { data: "TotalText" },
-                        { data: "CreatedAt" },
-                        { data: "ActionsHtml", orderable: false, searchable: false }
-                    ],
-                    columnDefs: [
-                        { targets: [2, 3], width: "14%", render: function (data) { return data; } },
-                        { targets: [6], width: "120px", className: "text-end", render: function (data) { return data; } }
-                    ],
-                    searching: false,
-                    lengthChange: false,
-                    ordering: false,
-                    language: {
-                        info: "Hiển thị _START_ đến _END_ của _TOTAL_ mục",
-                        infoEmpty: "Không có dữ liệu",
-                        zeroRecords: "Không có dữ liệu"
-                    }
-                });
-            }
-
-            function initReviewTable() {
-                if (reviewLoaded) return;
-                reviewLoaded = true;
-                $("#reviewTable").DataTable({
-                    pageLength: 10,
-                    serverSide: true,
-                    processing: true,
-                    autoWidth: false,
-                    ajax: {
-                        url: "edit.aspx/GetSellerReviews",
-                        type: "POST",
-                        contentType: "application/json; charset=utf-8",
-                        dataType: "json",
-                        data: function (d) {
-                            return JSON.stringify({
-                                draw: d.draw,
-                                start: d.start,
-                                length: d.length,
-                                sellerId: sellerId
-                            });
-                        },
-                        dataFilter: function (data) {
-                            try {
-                                var parsed = JSON.parse(data);
-                                return JSON.stringify(parsed.d ? parsed.d : parsed);
-                            } catch (e) {
-                                return data;
-                            }
-                        },
-                        dataSrc: "data"
-                    },
-                    columns: [
-                        { data: "ShopName" },
-                        { data: "RatingText" },
-                        { data: "Content" },
-                        { data: "CustomerName" },
-                        { data: "CreatedAt" }
-                    ],
-                    searching: false,
-                    lengthChange: false,
-                    ordering: false,
-                    language: {
-                        info: "Hiển thị _START_ đến _END_ của _TOTAL_ mục",
-                        infoEmpty: "Không có dữ liệu",
-                        zeroRecords: "Không có dữ liệu"
-                    }
-                });
-            }
-
-            $("button[data-bs-toggle=\"tab\"]").on("shown.bs.tab", function (event) {
-                var target = $(event.target).data("bs-target");
-                if (target === "#tab-shop-pane") {
-                    initShopTable();
-                } else if (target === "#tab-product-pane") {
-                    initProductTable();
-                } else if (target === "#tab-order-pane") {
-                    initOrderTable();
-                } else if (target === "#tab-review-pane") {
-                    initReviewTable();
-                }
-            });
-        })(jQuery);
-    </script>
+    <link href="/admin/assets/vendor/select2/select2.min.css" rel="stylesheet" />
 </asp:Content>

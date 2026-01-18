@@ -1,4 +1,4 @@
-﻿<%@ Page Language="C#" AutoEventWireup="true" CodeFile="login.aspx.cs" Inherits="SellerLogin" ContentType="text/html; charset=utf-8" ResponseEncoding="utf-8" %>
+<%@ Page Language="C#" AutoEventWireup="true" CodeFile="login.aspx.cs" Inherits="SellerLogin" ContentType="text/html; charset=utf-8" ResponseEncoding="utf-8" %>
 <!DOCTYPE html>
 <html lang="vi" dir="ltr">
 <head runat="server">
@@ -6,6 +6,7 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>LOVEis | Kênh Người Bán</title>
+    <link rel="shortcut icon" href="<%= ResolveUrl("~/images/fav.png") %>" />
     <link rel="stylesheet" href="<%= ResolveUrl("~/public/theme/assets/css/bootstrap.min.css") %>" />
     <link rel="stylesheet" href="<%= ResolveUrl("~/public/assets/css/public.css") %>" />
     <link rel="stylesheet" href="<%= ResolveUrl("~/public/assets/vendor/fontawesome/css/all.min.css") %>" />

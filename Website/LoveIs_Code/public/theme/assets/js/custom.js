@@ -83,19 +83,21 @@
     });
 
 
-    // Auto active class adding with navigation
+    // Auto active class adding with navigation (only for category pages)
     $window.on('load', function() {
-        var current = location.pathname;
-        var $path = current.substring(current.lastIndexOf('/') + 1);
-        $('#navbarSupportedContent li a').each(function(e) {
+        var currentPath = window.location.pathname || '';
+        if (currentPath.indexOf('/danh-muc/') !== 0) {
+            return;
+        }
+        var $navLinks = $('.main-category-nav a[href^="/danh-muc/"]');
+        $navLinks.each(function() {
             var $this = $(this);
-            // if the current path is like this link, make it active
-            if ($path == $this.attr('href')) {
-                $this.parent('li').addClass('active');
-            } else if ($path == '') {
-                $('.navbar-nav li:first-child').addClass('active');
+            var href = $this.attr('href') || '';
+            if (href === currentPath) {
+                $this.closest('li').addClass('active');
+                $this.parents('li.dropdown').addClass('active');
             }
-        })
+        });
     });
 
 

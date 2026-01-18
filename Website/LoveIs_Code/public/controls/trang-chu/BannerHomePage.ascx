@@ -1,4 +1,4 @@
-﻿<%@ Control Language="C#" AutoEventWireup="true" CodeFile="BannerHomePage.ascx.cs" Inherits="public_controls_trang_chu_BannerHomePage" %>
+<%@ Control Language="C#" AutoEventWireup="true" CodeFile="BannerHomePage.ascx.cs" Inherits="public_controls_trang_chu_BannerHomePage" %>
 <!--==================== Slider Section End ====================-->
 <div class="full-row p-0 bg-light">
     <asp:Panel ID="VideoOnlyPanel" runat="server" Visible="false">
@@ -43,31 +43,31 @@
                 <div class="swiper category-swiper">
                     <div class="swiper-wrapper">
                         <div class="swiper-slide">
-                            <a class="category-card" href="/danh-muc/quan-lot">
+                            <a class="category-card" href="/danh-muc/%C4%91%E1%BB%93-%C4%91%E1%BB%8Bnh-h%C3%ACnh-4288">
                                 <img src="/images/danhmuc/1.jpg" alt="Quần lót" />
                                 <span class="category-card__label">PANTIES</span>
                             </a>
                         </div>
                         <div class="swiper-slide">
-                            <a class="category-card" href="/danh-muc/ao-nguc">
+                            <a class="category-card" href="/danh-muc/bodysuit-%C4%91%E1%BB%8Bnh-h%C3%ACnh-4310">
                                 <img src="/images/danhmuc/2.jpg" alt="Áo ngực" />
                                 <span class="category-card__label">BRA</span>
                             </a>
                         </div>
                         <div class="swiper-slide">
-                            <a class="category-card" href="/danh-muc/do-ngu">
+                            <a class="category-card" href="/danh-muc/corset-%C4%91%E1%BB%8Bnh-h%C3%ACnh-4311">
                                 <img src="/images/danhmuc/3.jpg" alt="Đồ ngủ" />
                                 <span class="category-card__label">SLEEPWEAR</span>
                             </a>
                         </div>
                         <div class="swiper-slide">
-                            <a class="category-card" href="/danh-muc/bikini">
+                            <a class="category-card" href="/danh-muc/legging-%C4%91%E1%BB%8Bnh-h%C3%ACnh-4313">
                                 <img src="/images/danhmuc/4.jpg" alt="Bikini" />
                                 <span class="category-card__label">BIKINI</span>
                             </a>
                         </div>
                         <div class="swiper-slide">
-                            <a class="category-card" href="/danh-muc/bo-set">
+                            <a class="category-card" href="/danh-muc/qu%E1%BA%A7n-%C4%91%E1%BB%8Bnh-h%C3%ACnh-4312">
                                 <img src="/images/danhmuc/5.jpg" alt="Bộ sưu tập" />
                                 <span class="category-card__label">COLLECTION</span>
                             </a>

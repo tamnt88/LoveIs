@@ -12,8 +12,8 @@
 </asp:Content>
 
 <asp:Content ID="MainContent" ContentPlaceHolderID="MainContent" runat="server">
-    <main class="container py-4 category-page">
-        <div class="category-hero mb-4">
+    <main class="container py-4 category-page" data-wishlist-endpoint="/danh-muc/default.aspx/ToggleWishlist">
+        <div class="category-hero mb-4" style="display:none;">
             <div class="category-hero-banner">
                 <asp:Image ID="CategoryBannerImage" runat="server" CssClass="img-fluid w-100" AlternateText="Category Banner" />
                 <div class="category-hero-overlay">
@@ -22,9 +22,9 @@
             </div>
         </div>
         <div class="row g-4">
-            <aside class="col-lg-3 order-2 order-lg-1">
+            <aside class="col-lg-2 order-2 order-lg-1">
                 <div class="category-sidebar">
-                    <h6 class="mb-3 sidebar-heading"><i class="fa-solid fa-list"></i><span>Tất cả Danh mục</span></h6>
+                    <h6 class="mb-3 sidebar-heading"><i class="fa-solid fa-list"></i><span>Tất cả danh mục</span></h6>
                     <asp:Repeater ID="SidebarRepeater" runat="server">
                         <ItemTemplate>
                             <div class="sidebar-group <%# GetSidebarOpenClass(Eval("IsOpen")) %>">
@@ -64,36 +64,20 @@
                             </div>
                         </ItemTemplate>
                     </asp:Repeater>
-                </div>
-                <div class="filter-sidebar">
-                    <h6 class="mb-3 sidebar-heading"><i class="fa-solid fa-filter"></i><span>Bộ lọc</span></h6>
-                    <asp:Repeater ID="FilterGroupRepeater" runat="server">
-                        <ItemTemplate>
-                            <div class="filter-group">
-                                <div class="filter-title"><%# Eval("GroupName") %></div>
-                                <div class="filter-options">
-                                    <asp:Repeater ID="FilterOptionRepeater" runat="server" DataSource='<%# Eval("Options") %>'>
-                                        <ItemTemplate>
-                                            <label class="filter-option">
-                                                <input type="checkbox" class="js-filter-option" value="<%# Eval("Id") %>" <%# Eval("Checked") %> />
-                                                <span><%# Eval("OptionName") %></span>
-                                            </label>
-                                        </ItemTemplate>
-                                    </asp:Repeater>
-                                </div>
-                            </div>
-                        </ItemTemplate>
-                    </asp:Repeater>
+                </div>                <div class="filter-sidebar">
                     <h6 class="mb-3 mt-4 sidebar-heading"><i class="fa-solid fa-tags"></i><span>Thuộc tính</span></h6>
                     <asp:Repeater ID="AttributeGroupRepeater" runat="server">
                         <ItemTemplate>
-                            <div class="filter-group">
-                                <div class="filter-title"><%# Eval("AttributeName") %></div>
+                            <div class="filter-group attribute-filter-group">
+                                <button type="button" class="filter-title filter-toggle-btn">
+                                    <span><%# Eval("AttributeName") %></span>
+                                    <i class="fas fa-angle-down"></i>
+                                </button>
                                 <div class="filter-options">
                                     <asp:Repeater ID="AttributeValueRepeater" runat="server" DataSource='<%# Eval("Values") %>'>
                                         <ItemTemplate>
                                             <label class="filter-option">
-                                                <input type="checkbox" class="js-filter-attr" value="<%# Eval("Id") %>" <%# Eval("Checked") %> />
+                                                <input type="checkbox" class="js-filter-attr" value="<%# Eval("Id") %>" <%# Eval("Selected") %> />
                                                 <span><%# Eval("ValueName") %></span>
                                             </label>
                                         </ItemTemplate>
@@ -104,7 +88,8 @@
                     </asp:Repeater>
                 </div>
             </aside>
-            <section class="col-lg-9 order-1 order-lg-2">
+                        <section class="col-lg-10 order-1 order-lg-2">
+                
                 <nav class="breadcrumb-wrapper" aria-label="breadcrumb">
                     <ol class="breadcrumb mb-2">
                         <asp:Literal ID="CategoryBreadcrumb" runat="server" />
@@ -116,17 +101,67 @@
                         <p><asp:Literal ID="CategorySubTitle" runat="server" /></p>
                     </div>
                 </div>
-                <div class="row g-3">
+                            <div class="category-filter-bar">
+                    <div class="filter-bar-left">
+                        <div class="filter-field">
+                            <label for="LocationSelect">Nơi bán</label>
+                            <select id="LocationSelect" class="filter-select js-filter-select-location">
+                                <option value="">Tất cả</option>
+                                <asp:Repeater ID="LocationFilterRepeater" runat="server">
+                                    <ItemTemplate>
+                                        <option value="<%# Eval("Id") %>" <%# Eval("Selected") %>><%# Eval("Name") %></option>
+                                    </ItemTemplate>
+                                </asp:Repeater>
+                            </select>
+                        </div>
+                        <div class="filter-field">
+                            <label for="BrandSelect">Thương hiệu</label>
+                            <select id="BrandSelect" class="filter-select js-filter-select-brand">
+                                <option value="">Tất cả</option>
+                                <asp:Repeater ID="BrandFilterRepeater" runat="server">
+                                    <ItemTemplate>
+                                        <option value="<%# Eval("Id") %>" <%# Eval("Selected") %>><%# Eval("Name") %></option>
+                                    </ItemTemplate>
+                                </asp:Repeater>
+                            </select>
+                        </div>
+                        <div class="filter-field">
+                            <label for="OriginSelect">Xuất xứ</label>
+                            <select id="OriginSelect" class="filter-select js-filter-select-origin">
+                                <option value="">Tất cả</option>
+                                <asp:Repeater ID="OriginFilterRepeater" runat="server">
+                                    <ItemTemplate>
+                                        <option value="<%# Eval("Id") %>" <%# Eval("Selected") %>><%# Eval("Name") %></option>
+                                    </ItemTemplate>
+                                </asp:Repeater>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="filter-bar-right">
+                        <div class="filter-field">
+                            <label for="SortSelect">Sắp xếp theo</label>
+                            <select id="SortSelect" class="filter-select js-filter-select-sort">
+                                <option value="popular" <%= GetSortSelected("popular") %>>Phổ biến</option>
+                                <option value="newest" <%= GetSortSelected("newest") %>>Mới nhất</option>
+                                <option value="price_asc" <%= GetSortSelected("price_asc") %>>Giá tăng dần</option>
+                                <option value="price_desc" <%= GetSortSelected("price_desc") %>>Giá giảm dần</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                <div class="row g-3 category-product-grid">
                     <asp:Repeater ID="CategoryProductRepeater" runat="server">
                         <ItemTemplate>
-                            <div class="col-6 col-md-4 col-lg-3">
+                            <div class="col-6 col-md-4 col-lg-3 product-col">
                                 <div class="product-card">
                                     <a class="product-thumb" href="/san-pham/<%# Eval("SeoSlug") %>">
                                         <img src="<%# Eval("ImageUrl") %>" alt="<%# Eval("ProductName") %>" />
                                         <%# Eval("SaleBadge") %>
                                     </a>
+                                    <button type="button" class="product-wishlist-btn <%# Eval("WishlistClass") %>" data-product-id="<%# Eval("Id") %>" aria-label="ThÃªm vÃ o yÃªu thÃ­ch">
+                                        <i class="<%# Eval("WishlistIconClass") %>"></i>
+                                    </button>
                                     <div class="product-body">
-                                        <a class="product-category" href="/danh-muc/<%# Eval("CategorySlug") %>"><%# Eval("CategoryName") %></a>
                                         <h6 class="product-title">
                                             <a href="/san-pham/<%# Eval("SeoSlug") %>"><%# Eval("ProductName") %></a>
                                         </h6>
@@ -149,84 +184,9 @@
     <script src="<%= ResolveUrl("~/public/assets/vendor/swiper/swiper-bundle.min.js") %>"></script>
     <script src="<%= ResolveUrl("~/public/assets/js/public-search.js") %>"></script>
     <script src="<%= ResolveUrl("~/public/assets/vendor/malihu/jquery.mCustomScrollbar.concat.min.js") %>"></script>
-    <script>
-        (function () {
-            var categoryParents = document.querySelectorAll(".category-parent");
-            var categoryPanels = document.querySelectorAll(".category-panel");
-
-            function activatePanel(targetId) {
-                categoryParents.forEach(function (item) {
-                    item.classList.toggle("active", item.getAttribute("data-target") === targetId);
-                });
-                categoryPanels.forEach(function (panel) {
-                    panel.classList.toggle("active", panel.id === targetId);
-                });
-            }
-
-            categoryParents.forEach(function (item) {
-                item.addEventListener("mouseenter", function () {
-                    var targetId = item.getAttribute("data-target");
-                    activatePanel(targetId);
-                });
-            });
-
-            var categoryBar = document.querySelector(".category-bar");
-            if (categoryBar) {
-                categoryBar.addEventListener("mouseenter", function () {
-                    var left = document.querySelector(".category-left");
-                    var right = document.querySelector(".category-right");
-                    if (!left || !right) {
-                        return;
-                    }
-                    right.style.height = left.offsetHeight + "px";
-                    $(".category-scroll").mCustomScrollbar("destroy");
-                    $(".category-scroll").mCustomScrollbar({
-                        theme: "minimal-dark",
-                        scrollInertia: 120,
-                        mouseWheel: { preventDefault: true }
-                    });
-                });
-            }
-
-            document.querySelectorAll(".toggle-btn").forEach(function (btn) {
-                btn.addEventListener("click", function () {
-                    var group = btn.closest(".sidebar-group");
-                    if (group) {
-                        group.classList.toggle("open");
-                    }
-                });
-            });
-
-            function collectValues(selector) {
-                var values = [];
-                document.querySelectorAll(selector).forEach(function (input) {
-                    if (input.checked) {
-                        values.push(input.value);
-                    }
-                });
-                return values.join(",");
-            }
-
-            function applyFilters() {
-                var url = new URL(window.location.href);
-                var filterValues = collectValues(".js-filter-option");
-                var attrValues = collectValues(".js-filter-attr");
-                if (filterValues) {
-                    url.searchParams.set("filters", filterValues);
-                } else {
-                    url.searchParams.delete("filters");
-                }
-                if (attrValues) {
-                    url.searchParams.set("attrs", attrValues);
-                } else {
-                    url.searchParams.delete("attrs");
-                }
-                window.location.href = url.toString();
-            }
-
-            document.querySelectorAll(".js-filter-option, .js-filter-attr").forEach(function (input) {
-                input.addEventListener("change", applyFilters);
-            });
-        })();
-    </script>
+<script src="<%= ResolveUrl("~/public/assets/js/category-filters.js") %>"></script>
+    <script src="<%= ResolveUrl("~/public/assets/js/category-wishlist.js") %>"></script>
 </asp:Content>
+
+
+

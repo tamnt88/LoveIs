@@ -1,7 +1,7 @@
 <%@ Page Language="C#" AutoEventWireup="true" CodeFile="hoan-tat.aspx.cs" Inherits="CheckoutComplete" MasterPageFile="~/public/Public.master" %>
 
 <asp:Content ID="TitleContent" ContentPlaceHolderID="TitleContent" runat="server">
-    Đặt hàng thành công | Beauty Story
+    Đặt hàng thành công | LoveIs Store
 </asp:Content>
 
 <asp:Content ID="MainContent" ContentPlaceHolderID="MainContent" runat="server">
@@ -23,9 +23,9 @@
                     <i class="fa-solid fa-receipt"></i>Xem đơn hàng
                 </asp:HyperLink>
             </div>
-            <div class="complete-tip">
+            <%--<div class="complete-tip">
                 Chúng tôi sẽ liên hệ để xác nhận đơn hàng và giao hàng trong thời gian sớm nhất.
-            </div>
+            </div>--%>
         </div>
     </main>
 </asp:Content>

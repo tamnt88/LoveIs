@@ -1,8 +1,30 @@
 using System;
 using System.Linq;
+using System.Web;
 
 public static class CommunityUserHelper
 {
+    public static bool EnsureCommunityLogin()
+    {
+        var customerId = EnsureCommunityCustomerId();
+        if (customerId.HasValue)
+        {
+            return true;
+        }
+
+        var context = HttpContext.Current;
+        if (context == null)
+        {
+            return false;
+        }
+
+        var returnUrl = context.Request != null && context.Request.Url != null
+            ? context.Request.Url.PathAndQuery
+            : "/cong-dong";
+        context.Response.Redirect("/tai-khoan/dang-nhap.aspx?returnUrl=" + context.Server.UrlEncode(returnUrl));
+        return false;
+    }
+
     public static int? EnsureCommunityCustomerId()
     {
         var customerId = CustomerAuth.GetCustomerId();

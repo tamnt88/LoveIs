@@ -44,6 +44,9 @@ public class BeautyStoryContext : DbContext
     public DbSet<CfSeller> CfSellers { get; set; }
     public DbSet<CfShop> CfShops { get; set; }
     public DbSet<CfShopUser> CfShopUsers { get; set; }
+    public DbSet<CfShopFollow> CfShopFollows { get; set; }
+    public DbSet<CfShopInquiry> CfShopInquiries { get; set; }
+    public DbSet<CfShopInquiryMessage> CfShopInquiryMessages { get; set; }
     public DbSet<CfShopOrder> CfShopOrders { get; set; }
     public DbSet<CfShopOrderHistory> CfShopOrderHistories { get; set; }
     public DbSet<CfReturnRequest> CfReturnRequests { get; set; }
@@ -71,6 +74,7 @@ public class BeautyStoryContext : DbContext
     public DbSet<CfCommunityPost> CfCommunityPosts { get; set; }
     public DbSet<CfCommunityPostImage> CfCommunityPostImages { get; set; }
     public DbSet<CfCommunityComment> CfCommunityComments { get; set; }
+    public DbSet<CfCommunityCommentLike> CfCommunityCommentLikes { get; set; }
     public DbSet<CfCommunityLike> CfCommunityLikes { get; set; }
     public DbSet<CfCommunityRoom> CfCommunityRooms { get; set; }
     public DbSet<CfCommunityRoomMember> CfCommunityRoomMembers { get; set; }
@@ -80,6 +84,7 @@ public class BeautyStoryContext : DbContext
     public DbSet<CfPlatformFeeConfig> CfPlatformFeeConfigs { get; set; }
     public DbSet<CfPlatformFeeCategory> CfPlatformFeeCategories { get; set; }
     public DbSet<CfCustomerOrderLimit> CfCustomerOrderLimits { get; set; }
+    public DbSet<CfWishlist> CfWishlists { get; set; }
 
     protected override void OnModelCreating(DbModelBuilder modelBuilder)
     {

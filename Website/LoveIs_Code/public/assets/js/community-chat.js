@@ -1,4 +1,4 @@
-document.addEventListener("DOMContentLoaded", function () {
+﻿document.addEventListener("DOMContentLoaded", function () {
     var roomIdField = document.getElementById("RoomIdField");
     var currentUserIdField = document.getElementById("CurrentUserIdField");
     var sendBtn = document.getElementById("sendMessageBtn");
@@ -16,10 +16,14 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
     var lastMessageId = parseInt(lastMessageField ? lastMessageField.value || "0" : "0", 10);
+    function getInitial(name) {
+        var value = (name || "").trim();
+        return value ? value.charAt(0).toUpperCase() : "?";
+    }
 
     var hasSignalR = window.jQuery && jQuery.connection && jQuery.connection.hub;
     if (!hasSignalR) {
-        console.warn("SignalR chưa sẵn sàng. Kiểm tra /signalr/hubs.");
+        console.warn("SignalR chÆ°a sáºµn sÃ ng. Kiá»ƒm tra /signalr/hubs.");
     }
 
     var hub = hasSignalR ? (jQuery.connection.communityChatHub || jQuery.connection.communityChat) : null;
@@ -40,28 +44,33 @@ document.addEventListener("DOMContentLoaded", function () {
                 return;
             }
 
-        var wrapper = document.createElement("div");
-        wrapper.className = "chat-message" + (message.SenderId.toString() === currentUserIdField.value ? " me" : "");
+            var wrapper = document.createElement("div");
+            wrapper.className = "chat-message" + (message.SenderId.toString() === currentUserIdField.value ? " me" : "");
 
-        var bubble = document.createElement("div");
-        bubble.className = "bubble";
+            var avatar = document.createElement("span");
+            avatar.className = "chat-avatar";
+            avatar.textContent = message.SenderInitial || getInitial(message.SenderName);
 
-        var meta = document.createElement("div");
-        meta.className = "small text-muted";
-        meta.textContent = message.SenderName + " · " + message.CreatedAt;
+            var bubble = document.createElement("div");
+            bubble.className = "bubble";
 
-        var body = document.createElement("div");
-        body.textContent = message.Content;
+            var meta = document.createElement("div");
+            meta.className = "small text-muted";
+            meta.textContent = message.SenderName + " - " + message.CreatedAt;
 
-        bubble.appendChild(meta);
-        bubble.appendChild(body);
-        wrapper.appendChild(bubble);
-        chatBox.appendChild(wrapper);
-        chatBox.scrollTop = chatBox.scrollHeight;
+            var body = document.createElement("div");
+            body.textContent = message.Content;
+
+            bubble.appendChild(meta);
+            bubble.appendChild(body);
+            wrapper.appendChild(avatar);
+            wrapper.appendChild(bubble);
+            chatBox.appendChild(wrapper);
+            chatBox.scrollTop = chatBox.scrollHeight;
         };
 
         hub.client.chatError = function (text) {
-            alert(text || "Không thể gửi tin nhắn.");
+            alert(text || "KhÃ´ng thá»ƒ gá»­i tin nháº¯n.");
         };
 
         jQuery.connection.hub.logging = true;
@@ -87,11 +96,11 @@ document.addEventListener("DOMContentLoaded", function () {
             return;
         }
         if (!hub || !hub.server) {
-            alert("Chat chưa sẵn sàng. Vui lòng tải lại trang.");
+            alert("Chat chÆ°a sáºµn sÃ ng. Vui lÃ²ng táº£i láº¡i trang.");
             return;
         }
         if (!joined) {
-            alert("Đang kết nối phòng chat. Vui lòng thử lại sau vài giây.");
+            alert("Äang káº¿t ná»‘i phÃ²ng chat. Vui lÃ²ng thá»­ láº¡i sau vÃ i giÃ¢y.");
             return;
         }
         console.log("Send message", roomId, text);
@@ -103,18 +112,23 @@ document.addEventListener("DOMContentLoaded", function () {
         var wrapper = document.createElement("div");
         wrapper.className = "chat-message" + (message.SenderId.toString() === currentUserIdField.value ? " me" : "");
 
+        var avatar = document.createElement("span");
+        avatar.className = "chat-avatar";
+        avatar.textContent = message.SenderInitial || getInitial(message.SenderName);
+
         var bubble = document.createElement("div");
         bubble.className = "bubble";
 
         var meta = document.createElement("div");
         meta.className = "small text-muted";
-        meta.textContent = message.SenderName + " · " + message.CreatedAt;
+        meta.textContent = message.SenderName + " - " + message.CreatedAt;
 
         var body = document.createElement("div");
         body.textContent = message.Content;
 
         bubble.appendChild(meta);
         bubble.appendChild(body);
+        wrapper.appendChild(avatar);
         wrapper.appendChild(bubble);
         chatBox.appendChild(wrapper);
         chatBox.scrollTop = chatBox.scrollHeight;
@@ -141,3 +155,4 @@ document.addEventListener("DOMContentLoaded", function () {
 
     setInterval(pollMessages, 2000);
 });
+

@@ -16,6 +16,7 @@
         <a class="account-menu-item <%= IsActive("/tai-khoan/ngan-hang.aspx") %>" href="/tai-khoan/ngan-hang.aspx">Ngân hàng</a>
         <a class="account-menu-item <%= IsActive("/tai-khoan/dia-chi.aspx") %>" href="/tai-khoan/dia-chi.aspx">Địa chỉ</a>
         <a class="account-menu-item <%= IsActive("/tai-khoan/doi-mat-khau.aspx") %>" href="/tai-khoan/doi-mat-khau.aspx">Đổi mật khẩu</a>
+        <a class="account-menu-item <%= IsActive("/tai-khoan/yeu-thich.aspx") %>" href="/tai-khoan/yeu-thich.aspx">Wishlist</a>
         <a class="account-menu-item <%= IsActive("#notify") %>" href="#">Cài đặt thông báo</a>
         <a class="account-menu-item <%= IsActive("#privacy") %>" href="#">Thiết lập riêng tư</a>
         <div class="account-menu-title mt-3">Đơn mua</div>

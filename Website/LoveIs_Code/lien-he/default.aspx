@@ -1,4 +1,4 @@
-﻿<%@ Page Language="C#" AutoEventWireup="true" CodeFile="default.aspx.cs" Inherits="ContactDefault" MasterPageFile="~/public/Public.master" %>
+<%@ Page Language="C#" AutoEventWireup="true" CodeFile="default.aspx.cs" Inherits="ContactDefault" MasterPageFile="~/public/Public.master" %>
 
 <asp:Content ID="TitleContent" ContentPlaceHolderID="TitleContent" runat="server">
     <asp:Literal ID="SeoTitleLiteral" runat="server" />
@@ -15,7 +15,7 @@
                 src="<%= ContactMapUrl %>"
                 loading="lazy"
                 referrerpolicy="no-referrer-when-downgrade"
-                aria-label="Ban do Beauty Story">
+                aria-label="Ban do LoveIs Store">
             </iframe>
         </div>
 
@@ -29,7 +29,7 @@
 
             <div class="section-heading">
                 <div>
-                    <h4>Liên hệ với Beauty Story</h4>
+                    <h4>Liên hệ với LoveIs Store</h4>
                     <p>Vui lòng cho chúng tôi biết bạn cần hỗ trợ gì. Đội ngũ của chúng tôi sẽ phản hồi sớm nhất có thể.</p>
                 </div>
             </div>

@@ -43,7 +43,7 @@
     </div>
 </div>
 
-<footer class="full-row bg-dark">
+<footer class="full-row fashion-footer">
     <div class="container">
         <div class="footer-main">
             <div class="footer-contact-col">

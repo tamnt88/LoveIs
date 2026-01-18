@@ -1,4 +1,4 @@
-﻿<%@ Page Language="C#" AutoEventWireup="true" CodeFile="default.aspx.cs" Inherits="CartDefault" MasterPageFile="~/public/Public.master" ContentType="text/html; charset=utf-8" ResponseEncoding="utf-8" EnableEventValidation="false" %>
+<%@ Page Language="C#" AutoEventWireup="true" CodeFile="default.aspx.cs" Inherits="CartDefault" MasterPageFile="~/public/Public.master" ContentType="text/html; charset=utf-8" ResponseEncoding="utf-8" EnableEventValidation="false" %>
 
 <asp:Content ID="TitleContent" ContentPlaceHolderID="TitleContent" runat="server">
     <asp:Literal ID="SeoTitleLiteral" runat="server" />
@@ -38,6 +38,9 @@
         </asp:Panel>
 
         <asp:Panel ID="CartPanel" runat="server">
+            <asp:Panel ID="CartLimitPanel" runat="server" CssClass="alert alert-warning mb-3" Visible="false">
+                <asp:Literal ID="CartLimitLiteral" runat="server" />
+            </asp:Panel>
             <div class="cart-table">
                 <div class="cart-header">
                     <div class="cart-check">
@@ -101,7 +104,7 @@
                     </asp:LinkButton>
                     <asp:LinkButton ID="UpdateCartButton" runat="server" CssClass="btn btn-outline-dark btn-with-icon" OnClick="UpdateCartButton_Click">
                         <i class="fa-solid fa-rotate-right"></i>
-                        Cập nhật lại
+                        Cập nhật
                     </asp:LinkButton>
                     
                     <span id="CartUpdateTarget" data-cart-postback="<%= UpdateCartButton.UniqueID %>"></span>

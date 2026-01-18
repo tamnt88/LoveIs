@@ -197,9 +197,16 @@ public partial class AdminMaster : AdminBaseMaster
         if (isActive && container != null)
         {
             string existing = container.Attributes["class"];
-            container.Attributes["class"] = string.IsNullOrWhiteSpace(existing)
-                ? "admin-nav-item active"
+            string updated = string.IsNullOrWhiteSpace(existing)
+                ? "menu-item active"
                 : existing + " active";
+
+            if (hasChildren)
+            {
+                updated += " open";
+            }
+
+            container.Attributes["class"] = updated;
         }
     }
 
@@ -310,5 +317,12 @@ public partial class AdminMaster : AdminBaseMaster
         }
 
         return false;
+    }
+
+    protected string GetChildItemCss(object urlObj)
+    {
+        string url = urlObj == null ? null : urlObj.ToString();
+        string currentPath = HttpContext.Current.Request.AppRelativeCurrentExecutionFilePath;
+        return IsSamePathOrChild(url, currentPath) ? "active" : string.Empty;
     }
 }

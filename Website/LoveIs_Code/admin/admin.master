@@ -70,7 +70,7 @@
                                     <ul class="submenu">
                                         <asp:Repeater ID="ChildRepeater" runat="server">
                                             <ItemTemplate>
-                                                <li>
+                                                <li class="<%# GetChildItemCss(Eval("Url")) %>">
                                                     <a href="<%# Eval("Url") %>"><%# Eval("MenuName") %></a>
                                                 </li>
                                             </ItemTemplate>
@@ -162,6 +162,14 @@
                 if (!parent) return;
                 parent.classList.toggle("open");
             });
+        });
+
+        document.querySelectorAll(".submenu li.active").forEach(function (item) {
+            var parent = item.closest(".menu-item");
+            if (parent) {
+                parent.classList.add("active");
+                parent.classList.add("open");
+            }
         });
     </script>
     <asp:ContentPlaceHolder ID="PageScripts" runat="server" />

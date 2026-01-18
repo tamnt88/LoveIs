@@ -183,48 +183,89 @@ body.admin-dashboard {
     gap: 6px;
 }
 
+.menu-actions-end {
+    justify-content: flex-end;
+}
+
 .status-tag {
     display: inline-flex;
     align-items: center;
-    padding: 2px 10px;
+    padding: 3px 10px;
     border-radius: 999px;
     font-size: 12px;
-    font-weight: 500;
+    font-weight: 700;
+    letter-spacing: 0.1px;
+    border: 1px solid transparent;
 }
 
 .status-on {
-    background: #e9f6ef;
-    color: #2e7d57;
+    background: #dff3e6;
+    color: #1c5a3b;
+    border-color: #8fd3ab;
 }
 
 .status-off {
-    background: #fde9ee;
-    color: #b44b60;
+    background: #fde0e6;
+    color: #8f243b;
+    border-color: #f0a6b7;
 }
 
 .status-success {
-    background: #e9f6ef;
-    color: #2e7d57;
+    background: #dff3e6;
+    color: #1c5a3b;
+    border-color: #8fd3ab;
 }
 
 .status-warning {
-    background: #fff4e0;
-    color: #9a6b2f;
+    background: #ffe9c9;
+    color: #7b4e12;
+    border-color: #f0c07a;
 }
 
 .status-danger {
-    background: #fde9ee;
-    color: #b44b60;
+    background: #fde0e6;
+    color: #8f243b;
+    border-color: #f0a6b7;
 }
 
 .status-info {
-    background: #e9f1fb;
-    color: #38618c;
+    background: #dcecff;
+    color: #1f4c7a;
+    border-color: #8fb8e8;
 }
 
 .status-neutral {
-    background: #f1f1f3;
-    color: #6b6b75;
+    background: #eef0f3;
+    color: #4f5461;
+    border-color: #cbd1da;
+}
+
+.status-tag {
+    box-shadow: 0 1px 0 rgba(0, 0, 0, 0.04);
+}
+
+.status-shop {
+    background: #dcecff;
+    color: #1f4c7a;
+    border-color: #8fb8e8;
+}
+
+.status-seller {
+    background: #dff3e6;
+    color: #1c5a3b;
+    border-color: #8fd3ab;
+}
+
+.status-seller-active {
+    background: #dff3e6;
+    color: #1c5a3b;
+    border-color: #8fd3ab;
+}
+
+.status-seller-inactive {
+    background: #fde0e6;
+    color: #8f243b;
+    border-color: #f0a6b7;
 }
 
 .slug-wrap {
@@ -494,6 +535,14 @@ body.admin-dashboard {
     justify-content: flex-end;
     overflow-x: auto;
     max-width: 100%;
+}
+
+.dataTables_wrapper {
+    width: 100%;
+}
+
+.dataTables_wrapper table.dataTable {
+    width: 100% !important;
 }
 
 .dataTables_wrapper {

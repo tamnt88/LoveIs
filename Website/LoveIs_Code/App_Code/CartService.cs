@@ -42,13 +42,19 @@ public static class CartService
         var maxItemsPerOrder = limit != null ? limit.MaxItemsPerOrder : int.MaxValue;
         var maxQtyPerItem = limit != null ? limit.MaxQtyPerItem : int.MaxValue;
         var currentTotalQty = cart.Sum(x => x.Quantity);
+        var stockQty = GetAvailableStock(variantId);
+        if (stockQty <= 0)
+        {
+            return 0;
+        }
 
         var existing = cart.FirstOrDefault(x => x.VariantId == variantId);
         if (existing != null)
         {
             var allowedPerItem = Math.Max(0, maxQtyPerItem - existing.Quantity);
             var allowedByTotal = Math.Max(0, maxItemsPerOrder - (currentTotalQty - existing.Quantity));
-            var addQty = Math.Min(quantity, Math.Min(allowedPerItem, allowedByTotal));
+            var allowedByStock = Math.Max(0, stockQty - existing.Quantity);
+            var addQty = Math.Min(quantity, Math.Min(allowedPerItem, Math.Min(allowedByTotal, allowedByStock)));
             if (addQty <= 0)
             {
                 return 0;
@@ -60,7 +66,7 @@ public static class CartService
         }
 
         var allowedByTotalNew = Math.Max(0, maxItemsPerOrder - currentTotalQty);
-        var addQuantity = Math.Min(quantity, Math.Min(maxQtyPerItem, allowedByTotalNew));
+        var addQuantity = Math.Min(quantity, Math.Min(maxQtyPerItem, Math.Min(allowedByTotalNew, stockQty)));
         if (addQuantity <= 0)
         {
             return 0;
@@ -105,6 +111,7 @@ public static class CartService
         var maxItemsPerOrder = limit != null ? limit.MaxItemsPerOrder : int.MaxValue;
         var maxQtyPerItem = limit != null ? limit.MaxQtyPerItem : int.MaxValue;
         var remaining = maxItemsPerOrder;
+        var stockLookup = GetStockLookup(cart.Select(x => x.VariantId));
 
         foreach (var item in cart.ToList())
         {
@@ -116,6 +123,10 @@ public static class CartService
             var desired = Math.Max(1, quantities[item.VariantId]);
             var allowed = Math.Min(desired, maxQtyPerItem);
             allowed = Math.Min(allowed, remaining);
+            if (stockLookup.ContainsKey(item.VariantId))
+            {
+                allowed = Math.Min(allowed, stockLookup[item.VariantId]);
+            }
             item.Quantity = allowed;
             remaining -= allowed;
         }
@@ -192,5 +203,81 @@ public static class CartService
         {
             return null;
         }
+    }
+
+    private static int GetAvailableStock(int variantId)
+    {
+        if (variantId <= 0)
+        {
+            return 0;
+        }
+
+        try
+        {
+            using (var db = new BeautyStoryContext())
+            {
+                var variant = db.CfProductVariants.FirstOrDefault(v => v.Id == variantId);
+                if (variant == null || !variant.Status)
+                {
+                    return 0;
+                }
+
+                var effectivePrice = GetEffectivePrice(variant.Price, variant.SalePrice);
+                if (effectivePrice <= 0)
+                {
+                    return 0;
+                }
+
+                return Math.Max(0, variant.StockQty);
+            }
+        }
+        catch
+        {
+            return 0;
+        }
+    }
+
+    private static Dictionary<int, int> GetStockLookup(IEnumerable<int> variantIds)
+    {
+        var result = new Dictionary<int, int>();
+        var ids = variantIds != null ? variantIds.Distinct().ToList() : new List<int>();
+        if (ids.Count == 0)
+        {
+            return result;
+        }
+
+        try
+        {
+            using (var db = new BeautyStoryContext())
+            {
+                var variants = db.CfProductVariants
+                    .Where(v => ids.Contains(v.Id))
+                    .Select(v => new { v.Id, v.StockQty, v.Status, v.Price, v.SalePrice })
+                    .ToList();
+
+                foreach (var variant in variants)
+                {
+                    var effectivePrice = GetEffectivePrice(variant.Price, variant.SalePrice);
+                    result[variant.Id] = variant.Status && effectivePrice > 0
+                        ? Math.Max(0, variant.StockQty)
+                        : 0;
+                }
+            }
+        }
+        catch
+        {
+        }
+
+        return result;
+    }
+
+    private static decimal GetEffectivePrice(decimal price, decimal? salePrice)
+    {
+        if (salePrice.HasValue && salePrice.Value > 0 && salePrice.Value < price)
+        {
+            return salePrice.Value;
+        }
+
+        return price > 0 ? price : 0;
     }
 }

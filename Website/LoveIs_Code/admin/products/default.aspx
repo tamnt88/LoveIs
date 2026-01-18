@@ -1,4 +1,4 @@
-<%@ Page Language="C#" AutoEventWireup="true" CodeFile="default.aspx.cs" Inherits="AdminProductsDefault" MasterPageFile="~/admin/admin.master" %>
+﻿<%@ Page Language="C#" AutoEventWireup="true" CodeFile="default.aspx.cs" Inherits="AdminProductsDefault" MasterPageFile="~/admin/admin.master" %>
 
 <asp:Content ID="TitleContent" ContentPlaceHolderID="PageTitle" runat="server">
     Quản lý sản phẩm
@@ -19,23 +19,31 @@
     <div class="card-kpi p-3 bg-white">
         <div class="admin-filters mb-3">
             <div class="row g-2 align-items-end product-filter-row">
-                <div class="col-md-2">
+                <div class="col-lg-2 col-md-4">
                     <label class="form-label">Tên sản phẩm</label>
                     <input type="text" id="filterName" class="form-control" placeholder="Nhập tên sản phẩm" />
                 </div>
-                <div class="col-md-2">
+                <div class="col-lg-2 col-md-4">
+                    <label class="form-label">SKU</label>
+                    <input type="text" id="filterSku" class="form-control" placeholder="Nhập SKU" />
+                </div>
+                <div class="col-lg-2 col-md-4">
                     <label class="form-label">Danh mục</label>
                     <asp:DropDownList ID="FilterCategory" runat="server" CssClass="form-select"></asp:DropDownList>
                 </div>
-                <div class="col-md-2">
+                <div class="col-lg-2 col-md-4">
                     <label class="form-label">Thương hiệu</label>
                     <asp:DropDownList ID="FilterBrand" runat="server" CssClass="form-select"></asp:DropDownList>
                 </div>
-                <div class="col-md-2">
+                <div class="col-lg-2 col-md-4">
                     <label class="form-label">Xuất xứ</label>
                     <asp:DropDownList ID="FilterOrigin" runat="server" CssClass="form-select"></asp:DropDownList>
                 </div>
-                <div class="col-md-2">
+                <div class="col-lg-2 col-md-4">
+                    <label class="form-label">Cửa hàng</label>
+                    <asp:DropDownList ID="FilterShop" runat="server" CssClass="form-select"></asp:DropDownList>
+                </div>
+                <div class="col-lg-2 col-md-4">
                     <label class="form-label">Trạng thái</label>
                     <select id="filterStatus" class="form-select">
                         <option value="">Tất cả trạng thái</option>
@@ -43,7 +51,7 @@
                         <option value="0">Ẩn</option>
                     </select>
                 </div>
-                <div class="col-md-2 d-flex gap-2 align-items-end filter-actions">
+                <div class="col-lg-3 col-md-6 d-flex gap-2 align-items-end filter-actions">
                     <button type="button" class="btn btn-outline-dark btn-with-icon" id="applyFilters">
                         <i class="fa-solid fa-filter"></i> Lọc
                     </button>
@@ -66,11 +74,14 @@
                     <tr>
                         <th>Ảnh</th>
                         <th>Sản phẩm</th>
+                        <th>SKU</th>
                         <th>Danh mục</th>
+                        <th>Cửa hàng</th>
                         <th>Thương hiệu</th>
                         <th>Xuất xứ</th>
                         <th>Giá từ</th>
-                        <th>Số lượng</th>
+                        <th>Tồn kho</th>
+                        <th>Ngày tạo</th>
                         <th>Trạng thái</th>
                         <th class="text-end">Thao tác</th>
                     </tr>
@@ -98,16 +109,18 @@
             var $category = $("#<%= FilterCategory.ClientID %>");
             var $brand = $("#<%= FilterBrand.ClientID %>");
             var $origin = $("#<%= FilterOrigin.ClientID %>");
+            var $shop = $("#<%= FilterShop.ClientID %>");
 
             if ($.fn.select2) {
                 $category.select2({ width: "100%" });
                 $brand.select2({ width: "100%" });
                 $origin.select2({ width: "100%" });
+                $shop.select2({ width: "100%" });
             }
 
             var table = $("#productTable").DataTable({
                 pageLength: 25,
-                order: [[0, "asc"]],
+                order: [[1, "asc"]],
                 serverSide: true,
                 processing: true,
                 ajax: {
@@ -121,12 +134,14 @@
                             start: d.start,
                             length: d.length,
                             search: d.search ? d.search.value : "",
-                            orderColumn: d.order && d.order.length ? d.order[0].column : 0,
+                            orderColumn: d.order && d.order.length ? d.order[0].column : 1,
                             orderDir: d.order && d.order.length ? d.order[0].dir : "asc",
                             name: $("#filterName").val(),
+                            sku: $("#filterSku").val(),
                             categoryId: $("#<%= FilterCategory.ClientID %>").val(),
                             brandId: $("#<%= FilterBrand.ClientID %>").val(),
                             originId: $("#<%= FilterOrigin.ClientID %>").val(),
+                            shopId: $("#<%= FilterShop.ClientID %>").val(),
                             status: $("#filterStatus").val()
                         });
                     },
@@ -143,17 +158,20 @@
                 columns: [
                     { data: "ImageHtml", orderable: false, searchable: false },
                     { data: "ProductName" },
+                    { data: "Sku" },
                     { data: "CategoryName" },
+                    { data: "ShopName" },
                     { data: "BrandName" },
                     { data: "OriginName" },
                     { data: "MinPrice" },
                     { data: "StockQty" },
+                    { data: "CreatedAt", orderable: true, searchable: false },
                     { data: "StatusHtml", orderable: false, searchable: false },
                     { data: "ActionsHtml", orderable: false, searchable: false }
                 ],
                 columnDefs: [
-                    { targets: [8], className: "text-end", render: function (data) { return data; } },
-                    { targets: [7], render: function (data) { return data; } },
+                    { targets: [11], className: "text-end", render: function (data) { return data; } },
+                    { targets: [10], render: function (data) { return data; } },
                     { targets: [0], render: function (data) { return data; } }
                 ],
                 searching: false,
@@ -204,9 +222,11 @@
 
             $("#resetFilters").on("click", function () {
                 $("#filterName").val("");
+                $("#filterSku").val("");
                 $category.val("").trigger("change");
                 $brand.val("").trigger("change");
                 $origin.val("").trigger("change");
+                $shop.val("").trigger("change");
                 $("#filterStatus").val("");
                 table.ajax.reload();
             });
@@ -214,6 +234,7 @@
             $category.on("change", function () { table.ajax.reload(); });
             $brand.on("change", function () { table.ajax.reload(); });
             $origin.on("change", function () { table.ajax.reload(); });
+            $shop.on("change", function () { table.ajax.reload(); });
         })(jQuery);
     </script>
 </asp:Content>

@@ -15,71 +15,95 @@
 </head>
 <body class="admin-dashboard">
     <form id="form1" runat="server">
-        <header class="admin-header">
-            <div class="brand-bar">
-                <img class="logo" src="/images/logo_ngang.png" alt="LoveIs Store" />
-                <nav class="admin-nav">
-                    <asp:Repeater ID="TopMenuRepeater" runat="server" OnItemDataBound="TopMenuRepeater_ItemDataBound">
-                        <ItemTemplate>
-                            <div class="admin-nav-item dropdown" runat="server" id="MenuItemContainer">
-                                <a class="nav-button admin-nav-link" runat="server" id="MenuLink"></a>
-                                <button class="nav-button dropdown-toggle" runat="server" id="MenuButton" type="button" data-bs-toggle="dropdown" aria-expanded="false"></button>
-                                <ul class="dropdown-menu" runat="server" id="MenuDropdown">
-                                    <asp:Repeater ID="ChildRepeater" runat="server">
-                                        <ItemTemplate>
-                                            <li>
-                                                <a class="dropdown-item" href="<%# Eval("Url") %>">
-                                                    <i class="<%# Eval("Icon") %> me-2"></i><%# Eval("MenuName") %>
-                                                </a>
-                                            </li>
-                                        </ItemTemplate>
-                                    </asp:Repeater>
-                                </ul>
-                            </div>
-                        </ItemTemplate>
-                    </asp:Repeater>
-                </nav>
-                <div class="dropdown">
-                    <button class="btn btn-outline-light dropdown-toggle admin-user-btn" type="button" data-bs-toggle="dropdown" aria-expanded="false">
-                        <i class="fi fi-rr-user"></i>
-                        <asp:Literal ID="CurrentUserName" runat="server" Text="Admin"></asp:Literal>
-                    </button>
-                    <ul class="dropdown-menu dropdown-menu-end">
-                        <li>
-                            <a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#profileModal">
-                                <i class="fa-solid fa-key me-2"></i>Đổi mật khẩu
-                            </a>
-                        </li>
-                        <li>
-                            <asp:LinkButton ID="LogoutButton" runat="server" CssClass="dropdown-item" OnClick="LogoutButton_Click">
-                                <i class="fa-solid fa-right-from-bracket me-2"></i>Đăng xuất
-                            </asp:LinkButton>
-                        </li>
-                    </ul>
+        <div class="admin-shell">
+            <header class="admin-topbar">
+                <div class="left">
+                    <img class="logo" src="/images/logo_ngang.png" alt="LoveIs Store" />
+                    <span>Admin</span>
+                    <%--<span class="opacity-75">|</span>
+                    <i class="fa-solid fa-house"></i>
+                    <span>Dashboard</span>--%>
                 </div>
-            </div>
-        </header>
-        <main class="content">
-            <nav class="breadcrumb-wrap bg-white px-3 py-2 rounded-3 border" aria-label="breadcrumb">
-                <ol class="breadcrumb">
-                    <asp:ContentPlaceHolder ID="PageBreadcrumb" runat="server" />
-                </ol>
-            </nav>
-            <div class="d-flex justify-content-between align-items-center mb-4">
-                <div>
-                    <h4 class="mb-1">
-                        <asp:ContentPlaceHolder ID="PageHeading" runat="server" />
-                    </h4>
-                    <div class="text-muted">
-                        <asp:ContentPlaceHolder ID="PageSubHeading" runat="server" />
+                <div class="right">
+                    <i class="fa-solid fa-grid-2"></i>
+                    <div><i class="fa-regular fa-bell"></i><span class="badge-dot">24</span></div>
+                    <%--<i class="fa-solid fa-gift"></i>--%>
+                    <div class="dropdown">
+                        <button class="btn btn-outline-light dropdown-toggle admin-user-btn" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="fi fi-rr-user"></i>
+                            <asp:Literal ID="CurrentUserName" runat="server" Text="Admin"></asp:Literal>
+                        </button>
+                        <ul class="dropdown-menu dropdown-menu-end">
+                            <li>
+                                <a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#profileModal">
+                                    <i class="fa-solid fa-key me-2"></i>Đổi mật khẩu
+                                </a>
+                            </li>
+                            <li>
+                                <asp:LinkButton ID="LogoutButton" runat="server" CssClass="dropdown-item" OnClick="LogoutButton_Click">
+                                    <i class="fa-solid fa-right-from-bracket me-2"></i>Đăng xuất
+                                </asp:LinkButton>
+                            </li>
+                        </ul>
                     </div>
                 </div>
-            </div>
-            <asp:ContentPlaceHolder ID="MainContent" runat="server" />
-            <div class="mt-4 small text-center footer-note">
-                Hệ thống quản trị LoveIs Store. Version 1.0
-            </div>
-        </main>
+            </header>
+            <aside class="admin-sidebar">
+                <ul class="admin-nav">
+                    <asp:Repeater ID="TopMenuRepeater" runat="server" OnItemDataBound="TopMenuRepeater_ItemDataBound">
+                        <ItemTemplate>
+                            <li class="menu-item <%# ((System.Collections.Generic.List<AdminMenuItem>)Eval("Children")).Count > 0 ? "has-children" : string.Empty %>" runat="server" id="MenuItemContainer">
+                                <a class="menu-link" runat="server" id="MenuLink">
+                                    <span>
+                                        <%# string.IsNullOrWhiteSpace((string)Eval("Icon")) ? "" : "<i class='" + Eval("Icon") + "'></i>" %>
+                                        <%# Eval("MenuName") %>
+                                    </span>
+                                </a>
+                                <button class="menu-button" type="button" runat="server" id="MenuButton">
+                                    <span>
+                                        <%# string.IsNullOrWhiteSpace((string)Eval("Icon")) ? "" : "<i class='" + Eval("Icon") + "'></i>" %>
+                                        <%# Eval("MenuName") %>
+                                    </span>
+                                    <i class="fa-solid fa-angle-down"></i>
+                                </button>
+                                <asp:PlaceHolder ID="ChildMenuWrap" runat="server">
+                                    <ul class="submenu">
+                                        <asp:Repeater ID="ChildRepeater" runat="server">
+                                            <ItemTemplate>
+                                                <li>
+                                                    <a href="<%# Eval("Url") %>"><%# Eval("MenuName") %></a>
+                                                </li>
+                                            </ItemTemplate>
+                                        </asp:Repeater>
+                                    </ul>
+                                </asp:PlaceHolder>
+                            </li>
+                        </ItemTemplate>
+                    </asp:Repeater>
+                </ul>
+            </aside>
+            <section class="admin-content">
+                <nav class="breadcrumb-wrap bg-white px-3 py-2 rounded-3 border" aria-label="breadcrumb">
+                    <ol class="breadcrumb">
+                        <asp:ContentPlaceHolder ID="PageBreadcrumb" runat="server" />
+                    </ol>
+                </nav>
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <div>
+                        <h4 class="mb-1">
+                            <asp:ContentPlaceHolder ID="PageHeading" runat="server" />
+                        </h4>
+                        <div class="text-muted">
+                            <asp:ContentPlaceHolder ID="PageSubHeading" runat="server" />
+                        </div>
+                    </div>
+                </div>
+                <asp:ContentPlaceHolder ID="MainContent" runat="server" />
+                <div class="mt-4 small text-center footer-note">
+                    Hệ thống quản trị LoveIs Store. Version 1.0
+                </div>
+            </section>
+        </div>
         <div class="modal fade" id="profileModal" tabindex="-1" aria-labelledby="profileModalLabel" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
             <div class="modal-dialog modal-dialog-centered">
                 <div class="modal-content">
@@ -98,16 +122,16 @@
                             <asp:TextBox ID="EmailInput" runat="server" CssClass="form-control" placeholder="Nhập email"></asp:TextBox>
                         </div>
                         <div class="mb-3">
-                            <label class="form-label">Mật khẩu hiện tại</label>
-                            <asp:TextBox ID="CurrentPasswordInput" runat="server" CssClass="form-control" TextMode="Password" placeholder="Nhập mật khẩu hiện tại"></asp:TextBox>
+                            <label class="form-label">Mật khẩu cũ</label>
+                            <asp:TextBox ID="CurrentPasswordInput" runat="server" CssClass="form-control" TextMode="Password" placeholder="Nhập mật khẩu cũ"></asp:TextBox>
                         </div>
                         <div class="mb-3">
                             <label class="form-label">Mật khẩu mới</label>
                             <asp:TextBox ID="NewPasswordInput" runat="server" CssClass="form-control" TextMode="Password" placeholder="Nhập mật khẩu mới"></asp:TextBox>
                         </div>
                         <div class="mb-3">
-                            <label class="form-label">Xác nhận mật khẩu</label>
-                            <asp:TextBox ID="ConfirmPasswordInput" runat="server" CssClass="form-control" TextMode="Password" placeholder="Nhập lại mật khẩu"></asp:TextBox>
+                            <label class="form-label">Xác nhận mật khẩu mới</label>
+                            <asp:TextBox ID="ConfirmPasswordInput" runat="server" CssClass="form-control" TextMode="Password" placeholder="Nhập lại mật khẩu mới"></asp:TextBox>
                         </div>
                     </div>
                     <div class="modal-footer">
@@ -131,7 +155,16 @@
                 }
             }
         })();
+
+        document.querySelectorAll(".menu-item.has-children > .menu-button").forEach(function (btn) {
+            btn.addEventListener("click", function () {
+                var parent = btn.closest(".menu-item");
+                if (!parent) return;
+                parent.classList.toggle("open");
+            });
+        });
     </script>
     <asp:ContentPlaceHolder ID="PageScripts" runat="server" />
 </body>
 </html>
+

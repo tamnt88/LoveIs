@@ -153,34 +153,48 @@ public partial class AdminMaster : AdminBaseMaster
         var container = (HtmlGenericControl)e.Item.FindControl("MenuItemContainer");
         var link = (HtmlAnchor)e.Item.FindControl("MenuLink");
         var button = (HtmlButton)e.Item.FindControl("MenuButton");
-        var dropdown = (HtmlGenericControl)e.Item.FindControl("MenuDropdown");
+        var dropdown = (PlaceHolder)e.Item.FindControl("ChildMenuWrap");
         var childRepeater = (Repeater)e.Item.FindControl("ChildRepeater");
 
         string icon = string.IsNullOrWhiteSpace(item.Icon) ? "fa-solid fa-circle" : item.Icon;
-        string labelHtml = string.Format("<i class=\"{0}\"></i><span>{1}</span>", icon, item.MenuName);
+        string labelHtml = string.Format("<span class=\"menu-text\"><i class=\"{0}\"></i>{1}</span>", icon, item.MenuName);
         string currentPath = HttpContext.Current.Request.AppRelativeCurrentExecutionFilePath;
         bool isActive = IsMenuActive(item, currentPath);
+        bool hasChildren = item.Children != null && item.Children.Count > 0;
 
-        if (item.Children.Count > 0)
+        if (hasChildren)
         {
-            link.Visible = false;
-            button.Visible = true;
-            dropdown.Visible = true;
-            button.InnerHtml = labelHtml;
+            if (link != null)
+                link.Visible = false;
+            if (button != null)
+            {
+                button.Visible = true;
+                button.InnerHtml = labelHtml + "<i class=\"fa-solid fa-angle-down\"></i>";
+            }
+            if (dropdown != null)
+                dropdown.Visible = true;
 
-            childRepeater.DataSource = item.Children;
-            childRepeater.DataBind();
+            if (childRepeater != null)
+            {
+                childRepeater.DataSource = item.Children;
+                childRepeater.DataBind();
+            }
         }
         else
         {
-            button.Visible = false;
-            dropdown.Visible = false;
-            link.Visible = true;
-            link.HRef = string.IsNullOrWhiteSpace(item.Url) ? "#" : item.Url;
-            link.InnerHtml = labelHtml;
+            if (button != null)
+                button.Visible = false;
+            if (dropdown != null)
+                dropdown.Visible = false;
+            if (link != null)
+            {
+                link.Visible = true;
+                link.HRef = string.IsNullOrWhiteSpace(item.Url) ? "#" : item.Url;
+                link.InnerHtml = labelHtml;
+            }
         }
 
-        if (isActive)
+        if (isActive && container != null)
         {
             string existing = container.Attributes["class"];
             container.Attributes["class"] = string.IsNullOrWhiteSpace(existing)

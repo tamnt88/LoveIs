@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Linq;
 using System.Data.Entity;
 using System.Collections.Generic;
@@ -138,6 +138,12 @@ public partial class PublicHeader : System.Web.UI.UserControl
             CategoryPanelRepeater.DataSource = menuItems;
             CategoryPanelRepeater.DataBind();
 
+            if (CategoryTopNavRepeater != null)
+            {
+                CategoryTopNavRepeater.DataSource = menuItems;
+                CategoryTopNavRepeater.DataBind();
+            }
+
             MobileCategoryRepeater.DataSource = menuItems;
             MobileCategoryRepeater.DataBind();
         }
@@ -217,6 +223,10 @@ public partial class PublicHeader : System.Web.UI.UserControl
         if (CustomerNameLiteral != null && signedIn)
         {
             CustomerNameLiteral.Text = HttpUtility.HtmlEncode(CustomerAuth.GetCustomerDisplayName());
+        }
+        else
+        {
+            CustomerNameLiteral.Text = "Tài khoản của bạn";
         }
     }
 
@@ -344,12 +354,84 @@ public partial class PublicHeader : System.Web.UI.UserControl
 
     public string GetMenuItemActiveClass(int index)
     {
-        return index == 0 ? "active" : string.Empty;
+        return string.Empty;
     }
 
     public string GetPanelActiveClass(int index)
     {
-        return index == 0 ? "active" : string.Empty;
+        return string.Empty;
+    }
+
+    public string GetTopNavActiveClass(object seoSlugObj, object childrenObj)
+    {
+        var currentSlug = GetCurrentCategorySlug();
+        if (string.IsNullOrWhiteSpace(currentSlug))
+        {
+            return string.Empty;
+        }
+
+        var seoSlug = seoSlugObj as string ?? string.Empty;
+        if (string.Equals(seoSlug, currentSlug, StringComparison.OrdinalIgnoreCase))
+        {
+            return "active";
+        }
+
+        var children = childrenObj as List<CategoryMenuItem>;
+        if (children == null)
+        {
+            return string.Empty;
+        }
+
+        foreach (var child in children)
+        {
+            if (string.Equals(child.SeoSlug, currentSlug, StringComparison.OrdinalIgnoreCase))
+            {
+                return "active";
+            }
+
+            if (child.Children == null)
+            {
+                continue;
+            }
+
+            foreach (var grandChild in child.Children)
+            {
+                if (string.Equals(grandChild.SeoSlug, currentSlug, StringComparison.OrdinalIgnoreCase))
+                {
+                    return "active";
+                }
+            }
+        }
+
+        return string.Empty;
+    }
+
+    private static string GetCurrentCategorySlug()
+    {
+        var request = HttpContext.Current != null ? HttpContext.Current.Request : null;
+        if (request == null)
+        {
+            return string.Empty;
+        }
+
+        var path = (request.Path ?? string.Empty).TrimEnd('/');
+        if (path.Length == 0)
+        {
+            return string.Empty;
+        }
+
+        var segments = path.Split(new[] { '/' }, StringSplitOptions.RemoveEmptyEntries);
+        if (segments.Length < 2)
+        {
+            return string.Empty;
+        }
+
+        if (!string.Equals(segments[0], "danh-muc", StringComparison.OrdinalIgnoreCase))
+        {
+            return string.Empty;
+        }
+
+        return segments[1];
     }
 
     public class CategoryMenuItem

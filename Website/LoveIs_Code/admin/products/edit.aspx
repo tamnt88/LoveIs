@@ -68,6 +68,10 @@
                 <div class="tab-content border border-top-0 rounded-bottom p-3">
                     <div class="tab-pane fade show active" id="tab-basic-pane" role="tabpanel">
                         <div class="mb-3">
+                            <label class="form-label">Cửa hàng</label>
+                            <asp:DropDownList ID="ShopInput" runat="server" CssClass="form-select"></asp:DropDownList>
+                        </div>
+                        <div class="mb-3">
                             <label class="form-label">Tên sản phẩm</label>
                             <asp:TextBox ID="ProductNameInput" runat="server" CssClass="form-control"></asp:TextBox>
                         </div>
@@ -736,6 +740,7 @@
         })(jQuery);
     </script>
 </asp:Content>
+
 
 
 

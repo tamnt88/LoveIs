@@ -36,3 +36,12 @@
 - Wishlist.
 - Compare products.
 - Advanced search.
+
+## 9) Seller collections, promos, and shipping rules
+- Seller collections with product attachments.
+- Collection tracking (likes, clicks, views) and reporting.
+- Seller/admin coupons with validation at checkout.
+- Seller shipping configuration (default carrier + allowed carriers).
+- Seller free-shipping rules (global or threshold-based).
+- Shipping fee delta ledger for admin review when carriers change.
+- Seller bulk promotions with time windows applied in listings.

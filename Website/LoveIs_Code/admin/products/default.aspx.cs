@@ -57,12 +57,25 @@ public partial class AdminProductsDefault : AdminBasePage
             {
                 FilterOrigin.Items.Add(new System.Web.UI.WebControls.ListItem(item.OriginName, item.Id.ToString()));
             }
+
+            var shops = db.CfShops
+                .Where(s => s.Status == "Active")
+                .OrderBy(s => s.ShopName)
+                .Select(s => new { s.Id, s.ShopName })
+                .ToList();
+
+            FilterShop.Items.Clear();
+            FilterShop.Items.Add(new System.Web.UI.WebControls.ListItem("Tất cả cửa hàng", ""));
+            foreach (var item in shops)
+            {
+                FilterShop.Items.Add(new System.Web.UI.WebControls.ListItem(item.ShopName, item.Id.ToString()));
+            }
         }
     }
 
     [WebMethod]
     [ScriptMethod(ResponseFormat = ResponseFormat.Json)]
-    public static DataTableResult<ProductRow> GetProducts(int draw, int start, int length, string search, int orderColumn, string orderDir, string name, string categoryId, string brandId, string originId, string status)
+    public static DataTableResult<ProductRow> GetProducts(int draw, int start, int length, string search, int orderColumn, string orderDir, string name, string sku, string categoryId, string brandId, string originId, string shopId, string status)
     {
         using (var db = new BeautyStoryContext())
         {
@@ -72,13 +85,17 @@ public partial class AdminProductsDefault : AdminBasePage
                                 from b in bjoin.DefaultIfEmpty()
                                 join o in db.CfOrigins on p.OriginId equals o.Id into ojoin
                                 from o in ojoin.DefaultIfEmpty()
+                                join s in db.CfShops on p.ShopId equals s.Id into sjoin
+                                from s in sjoin.DefaultIfEmpty()
                                 select new
                                 {
                                     Product = p,
                                     CategoryName = c.CategoryName,
                                     BrandName = b != null ? b.BrandName : null,
-                                    OriginName = o != null ? o.OriginName : null
+                                    OriginName = o != null ? o.OriginName : null,
+                                    ShopName = s != null ? s.ShopName : null
                                 }).ToList();
+
             var slugs = db.CfSeoSlugs
                 .Where(s => s.EntityType == "Product")
                 .ToList();
@@ -96,6 +113,17 @@ public partial class AdminProductsDefault : AdminBasePage
                 .ToList();
             var priceLookup = variantPrices.ToDictionary(v => v.ProductId, v => v.MinPrice);
             var stockLookup = variantPrices.ToDictionary(v => v.ProductId, v => v.StockQty);
+
+            var skuLookup = db.CfProductVariants
+                .Where(v => v.Status)
+                .GroupBy(v => v.ProductId)
+                .Select(g => new
+                {
+                    ProductId = g.Key,
+                    Sku = g.OrderBy(v => v.Id).Select(v => v.Sku).FirstOrDefault()
+                })
+                .ToList()
+                .ToDictionary(v => v.ProductId, v => v.Sku);
 
             var imageLookup = db.CfProductImages
                 .Where(i => i.Status)
@@ -121,6 +149,17 @@ public partial class AdminProductsDefault : AdminBasePage
                 filteredProducts = filteredProducts.Where(p => !string.IsNullOrWhiteSpace(p.Product.ProductName) && p.Product.ProductName.ToLowerInvariant().Contains(keyword));
             }
 
+            if (!string.IsNullOrWhiteSpace(sku))
+            {
+                var keyword = sku.Trim();
+                var skuProductIds = db.CfProductVariants
+                    .Where(v => v.Sku != null && v.Sku.Contains(keyword))
+                    .Select(v => v.ProductId)
+                    .Distinct()
+                    .ToList();
+                filteredProducts = filteredProducts.Where(p => skuProductIds.Contains(p.Product.Id));
+            }
+
             int categoryFilterId;
             if (!string.IsNullOrWhiteSpace(categoryId) && int.TryParse(categoryId, out categoryFilterId))
             {
@@ -139,6 +178,12 @@ public partial class AdminProductsDefault : AdminBasePage
                 filteredProducts = filteredProducts.Where(p => p.Product.OriginId.HasValue && p.Product.OriginId.Value == originFilterId);
             }
 
+            int shopFilterId;
+            if (!string.IsNullOrWhiteSpace(shopId) && int.TryParse(shopId, out shopFilterId))
+            {
+                filteredProducts = filteredProducts.Where(p => p.Product.ShopId.HasValue && p.Product.ShopId.Value == shopFilterId);
+            }
+
             int statusFilter;
             if (!string.IsNullOrWhiteSpace(status) && int.TryParse(status, out statusFilter))
             {
@@ -153,6 +198,7 @@ public partial class AdminProductsDefault : AdminBasePage
             {
                 var slug = slugLookup.ContainsKey(p.Product.Id) ? slugLookup[p.Product.Id] : string.Empty;
                 var slugHtml = string.IsNullOrWhiteSpace(slug) ? string.Empty : string.Format("<span class=\"slug-tag\">/{0}</span>", slug);
+                var productSku = skuLookup.ContainsKey(p.Product.Id) ? skuLookup[p.Product.Id] : "-";
                 decimal price = priceLookup.ContainsKey(p.Product.Id) ? priceLookup[p.Product.Id] : 0;
                 int stockQty = stockLookup.ContainsKey(p.Product.Id) ? stockLookup[p.Product.Id] : 0;
                 string imageUrl = imageLookup.ContainsKey(p.Product.Id) ? imageLookup[p.Product.Id] : "/images/logo_doc.png";
@@ -162,11 +208,16 @@ public partial class AdminProductsDefault : AdminBasePage
                     Id = p.Product.Id,
                     ImageHtml = string.Format("<img src=\"{0}\" alt=\"{1}\" class=\"table-thumb\" />", imageUrl, p.Product.ProductName),
                     ProductName = string.Format("{0}<div class=\"slug-wrap\">{1}</div>", p.Product.ProductName, slugHtml),
+                    Sku = productSku,
                     CategoryName = ProductTagHelper.FormatTag(p.CategoryName ?? "-", "info-tag-blue"),
-                    BrandName = ProductTagHelper.FormatTag(p.BrandName ?? "-", "info-tag-rose"),
-                    OriginName = ProductTagHelper.FormatTag(p.OriginName ?? "-", "info-tag-olive"),
+                    ShopName = ProductTagHelper.FormatTag(p.ShopName ?? "-", "info-tag-rose"),
+                    BrandName = ProductTagHelper.FormatTag(p.BrandName ?? "-", "info-tag-olive"),
+                    OriginName = ProductTagHelper.FormatTag(p.OriginName ?? "-", "info-tag-sand"),
+                    MinPriceValue = price,
                     MinPrice = price > 0 ? string.Format(new CultureInfo("vi-VN"), "{0:C0}", price) : "-",
                     StockQty = stockQty,
+                    CreatedAtValue = p.Product.CreatedAt,
+                    CreatedAt = p.Product.CreatedAt.ToString("dd/MM/yyyy HH:mm"),
                     SortOrder = p.Product.SortOrder,
                     StatusValue = p.Product.Status ? 1 : 0,
                     StatusHtml = p.Product.Status
@@ -174,10 +225,8 @@ public partial class AdminProductsDefault : AdminBasePage
                         : "<span class=\"status-tag status-off\">Ẩn</span>",
                     ActionsHtml = string.Format(
                         "<div class=\"menu-actions justify-content-end\">" +
-                        "<a class=\"btn btn-sm btn-outline-primary btn-with-icon\" href=\"/admin/products/edit.aspx?id={0}\">" +
-                        "<i class=\"fa-solid fa-pen\"></i> Sửa</a>" +
-                        "<button type=\"button\" class=\"btn btn-sm btn-outline-danger btn-with-icon\" onclick=\"deleteProduct({0});\">" +
-                        "<i class=\"fa-solid fa-trash\"></i> Xóa</button>" +
+                        "<a class=\"btn btn-sm btn-outline-primary btn-with-icon\" href=\"/admin/products/edit.aspx?id={0}\"><i class=\"fa fa-edit\"></i> Sửa</a>" +
+                        "<button class=\"btn btn-sm btn-outline-danger btn-with-icon\" type=\"button\" data-id=\"{0}\"><i class=\"fa fa-trash\"></i> Xóa</button>" +
                         "</div>", p.Product.Id)
                 };
             });
@@ -205,7 +254,7 @@ public partial class AdminProductsDefault : AdminBasePage
             var product = db.CfProducts.FirstOrDefault(p => p.Id == id);
             if (product == null)
             {
-                return new ActionResult { Success = false, Message = "Sản phẩm không tồn tại." };
+                return new ActionResult { Success = false, Message = "S?n ph?m kh?ng t?n t?i." };
             }
 
             bool hasVariants = db.CfProductVariants.Any(v => v.ProductId == id);
@@ -213,7 +262,7 @@ public partial class AdminProductsDefault : AdminBasePage
             bool hasFilters = db.CfProductFilters.Any(f => f.ProductId == id);
             if (hasVariants || hasImages || hasFilters)
             {
-                return new ActionResult { Success = false, Message = "Không thể xóa sản phẩm đang được sử dụng." };
+                return new ActionResult { Success = false, Message = "Kh?ng th? x?a s?n ph?m ?ang ???c s? d?ng." };
             }
 
             var slug = db.CfSeoSlugs.FirstOrDefault(s => s.EntityType == "Product" && s.EntityId == id);
@@ -235,14 +284,19 @@ public class ProductRow
     public int Id { get; set; }
     public string ImageHtml { get; set; }
     public string ProductName { get; set; }
+    public string Sku { get; set; }
     public int CategoryId { get; set; }
     public int? BrandId { get; set; }
     public int? OriginId { get; set; }
     public string CategoryName { get; set; }
+    public string ShopName { get; set; }
     public string BrandName { get; set; }
     public string OriginName { get; set; }
+    public decimal MinPriceValue { get; set; }
     public string MinPrice { get; set; }
     public int StockQty { get; set; }
+    public DateTime CreatedAtValue { get; set; }
+    public string CreatedAt { get; set; }
     public int SortOrder { get; set; }
     public int StatusValue { get; set; }
     public string StatusHtml { get; set; }
@@ -256,16 +310,24 @@ public static class ProductTableSorter
         bool desc = string.Equals(orderDir, "desc", StringComparison.OrdinalIgnoreCase);
         switch (orderColumn)
         {
-            case 0:
-                return desc ? rows.OrderByDescending(r => r.ProductName) : rows.OrderBy(r => r.ProductName);
             case 1:
-                return desc ? rows.OrderByDescending(r => r.CategoryName) : rows.OrderBy(r => r.CategoryName);
+                return desc ? rows.OrderByDescending(r => r.ProductName) : rows.OrderBy(r => r.ProductName);
             case 2:
-                return desc ? rows.OrderByDescending(r => r.BrandName) : rows.OrderBy(r => r.BrandName);
+                return desc ? rows.OrderByDescending(r => r.Sku) : rows.OrderBy(r => r.Sku);
             case 3:
-                return desc ? rows.OrderByDescending(r => r.OriginName) : rows.OrderBy(r => r.OriginName);
+                return desc ? rows.OrderByDescending(r => r.CategoryName) : rows.OrderBy(r => r.CategoryName);
             case 4:
-                return desc ? rows.OrderByDescending(r => r.MinPrice) : rows.OrderBy(r => r.MinPrice);
+                return desc ? rows.OrderByDescending(r => r.ShopName) : rows.OrderBy(r => r.ShopName);
+            case 5:
+                return desc ? rows.OrderByDescending(r => r.BrandName) : rows.OrderBy(r => r.BrandName);
+            case 6:
+                return desc ? rows.OrderByDescending(r => r.OriginName) : rows.OrderBy(r => r.OriginName);
+            case 7:
+                return desc ? rows.OrderByDescending(r => r.MinPriceValue) : rows.OrderBy(r => r.MinPriceValue);
+            case 8:
+                return desc ? rows.OrderByDescending(r => r.StockQty) : rows.OrderBy(r => r.StockQty);
+            case 9:
+                return desc ? rows.OrderByDescending(r => r.CreatedAtValue) : rows.OrderBy(r => r.CreatedAtValue);
             default:
                 return desc ? rows.OrderByDescending(r => r.ProductName) : rows.OrderBy(r => r.ProductName);
         }
@@ -284,3 +346,4 @@ public static class ProductTagHelper
         return string.Format("<span class=\"info-tag {0}\">{1}</span>", className, value);
     }
 }
+

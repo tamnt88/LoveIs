@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Linq;
 using System.Data.Entity;
 public partial class PublicMaster : System.Web.UI.MasterPage

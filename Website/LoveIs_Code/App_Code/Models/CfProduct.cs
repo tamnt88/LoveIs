@@ -94,6 +94,18 @@ public class CfProduct
 
     public int ContentScore { get; set; }
 
+    public int StockTotal { get; set; }
+
+    public decimal MaxDiscountPercent { get; set; }
+
+    public decimal ReturnRate30d { get; set; }
+
+    public decimal CancelRate30d { get; set; }
+
+    public int ViewCount30d { get; set; }
+
+    public bool IsViolation { get; set; }
+
     public decimal? PackageWeightGrams { get; set; }
 
     public decimal? PackageLengthCm { get; set; }

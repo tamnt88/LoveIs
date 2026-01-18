@@ -107,6 +107,9 @@ public class CfShop
     public int RatingCount { get; set; }
 
     public int CompletedOrders { get; set; }
+    public decimal? ResponseRate { get; set; }
+    public int? ResponseTimeMinutes { get; set; }
+    public int FollowerCount { get; set; }
 
     public DateTime CreatedAt { get; set; }
 
@@ -119,6 +122,59 @@ public class CfShop
     public string UpdatedBy { get; set; }
 
     public int SortOrder { get; set; }
+}
+
+[Table("cf_shop_follow")]
+public class CfShopFollow
+{
+    public int Id { get; set; }
+
+    public int ShopId { get; set; }
+
+    public int CustomerId { get; set; }
+
+    public bool Status { get; set; }
+
+    public DateTime CreatedAt { get; set; }
+
+    public DateTime? UpdatedAt { get; set; }
+}
+
+[Table("cf_shop_inquiry")]
+public class CfShopInquiry
+{
+    public int Id { get; set; }
+
+    public int ShopId { get; set; }
+
+    public int CustomerId { get; set; }
+
+    public DateTime CreatedAt { get; set; }
+
+    public DateTime? FirstReplyAt { get; set; }
+
+    public DateTime? LastReplyAt { get; set; }
+
+    public bool Status { get; set; }
+}
+
+[Table("cf_shop_inquiry_message")]
+public class CfShopInquiryMessage
+{
+    public int Id { get; set; }
+
+    public int InquiryId { get; set; }
+
+    public int ShopId { get; set; }
+
+    public int CustomerId { get; set; }
+
+    [StringLength(20)]
+    public string SenderType { get; set; }
+
+    public string Message { get; set; }
+
+    public DateTime CreatedAt { get; set; }
 }
 
 [Table("cf_shop_user")]
@@ -234,6 +290,9 @@ public class CfReturnRequest
     public int OrderId { get; set; }
 
     public int ShopId { get; set; }
+
+    [StringLength(20)]
+    public string RequestType { get; set; }
 
     [StringLength(300)]
     public string Reason { get; set; }

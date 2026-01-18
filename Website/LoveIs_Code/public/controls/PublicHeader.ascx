@@ -1,10 +1,10 @@
-﻿<%@ Control Language="C#" AutoEventWireup="true" CodeFile="PublicHeader.ascx.cs" Inherits="PublicHeader" %>
+<%@ Control Language="C#" AutoEventWireup="true" CodeFile="PublicHeader.ascx.cs" Inherits="PublicHeader" %>
 
 
 
 <header class="ecommerce-header">
 
-    <div class="top-header d-none d-lg-block py-2 bg-light border-0 font-normal">
+    <div class="top-header d-none d-lg-block py-2 bg-light-1 border-0 font-normal">
 
         <div class="container">
 
@@ -14,7 +14,7 @@
 
                     <div class="d-flex align-items-center">
 
-                        <a href="/seller" class="text-general"><span><i class="fa-solid fa-shop"></i>&nbsp;Kênh nhà bán hàng</span></a>
+                        <a href="/seller" class="text-general kenh-nha-ban-hang"><span><i class="fa-solid fa-shop"></i>&nbsp;Kênh nhà bán hàng</span></a>
                         <a href="#" class="text-general" style="display:none;"><span><i class="fa-solid fa-location-dot"></i>&nbsp;<asp:Literal ID="AddressLiteral" runat="server" /></span></a>
 
                     </div>
@@ -30,7 +30,7 @@
 
                         <li><a id="EmailLink" runat="server"><i class="fa-solid fa-envelope"></i>&nbsp;<asp:Literal ID="EmailLiteral" runat="server" /></a></li>
 
-                        <li><a href="/cong-dong"><i class="fa-solid fa-people-group"></i>&nbsp;Cộng đồng</a></li>
+                        <li><a href="/cong-dong"><i class="fa-solid fa-people-group"></i>&nbsp;LoveIs Social</a></li>
 
                         <li class="my-account-dropdown community-notify">
                             <a href="/cong-dong" class="has-dropdown">
@@ -59,14 +59,13 @@
                                 <span class="notify-badge"><asp:Literal ID="MessageCountLiteral" runat="server" /></span>
                             </a>
                         </li><li class="my-account-dropdown">
-                            <a href="/tai-khoan/ho-so.aspx" class="has-dropdown"><i class="flaticon-user-3 flat-mini text-primary me-1"></i>Tài khoản của bạn</a>
+                            <a href="/tai-khoan/ho-so.aspx" class="has-dropdown"><i class="flaticon-user-3 flat-mini me-1"></i><asp:Literal ID="CustomerNameLiteral" runat="server" /></a>
                             <ul class="my-account-popup">
                                 <asp:PlaceHolder ID="GuestLinks" runat="server">
                                     <li><a href="<%= ResolveUrl("~/tai-khoan/dang-nhap.aspx") %>">Đăng nhập</a></li>
                                     <li><a href="<%= ResolveUrl("~/tai-khoan/dang-ky.aspx") %>">Đăng ký</a></li>
                                 </asp:PlaceHolder>
                                 <asp:PlaceHolder ID="CustomerLinks" runat="server" Visible="false">
-                                    <li><a href="#"><i class="fa-solid fa-user"></i>&nbsp;<asp:Literal ID="CustomerNameLiteral" runat="server" /></a></li>
                                     <li>
                                         <a href="/tai-khoan/ho-so.aspx">Tài khoản của bạn</a>
                                     </li>
@@ -87,17 +86,17 @@
 
     </div>
 
-    <div class="main-nav bg-white d-none d-lg-block">
+    <div class="main-nav bg-white-1 d-none d-lg-block">
 
         <div class="container">
 
             <div class="row align-items-center">
 
-                <div class="col-xl-8 col-md-9">
+                <div class="col-xl-3 col-md-3">
 
                     <nav class="navbar navbar-expand-lg nav-general nav-primary-hover">
 
-                        <a class="navbar-brand mobile-logo" href="/">
+                        <a class="mobile-logo" href="/">
                             <asp:Image ID="LogoMainImage" runat="server" CssClass="nav-logo" AlternateText="LoveIs Store" /></a>
 
                         <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
@@ -108,7 +107,7 @@
 
                         <div class="collapse navbar-collapse" id="navbarSupportedContent">
 
-                            <div class="category-bar header-category-bar">
+                            <div class="category-bar header-category-bar d-none">
 
                                 <div class="category-toggle">
 
@@ -243,15 +242,13 @@
 
                 </div>
 
-                <div class="col-xl-4 col-md-3">
-
-                    <div class="margin-right-1 d-flex align-items-center justify-content-end h-100">
-
+                <div class="col-xl-7 col-md-7">
+                    
                         <div class="product-search-one flex-grow-1 global-search touch-screen-view">
 
                             <div class="form-inline search-pill-shape search-box">
 
-                                <input type="text" class="form-control search-field js-search-input" name="q" placeholder="Tìm sản phẩm, thương hiệu, tên shop">
+                                <input type="text" class="form-control search-field js-search-input" name="q" placeholder="Tìm sản phẩm, thương hiệu, tên shop...">
 
                                 <button type="button" class="search-submit"><i class="flaticon-search flat-mini text-white"></i></button>
 
@@ -270,6 +267,12 @@
                             </a>
 
                         </div>
+                </div>
+
+                <div class="col-xl-2 col-md-2">
+
+                    <div class="margin-right-1 d-flex align-items-center justify-content-end h-100">
+
 
                         <div class="header-cart-4">
 
@@ -280,9 +283,9 @@
 
                                 <div class="cart-wrap">
 
-                                    <div class="cart-text">Gi? hàng</div>
+                                    <div class="cart-text">Giỏ hàng</div>
 
-                                    <span class="header-cart-count">(<asp:Literal ID="CartCountTextLiteral" runat="server" />) s?n ph?m</span>
+                                    <span class="header-cart-count">(<asp:Literal ID="CartCountTextLiteral" runat="server" />) sản phẩm</span>
 
                                 </div>
 
@@ -294,6 +297,42 @@
 
                 </div>
 
+            </div>
+
+            <div class="row header-menu-row">
+                <div class="col-12">
+                    <nav class="navbar navbar-expand-lg nav-general nav-primary-hover">
+                        <ul class="navbar-nav mx-auto main-category-nav">
+                            <asp:Repeater ID="CategoryTopNavRepeater" runat="server">
+                                <ItemTemplate>
+                                    <li class="nav-item dropdown">
+                                        <a class="nav-link dropdown-toggle <%# GetTopNavActiveClass(Eval("SeoSlug"), Eval("Children")) %>" href="/danh-muc/<%# Eval("SeoSlug") %>"><%# Eval("CategoryName") %></a>
+                                        <asp:PlaceHolder ID="TopNavChildWrap" runat="server" Visible='<%# ((System.Collections.Generic.List<CategoryMenuItem>)Eval("Children")).Count > 0 %>'>
+                                            <ul class="dropdown-menu">
+                                                <asp:Repeater ID="TopNavChildRepeater" runat="server" DataSource='<%# Eval("Children") %>'>
+                                                    <ItemTemplate>
+                                                        <li class="<%# ((System.Collections.Generic.List<CategoryMenuItem>)Eval("Children")).Count > 0 ? "dropdown" : string.Empty %>">
+                                                            <a class="dropdown-item <%# ((System.Collections.Generic.List<CategoryMenuItem>)Eval("Children")).Count > 0 ? "dropdown-toggle" : string.Empty %>" href="/danh-muc/<%# Eval("SeoSlug") %>"><%# Eval("CategoryName") %></a>
+                                                            <asp:PlaceHolder ID="TopNavGrandWrap" runat="server" Visible='<%# ((System.Collections.Generic.List<CategoryMenuItem>)Eval("Children")).Count > 0 %>'>
+                                                                <ul class="dropdown-menu">
+                                                                    <asp:Repeater ID="TopNavGrandRepeater" runat="server" DataSource='<%# Eval("Children") %>'>
+                                                                        <ItemTemplate>
+                                                                            <li><a class="dropdown-item" href="/danh-muc/<%# Eval("SeoSlug") %>"><%# Eval("CategoryName") %></a></li>
+                                                                        </ItemTemplate>
+                                                                    </asp:Repeater>
+                                                                </ul>
+                                                            </asp:PlaceHolder>
+                                                        </li>
+                                                    </ItemTemplate>
+                                                </asp:Repeater>
+                                            </ul>
+                                        </asp:PlaceHolder>
+                                    </li>
+                                </ItemTemplate>
+                            </asp:Repeater>
+                        </ul>
+                    </nav>
+                </div>
             </div>
 
         </div>
@@ -327,7 +366,7 @@
                                         <a href="#" class="d-flex align-items-center text-white">
                                             <i class="fa-solid fa-phone"></i>&nbsp;Hotline:&nbsp;<asp:Literal ID="Literal1" runat="server" /></a>
                                         |
-                                        <a href="<%= ResolveUrl("~/tra-cuu-don-hang") %>" title="Tra c?u don hàng"><i class="fa-solid fa-receipt"></i>&nbsp;Tra c?u don hàng</a>
+                                        <a href="<%= ResolveUrl("~/tra-cuu-don-hang") %>" title="Tra cứu đơn hàng"><i class="fa-solid fa-receipt"></i>&nbsp;Tra cứu đơn hàng</a>
 
                                         <span class="slide-nav-close"><i class="flaticon-cancel flat-mini text-white"></i></span>
 
@@ -338,7 +377,7 @@
                                         <ul class="nav nav-pills wc-tabs" id="menu-and-category" role="tablist">
                                             <li class="nav-item" role="presentation">
 
-                                                <a class="nav-link active" id="pills-push-categories-tab" data-bs-toggle="pill" href="#pills-push-categories" role="tab" aria-controls="pills-push-categories" aria-selected="true">Danh m?c</a>
+                                                <a class="nav-link active" id="pills-push-categories-tab" data-bs-toggle="pill" href="#pills-push-categories" role="tab" aria-controls="pills-push-categories" aria-selected="true">Danh mục</a>
 
                                             </li>
 
@@ -361,14 +400,14 @@
 
                                                     <ul class="navbar-nav">
 
-                                                        <li class="nav-item"><a class="nav-link" href="/thuong-hieu/danh-sach">Thuong hi?u</a></li>
+                                                        <li class="nav-item"><a class="nav-link" href="/thuong-hieu/danh-sach">Thuong hiệu</a></li>
 
-                                                        <li class="nav-item"><a class="nav-link" href="/hang-moi-ve">Hàng m?i v?</a></li>
+                                                        <li class="nav-item"><a class="nav-link" href="/hang-moi-ve">Hàng mới về</a></li>
 
-                                                        <li class="nav-item"><a class="nav-link" href="/ban-chay">Bán ch?y</a></li>
+                                                        <li class="nav-item"><a class="nav-link" href="/ban-chay">Bán chạy</a></li>
 
                                                         <li class="nav-item dropdown">
-                                                            <a class="nav-link dropdown-toggle" href="/tin-tuc">Tin t?c</a>
+                                                            <a class="nav-link dropdown-toggle" href="/tin-tuc">Tin tức</a>
                                                             <ul class="dropdown-menu">
                                                                 <asp:Repeater ID="PostCategoryMobileRepeater" runat="server">
                                                                     <ItemTemplate>
@@ -389,7 +428,7 @@
                                                             </ul>
                                                         </li>
 
-                                                        <li class="nav-item"><a class="nav-link" href="/lien-he">Liên h?</a></li>
+                                                        <li class="nav-item"><a class="nav-link" href="/lien-he">Liên hệ</a></li>
 
                                                     </ul>
 
@@ -482,7 +521,7 @@
 
                         <div class="form-inline search-pill-shape search-box">
 
-                            <input type="text" class="form-control search-field js-search-input" name="q" placeholder="Tìm s?n ph?m, thuong hi?u b?n mong mu?n...">
+                            <input type="text" class="form-control search-field js-search-input" name="q" placeholder="Tìm sản phẩm, thương hiệu, tên shop....">
 
                             <button type="button" class="search-submit"><i class="flaticon-search flat-mini text-white"></i></button>
 

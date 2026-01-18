@@ -1,18 +1,22 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Data.Entity;
 using System.Web;
-
+using System.Web.Script.Services;
+using System.Web.Services;
 public partial class CategoryDefault : System.Web.UI.Page
 {
     private int _activeCategoryId;
     private List<int> _activeCategoryIds = new List<int>();
     private HashSet<int> _selectedFilterOptionIds = new HashSet<int>();
     private HashSet<int> _selectedAttributeValueIds = new HashSet<int>();
+    private HashSet<int> _selectedProvinceIds = new HashSet<int>();
+    private HashSet<int> _selectedBrandIds = new HashSet<int>();
+    private HashSet<int> _selectedOriginIds = new HashSet<int>();
     private int _currentPage = 1;
-    private const int PageSize = 28;
-
+    private string _sortKey = "popular";
+    private const int PageSize = 30;
     protected void Page_Load(object sender, EventArgs e)
     {
         if (!IsPostBack)
@@ -20,7 +24,6 @@ public partial class CategoryDefault : System.Web.UI.Page
             BindCategoryPage();
         }
     }
-
     private void BindCategoryPage()
     {
         using (var db = new BeautyStoryContext())
@@ -30,7 +33,6 @@ public partial class CategoryDefault : System.Web.UI.Page
                 .OrderBy(c => c.SortOrder)
                 .ThenBy(c => c.CategoryName)
                 .ToList();
-
             var slugs = db.CfSeoSlugs.AsNoTracking()
                 .Where(s => s.EntityType == "Category" || s.EntityType == "Product")
                 .ToList();
@@ -39,16 +41,13 @@ public partial class CategoryDefault : System.Web.UI.Page
                 .ToDictionary(
                     g => g.Key,
                     g => g.ToDictionary(s => s.EntityId, s => s.SeoSlug));
-
             string slug = GetSlugFromRequest();
             if (string.IsNullOrWhiteSpace(slug))
             {
                 var firstSlug = slugs.FirstOrDefault(s => s.EntityType == "Category");
                 slug = firstSlug != null ? firstSlug.SeoSlug : string.Empty;
             }
-
             _activeCategoryId = ResolveCategoryId(slugLookup, slug);
-
             var menuItems = allCategories
                 .Where(c => !c.ParentId.HasValue)
                 .Select(c => new CategoryMenuItem
@@ -81,14 +80,11 @@ public partial class CategoryDefault : System.Web.UI.Page
                 })
                 .Where(item => !string.IsNullOrWhiteSpace(item.SeoSlug))
                 .ToList();
-
             var categoryLookup = allCategories.ToDictionary(c => c.Id, c => c);
             var activePath = GetActiveCategoryPath(categoryLookup, _activeCategoryId);
             MarkActive(menuItems, activePath);
-
             SidebarRepeater.DataSource = menuItems;
             SidebarRepeater.DataBind();
-
             if (_activeCategoryId == 0)
             {
                 CategoryTitle.Text = "Danh mục";
@@ -97,7 +93,6 @@ public partial class CategoryDefault : System.Web.UI.Page
                 CategoryProductRepeater.DataBind();
                 return;
             }
-
             var activeCategory = db.CfCategories.AsNoTracking().FirstOrDefault(c => c.Id == _activeCategoryId);
             CategoryTitle.Text = activeCategory != null ? activeCategory.CategoryName : "Danh mục";
             CategorySubTitle.Text = string.Empty;
@@ -107,7 +102,6 @@ public partial class CategoryDefault : System.Web.UI.Page
                 ? activeCategory.BannerUrl
                 : "/public/theme/assets/images/slider/22.png";
             CategoryBannerImage.ImageUrl = bannerUrl;
-
             string slugUrl = !string.IsNullOrWhiteSpace(slug) ? "/danh-muc/" + slug : "/danh-muc";
             string title = activeCategory != null && !string.IsNullOrWhiteSpace(activeCategory.SeoTitle)
                 ? activeCategory.SeoTitle
@@ -130,24 +124,27 @@ public partial class CategoryDefault : System.Web.UI.Page
             string twitterTitle = activeCategory != null && !string.IsNullOrWhiteSpace(activeCategory.TwitterTitle) ? activeCategory.TwitterTitle : title;
             string twitterDescription = activeCategory != null && !string.IsNullOrWhiteSpace(activeCategory.TwitterDescription) ? activeCategory.TwitterDescription : description;
             string twitterImage = activeCategory != null && !string.IsNullOrWhiteSpace(activeCategory.TwitterImage) ? activeCategory.TwitterImage : bannerUrl;
-
             SeoTitleLiteral.Text = title + " | LoveIs Store";// HttpUtility.HtmlEncode(title + " | LoveIs Store");
             SeoMetaLiteral.Text = string.Join(Environment.NewLine, BuildSeoMeta(canonical, description, keywords, robots, ogTitle, ogDescription, ogImage, ogType, twitterTitle, twitterDescription, twitterImage));
-
             var categoryIds = new List<int> { _activeCategoryId };
             var childIds = allCategories.Where(c => c.ParentId == _activeCategoryId).Select(c => c.Id).ToList();
             var grandChildIds = allCategories.Where(c => c.ParentId.HasValue && childIds.Contains(c.ParentId.Value)).Select(c => c.Id).ToList();
             categoryIds.AddRange(childIds);
             categoryIds.AddRange(grandChildIds);
             _activeCategoryIds = categoryIds;
-
             _selectedFilterOptionIds = ParseIds(Request.QueryString["filters"]);
             _selectedAttributeValueIds = ParseIds(Request.QueryString["attrs"]);
+            _selectedProvinceIds = ParseIds(Request.QueryString["province"]);
+            _selectedBrandIds = ParseIds(Request.QueryString["brand"]);
+            _selectedOriginIds = ParseIds(Request.QueryString["origin"]);
+            _sortKey = (Request.QueryString["sort"] ?? "popular").Trim().ToLowerInvariant();
             _currentPage = ParsePage(Request.QueryString["page"]);
-
+            var categoryProductIds = db.CfProducts.AsNoTracking()
+                .Where(p => p.Status && categoryIds.Contains(p.CategoryId))
+                .Select(p => p.Id)
+                .ToList();
             var productQuery = db.CfProducts.AsNoTracking()
                 .Where(p => p.Status && categoryIds.Contains(p.CategoryId));
-
             if (_selectedFilterOptionIds.Count > 0)
             {
                 var productIdsByFilter = db.CfProductFilters
@@ -156,7 +153,6 @@ public partial class CategoryDefault : System.Web.UI.Page
                     .Distinct();
                 productQuery = productQuery.Where(p => productIdsByFilter.Contains(p.Id));
             }
-
             if (_selectedAttributeValueIds.Count > 0)
             {
                 var productIdsByAttr = db.CfProductVariantAttributes.AsNoTracking()
@@ -165,27 +161,63 @@ public partial class CategoryDefault : System.Web.UI.Page
                     .Distinct();
                 productQuery = productQuery.Where(p => productIdsByAttr.Contains(p.Id));
             }
-
+            if (_selectedProvinceIds.Count > 0)
+            {
+                var shopIdsByProvince = db.CfShops.AsNoTracking()
+                    .Where(s => s.ProvinceId.HasValue && _selectedProvinceIds.Contains(s.ProvinceId.Value))
+                    .Select(s => s.Id)
+                    .Distinct();
+                productQuery = productQuery.Where(p => p.ShopId.HasValue && shopIdsByProvince.Contains(p.ShopId.Value));
+            }
+            if (_selectedBrandIds.Count > 0)
+            {
+                productQuery = productQuery.Where(p => p.BrandId.HasValue && _selectedBrandIds.Contains(p.BrandId.Value));
+            }
+            if (_selectedOriginIds.Count > 0)
+            {
+                productQuery = productQuery.Where(p => p.OriginId.HasValue && _selectedOriginIds.Contains(p.OriginId.Value));
+            }
             var totalProducts = productQuery.Count();
             int totalPages = (int)Math.Ceiling(totalProducts / (double)PageSize);
             if (_currentPage > totalPages && totalPages > 0)
             {
                 _currentPage = totalPages;
+            }            IQueryable<int> idQuery;
+            switch (_sortKey)
+            {
+                case "newest":
+                    idQuery = productQuery.OrderByDescending(p => p.CreatedAt).Select(p => p.Id);
+                    break;
+                case "price_asc":
+                case "price_desc":
+                    var priceQuery = productQuery.Select(p => new
+                    {
+                        p.Id,
+                        MinPrice = db.CfProductVariants
+                            .Where(v => v.ProductId == p.Id && v.Status)
+                            .Select(v => (decimal?)(v.SalePrice ?? v.Price))
+                            .Min()
+                    });
+                    idQuery = _sortKey == "price_desc"
+                        ? priceQuery.OrderByDescending(x => x.MinPrice).Select(x => x.Id)
+                        : priceQuery.OrderBy(x => x.MinPrice).Select(x => x.Id);
+                    break;
+                default:
+                    idQuery = ProductRanking.Apply(productQuery).Select(p => p.Id);
+                    break;
             }
-
-            var pagedProductIds = ProductRanking.Apply(productQuery)
-                .Select(p => p.Id)
+            var pagedProductIds = idQuery
                 .Skip((_currentPage - 1) * PageSize)
                 .Take(PageSize)
                 .ToList();
-
             var products = db.CfProducts.AsNoTracking()
                 .Where(p => pagedProductIds.Contains(p.Id))
                 .Select(p => new ProductLite
                 {
                     Id = p.Id,
                     ProductName = p.ProductName,
-                    CategoryId = p.CategoryId
+                    CategoryId = p.CategoryId,
+                    ShopId = p.ShopId
                 })
                 .ToList();
             var productIds = products.Select(p => p.Id).ToList();
@@ -207,8 +239,15 @@ public partial class CategoryDefault : System.Web.UI.Page
                     SalePrice = v.SalePrice
                 })
                 .ToList();
-
             var categoryNameLookup = allCategories.ToDictionary(c => c.Id, c => c.CategoryName);
+            var shopIds = products
+                .Where(p => p.ShopId.HasValue)
+                .Select(p => p.ShopId.Value)
+                .Distinct()
+                .ToList();
+            var shopLookup = db.CfShops.AsNoTracking()
+                .Where(s => shopIds.Contains(s.Id))
+                .ToDictionary(s => s.Id, s => s.ShopName);
             var variantsByProduct = variants.ToLookup(v => v.ProductId);
             var variantSummaryLookup = new Dictionary<int, VariantSummary>();
             foreach (var group in variantsByProduct)
@@ -220,7 +259,6 @@ public partial class CategoryDefault : System.Web.UI.Page
                     SaleBadge = BuildSaleBadgeHtml(list)
                 };
             }
-
             var primaryImageLookup = new Dictionary<int, string>();
             foreach (var group in images.GroupBy(i => i.ProductId))
             {
@@ -230,37 +268,45 @@ public partial class CategoryDefault : System.Web.UI.Page
                     primaryImageLookup[group.Key] = primary.ImageUrl;
                     continue;
                 }
-
                 var fallback = group.FirstOrDefault();
                 if (fallback != null)
                 {
                     primaryImageLookup[group.Key] = fallback.ImageUrl;
                 }
             }
-
             var orderLookup = pagedProductIds
                 .Select((id, index) => new { id, index })
                 .ToDictionary(x => x.id, x => x.index);
+            var likedProductIds = new HashSet<int>();
+            var customerId = CustomerAuth.GetCustomerId();
+            if (customerId.HasValue && productIds.Count > 0)
+            {
+                likedProductIds = db.CfWishlists.AsNoTracking()
+                    .Where(w => w.CustomerId == customerId.Value && productIds.Contains(w.ProductId))
+                    .Select(w => w.ProductId)
+                    .ToHashSet();
+            }
             CategoryProductRepeater.DataSource = products
                 .OrderBy(p => orderLookup[p.Id])
                 .Select(p => new
                 {
                     p.Id,
                     p.ProductName,
-                    CategoryName = categoryNameLookup.ContainsKey(p.CategoryId) ? categoryNameLookup[p.CategoryId] : "-",
-                    CategorySlug = GetSlug(slugLookup, "Category", p.CategoryId),
+                    ShopName = p.ShopId.HasValue && shopLookup.ContainsKey(p.ShopId.Value) ? shopLookup[p.ShopId.Value] : "Shop",
                     SeoSlug = GetSlug(slugLookup, "Product", p.Id),
                     ImageUrl = primaryImageLookup.ContainsKey(p.Id) && !string.IsNullOrWhiteSpace(primaryImageLookup[p.Id]) ? primaryImageLookup[p.Id] : "/images/fav.png",
                     PriceLabel = variantSummaryLookup.ContainsKey(p.Id) ? variantSummaryLookup[p.Id].PriceLabel : "Liên hệ",
-                    SaleBadge = variantSummaryLookup.ContainsKey(p.Id) ? variantSummaryLookup[p.Id].SaleBadge : string.Empty
+                    SaleBadge = variantSummaryLookup.ContainsKey(p.Id) ? variantSummaryLookup[p.Id].SaleBadge : string.Empty,
+                    WishlistClass = likedProductIds.Contains(p.Id) ? "is-active" : string.Empty,
+                    WishlistIconClass = likedProductIds.Contains(p.Id) ? "fa-solid fa-heart" : "fa-regular fa-heart"
                 })
                 .ToList();
             CategoryProductRepeater.DataBind();
-
-            BindFilters(db);
+            BindLocations(db, categoryProductIds);
+            BindBrands(db, categoryProductIds);
+            BindOrigins(db, categoryProductIds);
             BindAttributes(db);
             RenderPagination(totalPages);
-
             SchemaLiteral.Text = BuildItemListSchema(
                 products.Select(p => new SchemaItem
                 {
@@ -270,17 +316,14 @@ public partial class CategoryDefault : System.Web.UI.Page
                 }).ToList());
         }
     }
-
     public string GetMenuItemActiveClass(int index)
     {
         return index == 0 ? "active" : string.Empty;
     }
-
     public string GetPanelActiveClass(int index)
     {
         return index == 0 ? "active" : string.Empty;
     }
-
     public string GetSidebarActiveClass(object categoryId)
     {
         int id = 0;
@@ -290,7 +333,6 @@ public partial class CategoryDefault : System.Web.UI.Page
         }
         return id == _activeCategoryId ? "active" : string.Empty;
     }
-
     public string GetSidebarOpenClass(object isOpen)
     {
         bool open = false;
@@ -300,7 +342,6 @@ public partial class CategoryDefault : System.Web.UI.Page
         }
         return open ? "open" : string.Empty;
     }
-
     public string GetToggleVisibleClass(object hasChildren)
     {
         bool visible = false;
@@ -310,29 +351,24 @@ public partial class CategoryDefault : System.Web.UI.Page
         }
         return visible ? string.Empty : "d-none";
     }
-
     private static string GetSlug(Dictionary<string, Dictionary<int, string>> lookup, string entityType, int entityId)
     {
         if (!lookup.ContainsKey(entityType))
         {
             return string.Empty;
         }
-
         var entityLookup = lookup[entityType];
         return entityLookup.ContainsKey(entityId) ? entityLookup[entityId] : string.Empty;
     }
-
     private static int ResolveCategoryId(Dictionary<string, Dictionary<int, string>> lookup, string slug)
     {
         if (!lookup.ContainsKey("Category"))
         {
             return 0;
         }
-
         var match = lookup["Category"].FirstOrDefault(kv => string.Equals(kv.Value, slug, StringComparison.OrdinalIgnoreCase));
         return match.Key;
     }
-
     private static string GetPrimaryImage(List<CfProductImage> images, int productId)
     {
         var primary = images.FirstOrDefault(i => i.ProductId == productId && i.IsPrimary);
@@ -340,11 +376,9 @@ public partial class CategoryDefault : System.Web.UI.Page
         {
             return primary.ImageUrl;
         }
-
         var fallback = images.FirstOrDefault(i => i.ProductId == productId);
         return fallback != null ? fallback.ImageUrl : "/images/fav.png";
     }
-
     private static string GetPriceLabel(List<CfProductVariant> variants, int productId)
     {
         var productVariants = variants.Where(v => v.ProductId == productId).ToList();
@@ -352,44 +386,38 @@ public partial class CategoryDefault : System.Web.UI.Page
         {
             return "Liên hệ";
         }
-
         var saleVariant = productVariants
             .Where(v => v.SalePrice.HasValue)
             .OrderBy(v => v.SalePrice.Value)
             .FirstOrDefault();
-
         var variant = saleVariant ?? productVariants.OrderBy(v => v.Price).First();
         var price = variant.SalePrice.HasValue ? variant.SalePrice.Value : variant.Price;
         return string.Format("{0:N0} đ", price);
     }
-
     private class ProductLite
     {
         public int Id { get; set; }
         public string ProductName { get; set; }
         public int CategoryId { get; set; }
+        public int? ShopId { get; set; }
     }
-
     private class ProductImageLite
     {
         public int ProductId { get; set; }
         public string ImageUrl { get; set; }
         public bool IsPrimary { get; set; }
     }
-
     private class VariantLite
     {
         public int ProductId { get; set; }
         public decimal Price { get; set; }
         public decimal? SalePrice { get; set; }
     }
-
     private class VariantSummary
     {
         public string PriceLabel { get; set; }
         public string SaleBadge { get; set; }
     }
-
     public class CategoryMenuItem
     {
         public int Id { get; set; }
@@ -406,7 +434,6 @@ public partial class CategoryDefault : System.Web.UI.Page
             get { return ChildCount > 0; }
         }
     }
-
     private static List<int> GetActiveCategoryPath(Dictionary<int, CfCategory> lookup, int categoryId)
     {
         var path = new List<int>();
@@ -423,7 +450,6 @@ public partial class CategoryDefault : System.Web.UI.Page
         }
         return path;
     }
-
     private static void MarkActive(List<CategoryMenuItem> items, List<int> activePath)
     {
         foreach (var item in items)
@@ -435,64 +461,6 @@ public partial class CategoryDefault : System.Web.UI.Page
             }
         }
     }
-
-    private void BindFilters(BeautyStoryContext db)
-    {
-        var categoryKey = _activeCategoryIds != null && _activeCategoryIds.Count > 0
-            ? string.Join("_", _activeCategoryIds.OrderBy(id => id))
-            : "none";
-        var groupIds = db.CfCategoryFilterGroups.AsNoTracking()
-            .Where(x => _activeCategoryIds.Contains(x.CategoryId))
-            .Select(x => x.GroupId)
-            .Distinct()
-            .ToList();
-
-        var groupKey = groupIds.Count > 0 ? string.Join("_", groupIds.OrderBy(id => id)) : "none";
-        var groups = db.CfFilterGroups.AsNoTracking()
-            .Where(g => groupIds.Contains(g.Id) && g.Status)
-            .OrderBy(g => g.SortOrder)
-            .ThenBy(g => g.GroupName)
-            .ToList();
-
-        var options = db.CfFilterOptions.AsNoTracking()
-            .Where(o => groupIds.Contains(o.GroupId) && o.Status)
-            .OrderBy(o => o.SortOrder)
-            .ThenBy(o => o.OptionName)
-            .ToList();
-
-        var grouped = groups.Select(g => new FilterGroupItem
-        {
-            Id = g.Id,
-            GroupName = g.GroupName,
-            Options = options
-                .Where(o => o.GroupId == g.Id)
-                .Select(o => new FilterOptionItem
-                {
-                    Id = o.Id,
-                    OptionName = o.OptionName,
-                    Checked = _selectedFilterOptionIds.Contains(o.Id) ? "checked=\"checked\"" : string.Empty
-                })
-                .ToList()
-        }).ToList();
-
-        FilterGroupRepeater.DataSource = grouped;
-        FilterGroupRepeater.DataBind();
-    }
-
-    public class FilterGroupItem
-    {
-        public int Id { get; set; }
-        public string GroupName { get; set; }
-        public List<FilterOptionItem> Options { get; set; }
-    }
-
-    public class FilterOptionItem
-    {
-        public int Id { get; set; }
-        public string OptionName { get; set; }
-        public string Checked { get; set; }
-    }
-
     private void BindAttributes(BeautyStoryContext db)
     {
         var categoryKey = _activeCategoryIds != null && _activeCategoryIds.Count > 0
@@ -502,26 +470,22 @@ public partial class CategoryDefault : System.Web.UI.Page
             .Where(p => p.Status && _activeCategoryIds.Contains(p.CategoryId))
             .Select(p => p.Id)
             .ToList();
-
         var attributeIds = db.CfProductVariantAttributes.AsNoTracking()
             .Where(pva => productIds.Contains(pva.Variant.ProductId))
             .Select(pva => pva.AttributeId)
             .Distinct()
             .ToList();
-
         var attrKey = attributeIds.Count > 0 ? string.Join("_", attributeIds.OrderBy(id => id)) : "none";
         var attributes = db.CfVariantAttributes.AsNoTracking()
             .Where(a => attributeIds.Contains(a.Id) && a.Status)
             .OrderBy(a => a.SortOrder)
             .ThenBy(a => a.AttributeName)
             .ToList();
-
         var values = db.CfVariantAttributeValues.AsNoTracking()
             .Where(v => attributeIds.Contains(v.AttributeId) && v.Status)
             .OrderBy(v => v.SortOrder)
             .ThenBy(v => v.ValueName)
             .ToList();
-
         var grouped = attributes.Select(a => new AttributeGroupItem
         {
             Id = a.Id,
@@ -532,29 +496,120 @@ public partial class CategoryDefault : System.Web.UI.Page
                 {
                     Id = v.Id,
                     ValueName = v.ValueName,
-                    Checked = _selectedAttributeValueIds.Contains(v.Id) ? "checked=\"checked\"" : string.Empty
+                    Selected = _selectedAttributeValueIds.Contains(v.Id) ? "selected=\"selected\"" : string.Empty
                 })
                 .ToList()
         }).ToList();
-
         AttributeGroupRepeater.DataSource = grouped;
         AttributeGroupRepeater.DataBind();
     }
-
     public class AttributeGroupItem
     {
         public int Id { get; set; }
         public string AttributeName { get; set; }
         public List<AttributeValueItem> Values { get; set; }
     }
-
     public class AttributeValueItem
     {
         public int Id { get; set; }
         public string ValueName { get; set; }
-        public string Checked { get; set; }
+        public string Selected { get; set; }
     }
-
+    private void BindLocations(BeautyStoryContext db, List<int> categoryProductIds)
+    {
+        var shopIds = db.CfProducts.AsNoTracking()
+            .Where(p => categoryProductIds.Contains(p.Id) && p.ShopId.HasValue)
+            .Select(p => p.ShopId.Value)
+            .Distinct()
+            .ToList();
+        var shopProvinces = db.CfShops.AsNoTracking()
+            .Where(s => shopIds.Contains(s.Id) && s.ProvinceId.HasValue)
+            .Select(s => new { s.ProvinceId, s.ProvinceName })
+            .ToList();
+        var provinceIds = shopProvinces
+            .Select(s => s.ProvinceId.Value)
+            .Distinct()
+            .ToList();
+        var provinceLookup = db.CfProvinces.AsNoTracking()
+            .Where(p => provinceIds.Contains(p.Id))
+            .ToDictionary(p => p.Id, p => p.ProvinceName);
+        var options = shopProvinces
+            .GroupBy(s => s.ProvinceId.Value)
+            .Select(g =>
+            {
+                var provinceId = g.Key;
+                var name = g.Select(x => x.ProvinceName).FirstOrDefault(n => !string.IsNullOrWhiteSpace(n));
+                if (string.IsNullOrWhiteSpace(name) && provinceLookup.ContainsKey(provinceId))
+                {
+                    name = provinceLookup[provinceId];
+                }
+                return new SimpleOption
+                {
+                    Id = provinceId,
+                    Name = name ?? string.Empty,
+                    Selected = _selectedProvinceIds.Contains(provinceId) ? "selected=\"selected\"" : string.Empty
+                };
+            })
+            .Where(o => !string.IsNullOrWhiteSpace(o.Name))
+            .OrderBy(o => o.Name)
+            .ToList();
+        LocationFilterRepeater.DataSource = options;
+        LocationFilterRepeater.DataBind();
+    }
+    private void BindBrands(BeautyStoryContext db, List<int> categoryProductIds)
+    {
+        var brandIds = db.CfProducts.AsNoTracking()
+            .Where(p => categoryProductIds.Contains(p.Id) && p.BrandId.HasValue)
+            .Select(p => p.BrandId.Value)
+            .Distinct()
+            .ToList();
+        var options = db.CfBrands.AsNoTracking()
+            .Where(b => brandIds.Contains(b.Id) && b.Status)
+            .OrderBy(b => b.SortOrder)
+            .ThenBy(b => b.BrandName)
+            .Select(b => new SimpleOption
+            {
+                Id = b.Id,
+                Name = b.BrandName,
+                Selected = _selectedBrandIds.Contains(b.Id) ? "selected=\"selected\"" : string.Empty
+            })
+            .ToList();
+        BrandFilterRepeater.DataSource = options;
+        BrandFilterRepeater.DataBind();
+    }
+    private void BindOrigins(BeautyStoryContext db, List<int> categoryProductIds)
+    {
+        var originIds = db.CfProducts.AsNoTracking()
+            .Where(p => categoryProductIds.Contains(p.Id) && p.OriginId.HasValue)
+            .Select(p => p.OriginId.Value)
+            .Distinct()
+            .ToList();
+        var options = db.CfOrigins.AsNoTracking()
+            .Where(o => originIds.Contains(o.Id) && o.Status)
+            .OrderBy(o => o.SortOrder)
+            .ThenBy(o => o.OriginName)
+            .Select(o => new SimpleOption
+            {
+                Id = o.Id,
+                Name = o.OriginName,
+                Selected = _selectedOriginIds.Contains(o.Id) ? "selected=\"selected\"" : string.Empty
+            })
+            .ToList();
+        OriginFilterRepeater.DataSource = options;
+        OriginFilterRepeater.DataBind();
+    }
+    protected string GetSortSelected(string value)
+    {
+        return string.Equals(_sortKey, value, StringComparison.OrdinalIgnoreCase)
+            ? "selected=\"selected\""
+            : string.Empty;
+    }
+    public class SimpleOption
+    {
+        public int Id { get; set; }
+        public string Name { get; set; }
+        public string Selected { get; set; }
+    }
     private static HashSet<int> ParseIds(string raw)
     {
         var result = new HashSet<int>();
@@ -562,7 +617,6 @@ public partial class CategoryDefault : System.Web.UI.Page
         {
             return result;
         }
-
         var parts = raw.Split(',');
         foreach (var part in parts)
         {
@@ -572,10 +626,8 @@ public partial class CategoryDefault : System.Web.UI.Page
                 result.Add(id);
             }
         }
-
         return result;
     }
-
     private static int ParsePage(string raw)
     {
         int page = 1;
@@ -585,7 +637,6 @@ public partial class CategoryDefault : System.Web.UI.Page
         }
         return 1;
     }
-
     private void RenderPagination(int totalPages)
     {
         if (totalPages <= 1)
@@ -593,21 +644,17 @@ public partial class CategoryDefault : System.Web.UI.Page
             PaginationLiteral.Text = string.Empty;
             return;
         }
-
         var links = new List<string>();
         string baseUrl = BuildBaseUrl();
-
         int groupSize = 5;
         int currentGroup = (int)Math.Ceiling(_currentPage / (double)groupSize);
         int groupStart = (currentGroup - 1) * groupSize + 1;
         int groupEnd = Math.Min(groupStart + groupSize - 1, totalPages);
-
         links.Add(string.Format("<li class=\"page-item\"><a class=\"page-link\" href=\"{0}\">&laquo;</a></li>", BuildPageUrl(baseUrl, 1)));
         if (_currentPage > 1)
         {
             links.Add(string.Format("<li class=\"page-item\"><a class=\"page-link\" href=\"{0}\">&lsaquo;</a></li>", BuildPageUrl(baseUrl, _currentPage - 1)));
         }
-
         for (int i = groupStart; i <= groupEnd; i++)
         {
             if (i == _currentPage)
@@ -619,22 +666,22 @@ public partial class CategoryDefault : System.Web.UI.Page
                 links.Add(string.Format("<li class=\"page-item\"><a class=\"page-link\" href=\"{0}\">{1}</a></li>", BuildPageUrl(baseUrl, i), i));
             }
         }
-
         if (_currentPage < totalPages)
         {
             links.Add(string.Format("<li class=\"page-item\"><a class=\"page-link\" href=\"{0}\">&rsaquo;</a></li>", BuildPageUrl(baseUrl, _currentPage + 1)));
         }
         links.Add(string.Format("<li class=\"page-item\"><a class=\"page-link\" href=\"{0}\">&raquo;</a></li>", BuildPageUrl(baseUrl, totalPages)));
-
         PaginationLiteral.Text = string.Format("<nav><ul class=\"pagination justify-content-center\">{0}</ul></nav>", string.Join("", links));
     }
-
     private string BuildBaseUrl()
     {
         string slug = GetSlugFromRequest();
         string filters = Request.QueryString["filters"];
         string attrs = Request.QueryString["attrs"];
-
+        string provinces = Request.QueryString["province"];
+        string brands = Request.QueryString["brand"];
+        string origins = Request.QueryString["origin"];
+        string sort = Request.QueryString["sort"];
         var query = new List<string>();
         if (!string.IsNullOrWhiteSpace(filters))
         {
@@ -644,7 +691,18 @@ public partial class CategoryDefault : System.Web.UI.Page
         {
             query.Add("attrs=" + Server.UrlEncode(attrs));
         }
-
+        if (!string.IsNullOrWhiteSpace(provinces))
+        {
+            query.Add("province=" + Server.UrlEncode(provinces));
+        }
+        if (!string.IsNullOrWhiteSpace(brands))
+        {
+            query.Add("brand=" + Server.UrlEncode(brands));
+        }
+        if (!string.IsNullOrWhiteSpace(origins))
+        {
+            query.Add("origin=" + Server.UrlEncode(origins));
+        }
         var basePath = string.IsNullOrWhiteSpace(slug) ? "/danh-muc" : "/danh-muc/" + Server.UrlEncode(slug);
         if (query.Count == 0)
         {
@@ -652,20 +710,17 @@ public partial class CategoryDefault : System.Web.UI.Page
         }
         return basePath + "?" + string.Join("&", query);
     }
-
     private static string BuildPageUrl(string baseUrl, int page)
     {
         var separator = baseUrl.Contains("?") ? "&" : "?";
         return baseUrl + separator + "page=" + page;
     }
-
     private static string FormatPriceHtml(List<VariantLite> variants)
     {
         if (variants == null || variants.Count == 0)
         {
-            return "Liên hệ";
+            return "Liên h?";
         }
-
         var sale = variants.Where(v => v.SalePrice.HasValue && v.SalePrice.Value > 0 && v.SalePrice.Value < v.Price)
             .OrderBy(v => v.SalePrice.Value)
             .FirstOrDefault();
@@ -674,22 +729,18 @@ public partial class CategoryDefault : System.Web.UI.Page
         {
             return "Liên hệ";
         }
-
         if (variant.SalePrice.HasValue && variant.SalePrice.Value > 0 && variant.SalePrice.Value < variant.Price)
         {
             return string.Format("<span class=\"price-old\">{0:N0} đ</span> <span class=\"price-current\">{1:N0} đ</span>", variant.Price, variant.SalePrice.Value);
         }
-
         return string.Format("<span class=\"price-current\">{0:N0} đ</span>", variant.Price);
     }
-
     private static string BuildSaleBadgeHtml(List<VariantLite> variants)
     {
         if (variants == null || variants.Count == 0)
         {
             return string.Empty;
         }
-
         var saleVariant = variants
             .Where(v => v.SalePrice.HasValue && v.SalePrice.Value > 0 && v.SalePrice.Value < v.Price)
             .OrderByDescending(v => (v.Price - v.SalePrice.Value) / v.Price)
@@ -698,30 +749,25 @@ public partial class CategoryDefault : System.Web.UI.Page
         {
             return string.Empty;
         }
-
         var percent = (int)Math.Round((saleVariant.Price - saleVariant.SalePrice.Value) / saleVariant.Price * 100m, 0);
         if (percent <= 0)
         {
             return string.Empty;
         }
-
         return string.Format("<span class=\"sale-badge\">-{0}%</span>", percent);
     }
-
     private class SchemaItem
     {
         public string Name { get; set; }
         public string Url { get; set; }
         public string ImageUrl { get; set; }
     }
-
     private string BuildItemListSchema(List<SchemaItem> items)
     {
         if (items == null || items.Count == 0)
         {
             return string.Empty;
         }
-
         var list = items.Select((item, index) => new
         {
             @type = "ListItem",
@@ -730,18 +776,15 @@ public partial class CategoryDefault : System.Web.UI.Page
             name = item.Name,
             image = item.ImageUrl
         }).ToList();
-
         var schema = new
         {
             @context = "https://schema.org",
             @type = "ItemList",
             itemListElement = list
         };
-
         var json = new System.Web.Script.Serialization.JavaScriptSerializer().Serialize(schema);
         return "<script type=\"application/ld+json\">" + json + "</script>";
     }
-
     private static string BuildCategoryBreadcrumb(List<CfCategory> categories, int categoryId, Dictionary<string, Dictionary<int, string>> slugLookup)
     {
         var path = new List<CfCategory>();
@@ -758,12 +801,10 @@ public partial class CategoryDefault : System.Web.UI.Page
             currentId = current.ParentId.Value;
         }
         path.Reverse();
-
         var links = new List<string>
         {
             "<li class=\"breadcrumb-item\"><a href=\"/\">Trang chủ</a></li>"
         };
-
         for (int i = 0; i < path.Count; i++)
         {
             var item = path[i];
@@ -772,7 +813,6 @@ public partial class CategoryDefault : System.Web.UI.Page
             {
                 continue;
             }
-
             bool isLast = i == path.Count - 1;
             var slug = GetSlug(slugLookup, "Category", item.Id);
             if (isLast || string.IsNullOrWhiteSpace(slug))
@@ -780,25 +820,20 @@ public partial class CategoryDefault : System.Web.UI.Page
                 links.Add(string.Format("<li class=\"breadcrumb-item active\" aria-current=\"page\">{0}</li>", name));
                 continue;
             }
-
             links.Add(string.Format("<li class=\"breadcrumb-item\"><a href=\"/danh-muc/{0}\">{1}</a></li>", slug, name));
         }
-
         return string.Join("", links);
     }
-
     private static bool IsLikelyUrl(string value)
     {
         if (string.IsNullOrWhiteSpace(value))
         {
             return false;
         }
-
         return value.StartsWith("http://", StringComparison.OrdinalIgnoreCase)
             || value.StartsWith("https://", StringComparison.OrdinalIgnoreCase)
             || value.Contains("unicoderbd.com");
     }
-
     private string GetSlugFromRequest()
     {
         var routeSlug = Page.RouteData.Values["slug"] as string;
@@ -808,7 +843,6 @@ public partial class CategoryDefault : System.Web.UI.Page
         }
         return (Request.QueryString["slug"] ?? string.Empty).Trim();
     }
-
     private static IEnumerable<string> BuildSeoMeta(
         string canonical,
         string description,
@@ -834,7 +868,6 @@ public partial class CategoryDefault : System.Web.UI.Page
             tags.Add("<link rel=\"canonical\" href=\"" + Encode(canonical) + "\" />");
             tags.Add("<meta property=\"og:url\" content=\"" + Encode(canonical) + "\" />");
         }
-
         if (!string.IsNullOrWhiteSpace(ogTitle))
         {
             tags.Add("<meta property=\"og:title\" content=\"" + Encode(ogTitle) + "\" />");
@@ -851,7 +884,6 @@ public partial class CategoryDefault : System.Web.UI.Page
         {
             tags.Add("<meta property=\"og:type\" content=\"" + Encode(ogType) + "\" />");
         }
-
         tags.Add("<meta name=\"twitter:card\" content=\"summary_large_image\" />");
         if (!string.IsNullOrWhiteSpace(twitterTitle))
         {
@@ -865,15 +897,65 @@ public partial class CategoryDefault : System.Web.UI.Page
         {
             tags.Add("<meta name=\"twitter:image\" content=\"" + Encode(twitterImage) + "\" />");
         }
-
         return tags;
     }
-
     private static string Encode(string value)
     {
         return HttpUtility.HtmlAttributeEncode(value ?? string.Empty);
     }
+
+    [WebMethod]
+    [ScriptMethod(ResponseFormat = ResponseFormat.Json)]
+    public static object ToggleWishlist(int productId)
+    {
+        var customerId = CustomerAuth.GetCustomerId();
+        if (!customerId.HasValue)
+        {
+            var context = HttpContext.Current;
+            var returnUrl = context != null && context.Request != null
+                ? context.Request.Url.PathAndQuery
+                : "/danh-muc";
+            return new
+            {
+                success = false,
+                requiresLogin = true,
+                loginUrl = "/tai-khoan/dang-nhap.aspx?returnUrl=" + HttpUtility.UrlEncode(returnUrl)
+            };
+        }
+        if (productId <= 0)
+        {
+            return new { success = false };
+        }
+        using (var db = new BeautyStoryContext())
+        {
+            var existing = db.CfWishlists.FirstOrDefault(w => w.CustomerId == customerId.Value && w.ProductId == productId);
+            bool liked;
+            if (existing != null)
+            {
+                db.CfWishlists.Remove(existing);
+                liked = false;
+            }
+            else
+            {
+                db.CfWishlists.Add(new CfWishlist
+                {
+                    CustomerId = customerId.Value,
+                    ProductId = productId,
+                    Status = true,
+                    CreatedAt = DateTime.UtcNow
+                });
+                liked = true;
+            }
+            db.SaveChanges();
+            return new { success = true, liked };
+        }
+    }
 }
+
+
+
+
+
 
 
 

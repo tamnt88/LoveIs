@@ -31,8 +31,19 @@ public class CfCommunityComment
     public int Id { get; set; }
     public int PostId { get; set; }
     public int CustomerId { get; set; }
+    public int? ParentId { get; set; }
     public string Content { get; set; }
     public bool Status { get; set; }
+    public DateTime CreatedAt { get; set; }
+}
+
+
+[Table("cf_community_comment_like")]
+public class CfCommunityCommentLike
+{
+    public int Id { get; set; }
+    public int CommentId { get; set; }
+    public int CustomerId { get; set; }
     public DateTime CreatedAt { get; set; }
 }
 

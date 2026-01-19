@@ -10,6 +10,12 @@ public partial class AdminSystemWalletRelease : AdminBasePage
 {
     protected void Page_Load(object sender, EventArgs e)
     {
+        if (Request != null && Request.HttpMethod == "POST"
+            && Request.Form["InlineUpload"] == "1"
+            && Request.Files != null && Request.Files.Count > 0)
+        {
+            ProcessInlineUpload();
+        }
     }
 
     protected void UploadProofButton_Click(object sender, EventArgs e)
@@ -290,6 +296,68 @@ public partial class AdminSystemWalletRelease : AdminBasePage
     private static string SaveUploadedFile(System.Web.UI.WebControls.FileUpload upload, string folder)
     {
         if (upload == null || !upload.HasFile)
+        {
+            return string.Empty;
+        }
+
+        var extension = Path.GetExtension(upload.FileName);
+        var fileName = Guid.NewGuid().ToString("N") + extension;
+        var virtualFolder = string.Format("~/upload/{0}", folder.Trim('/'));
+        var physicalFolder = HttpContext.Current.Server.MapPath(virtualFolder);
+        if (!Directory.Exists(physicalFolder))
+        {
+            Directory.CreateDirectory(physicalFolder);
+        }
+
+        var physicalPath = Path.Combine(physicalFolder, fileName);
+        upload.SaveAs(physicalPath);
+        return string.Format("/upload/{0}/{1}", folder.Trim('/'), fileName);
+    }
+
+    private void ProcessInlineUpload()
+    {
+        FormMessage.Text = string.Empty;
+        int payoutId;
+        if (!int.TryParse(Request.Form["PayoutId"], out payoutId))
+        {
+            FormMessage.Text = "Payout ID khong hop le.";
+            return;
+        }
+
+        var file = Request.Files["ProofFile"];
+        if (file == null || file.ContentLength == 0)
+        {
+            FormMessage.Text = "Vui long chon file chung tu.";
+            return;
+        }
+
+        var proofUrl = SaveUploadedFile(file, "payout-proofs");
+        if (string.IsNullOrWhiteSpace(proofUrl))
+        {
+            FormMessage.Text = "Khong the luu file.";
+            return;
+        }
+
+        using (var db = new BeautyStoryContext())
+        {
+            var actor = GetAdminUsername();
+            var note = Request.Form["ProofNote"] ?? string.Empty;
+            ShopWalletService.AddPayoutProof(db, payoutId, proofUrl, file.FileName, actor);
+            if (!ShopWalletService.MarkPayoutPaid(db, payoutId, actor, note))
+            {
+                FormMessage.Text = "Khong the cap nhat trang thai chi tien.";
+                return;
+            }
+
+            db.SaveChanges();
+            FormMessage.CssClass = "text-success small d-block mb-2";
+            FormMessage.Text = "Da upload chung tu va cap nhat trang thai.";
+        }
+    }
+
+    private static string SaveUploadedFile(System.Web.HttpPostedFile upload, string folder)
+    {
+        if (upload == null || upload.ContentLength == 0)
         {
             return string.Empty;
         }

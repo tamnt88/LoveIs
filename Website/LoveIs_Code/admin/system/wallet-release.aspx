@@ -183,14 +183,16 @@
                         var actionHtml = "";
                         if (item.Status === "Requested") {
                             actionHtml =
-                                "<div class='d-flex flex-column gap-1'>" +
-                                "<input class='form-control form-control-sm' placeholder='Proof URL' data-proof='" + item.Id + "' />" +
-                                "<input class='form-control form-control-sm' placeholder='Ghi chu' data-note='" + item.Id + "' />" +
+                                "<form class='d-flex flex-column gap-1' method='post' enctype='multipart/form-data'>" +
+                                "<input type='hidden' name='InlineUpload' value='1' />" +
+                                "<input type='hidden' name='PayoutId' value='" + item.Id + "' />" +
+                                "<input type='file' name='ProofFile' class='form-control form-control-sm' accept='image/*,application/pdf' />" +
+                                "<input type='text' name='ProofNote' class='form-control form-control-sm' placeholder='Ghi chu' />" +
                                 "<div class='d-flex gap-1'>" +
-                                "<button class='btn btn-sm btn-primary' data-pay='" + item.Id + "'>Da chi tien</button>" +
-                                "<button class='btn btn-sm btn-outline-danger' data-reject='" + item.Id + "'>Tu choi</button>" +
+                                "<button class='btn btn-sm btn-primary' type='submit'>Upload + Da chi tien</button>" +
+                                "<button class='btn btn-sm btn-outline-danger' type='button' data-reject='" + item.Id + "'>Tu choi</button>" +
                                 "</div>" +
-                                "</div>";
+                                "</form>";
                         }
                         row.innerHTML =
                             "<td>" + item.ShopName + "</td>" +

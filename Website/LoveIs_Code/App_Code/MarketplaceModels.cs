@@ -393,6 +393,21 @@ public class CfPaymentTransaction
     [StringLength(50)]
     public string Status { get; set; }
 
+    [StringLength(50)]
+    public string BankCode { get; set; }
+
+    [StringLength(255)]
+    public string BankName { get; set; }
+
+    [StringLength(50)]
+    public string CardType { get; set; }
+
+    [StringLength(50)]
+    public string CardNumber { get; set; }
+
+    [StringLength(20)]
+    public string ResponseCode { get; set; }
+
     public decimal Amount { get; set; }
 
     public string MetaJson { get; set; }

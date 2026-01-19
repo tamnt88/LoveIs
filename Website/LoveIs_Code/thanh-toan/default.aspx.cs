@@ -108,6 +108,7 @@ public partial class CheckoutDefault : System.Web.UI.Page
             BindShippingMethods();
 
             BindPaymentMethods();
+            BindOnePayChannels();
 
             BindSummary();
 
@@ -125,7 +126,7 @@ public partial class CheckoutDefault : System.Web.UI.Page
 
         string canonical = Request.Url != null ? Request.Url.GetLeftPart(UriPartial.Path) : string.Empty;
 
-        SystemPageSeoApplier.Apply("checkout", SeoTitleLiteral, SeoMetaLiteral, "Thanh toán | LoveIs Store", canonical);
+        SystemPageSeoApplier.Apply("checkout", SeoTitleLiteral, SeoMetaLiteral, "Thanh ton | LoveIs Store", canonical);
 
     }
 
@@ -147,7 +148,7 @@ public partial class CheckoutDefault : System.Web.UI.Page
 
             ProvinceDropDown.Items.Clear();
 
-            ProvinceDropDown.Items.Add(new ListItem("-- Ch?n t?nh/thành ph? --", ""));
+            ProvinceDropDown.Items.Add(new ListItem("-- Ch?n t?nh/thnh ph? --", ""));
 
             foreach (var item in provinces)
 
@@ -167,7 +168,7 @@ public partial class CheckoutDefault : System.Web.UI.Page
 
         WardDropDown.Items.Clear();
 
-        WardDropDown.Items.Add(new ListItem("-- Ch?n phu?ng/xã --", ""));
+        WardDropDown.Items.Add(new ListItem("-- Ch?n phu?ng/x --", ""));
 
         if (!provinceId.HasValue)
 
@@ -285,8 +286,95 @@ public partial class CheckoutDefault : System.Web.UI.Page
 
             }
 
+
+            var onlineMethod = methods.FirstOrDefault(m => IsOnlinePaymentMethod(m));
+            OnlinePaymentMethodId.Value = onlineMethod != null ? onlineMethod.Id.ToString() : "0";
         }
 
+    }
+
+
+    private void BindOnePayChannels()
+    {
+        OnePayChannelList.Items.Clear();
+        OnePayChannelList.Items.Add(new ListItem("The noi dia", "DOMESTIC"));
+        OnePayChannelList.Items.Add(new ListItem("The quoc te", "INTERNATIONAL"));
+        OnePayChannelList.Items.Add(new ListItem("Vi dien tu", "EWALLET"));
+        OnePayChannelList.SelectedValue = "DOMESTIC";
+    }
+
+    private static bool IsOnlinePaymentMethod(CfPaymentMethod method)
+    {
+        if (method == null)
+        {
+            return false;
+        }
+        var code = (method.Code ?? string.Empty).Trim().ToUpperInvariant();
+        var name = (method.Name ?? string.Empty).Trim().ToUpperInvariant();
+        return code == "ONLINE" || code == "ONEPAY" || name.Contains("ONLINE") || name.Contains("ONEPAY");
+    }
+
+    private static string GetOnePayCardList(string channel)
+    {
+        var key = (channel ?? string.Empty).Trim().ToUpperInvariant();
+        if (key == "DOMESTIC")
+        {
+            return "DOMESTIC";
+        }
+        if (key == "INTERNATIONAL")
+        {
+            return "INTERNATIONAL";
+        }
+        if (key == "EWALLET")
+        {
+            return "EWALLET,QR,VIETQR";
+        }
+        return string.Empty;
+    }
+
+    private static string GetOnePayChannelLabel(string channel)
+    {
+        var key = (channel ?? string.Empty).Trim().ToUpperInvariant();
+        if (key == "DOMESTIC")
+        {
+            return "The noi dia";
+        }
+        if (key == "INTERNATIONAL")
+        {
+            return "The quoc te";
+        }
+        if (key == "EWALLET")
+        {
+            return "Vi dien tu";
+        }
+        return string.Empty;
+    }
+
+    private string BuildOnePayPaymentUrl(CfOrder order, string cardList)
+    {
+        var baseUrl = Request != null && Request.Url != null
+            ? Request.Url.GetLeftPart(UriPartial.Authority)
+            : string.Empty;
+        var request = new OnePayRequest
+        {
+            MerchantId = OnePayHelper.GetSetting("OnePay:MerchantId", "TESTONEPAY32"),
+            AccessCode = OnePayHelper.GetSetting("OnePay:AccessCode", "6BEB2566"),
+            SecureHash = OnePayHelper.GetSetting("OnePay:HashCode", "6D0870CDE5F24F34F3915FB0045120D6"),
+            BaseUrl = OnePayHelper.GetSetting("OnePay:BaseUrl", "https://mtf.onepay.vn"),
+            UrlPrefix = OnePayHelper.GetSetting("OnePay:UrlPrefix", "/paygate/vpcpay.op?"),
+            ReturnUrl = BuildAbsoluteUrl(baseUrl, "/thanh-toan/onepay-return.aspx"),
+            CallbackUrl = BuildAbsoluteUrl(baseUrl, "/thanh-toan/onepay-ipn.aspx"),
+            MerchantTxnRef = order != null ? order.OrderCode : string.Empty,
+            OrderInfo = order != null ? order.OrderCode : string.Empty,
+            Amount = order != null ? OnePayHelper.ToOnePayAmount(order.Total) : 0,
+            CustomerId = order != null && order.CustomerId.HasValue ? order.CustomerId.Value.ToString() : string.Empty,
+            CustomerEmail = order != null ? order.InvoiceEmail : string.Empty,
+            CustomerPhone = order != null ? order.Phone : string.Empty,
+            TicketNo = Request != null ? Request.UserHostAddress : string.Empty,
+            CardList = cardList ?? string.Empty
+        };
+
+        return OnePayHelper.BuildPaymentUrl(request);
     }
 
     private void BindSummary()
@@ -410,7 +498,7 @@ public partial class CheckoutDefault : System.Web.UI.Page
 
                     LineTotalValue = lineTotal,
 
-                    LineTotal = price > 0 ? string.Format("{0:N0} d", lineTotal) : "Liên h?"
+                    LineTotal = price > 0 ? string.Format("{0:N0} d", lineTotal) : "Lin h?"
 
                 };
 
@@ -511,6 +599,17 @@ public partial class CheckoutDefault : System.Web.UI.Page
             }
         }
         return result;
+    }
+
+    private void RemoveCheckedItemsFromCart()
+    {
+        var selected = GetSelectedVariantIds(Request != null ? Request.QueryString["items"] : null);
+        if (selected.Count == 0)
+        {
+            CartService.ClearCart();
+            return;
+        }
+        CartService.RemoveVariants(selected);
     }
 
     private int? GetSelectedShippingMethodId()
@@ -1426,7 +1525,7 @@ public partial class CheckoutDefault : System.Web.UI.Page
     var submitKey = "CHECKOUT_SUBMIT_LOCK";
     if (Session[submitKey] != null)
     {
-        CheckoutMessage.Text = "Ðon hàng dang du?c x? lý. Vui lòng ch?.";
+        CheckoutMessage.Text = "on hng dang du?c x? l. Vui lng ch?.";
         return;
     }
 
@@ -1446,7 +1545,7 @@ public partial class CheckoutDefault : System.Web.UI.Page
 
                                                         {
 
-                                                            CheckoutMessage.Text = "Gi? hàng dang tr?ng.";
+                                                            CheckoutMessage.Text = "Gi? hng dang tr?ng.";
 
                                                             return;
 
@@ -1468,7 +1567,7 @@ public partial class CheckoutDefault : System.Web.UI.Page
 
                                                             {
 
-                                                                CheckoutMessage.Text = string.Format("Gi?i h?n don hàng: T?i da {0} s?n ph?m/don; m?i s?n ph?m t?i da {1}.", limit.MaxItemsPerOrder, limit.MaxQtyPerItem);
+                                                                CheckoutMessage.Text = string.Format("Gi?i h?n don hng: T?i da {0} s?n ph?m/don; m?i s?n ph?m t?i da {1}.", limit.MaxItemsPerOrder, limit.MaxQtyPerItem);
 
                                                                 return;
 
@@ -1486,7 +1585,7 @@ public partial class CheckoutDefault : System.Web.UI.Page
 
                                                         {
 
-                                                            CheckoutMessage.Text = "Vui lòng nh?p h? tên, s? di?n tho?i và d?a ch?.";
+                                                            CheckoutMessage.Text = "Vui lng nh?p h? tn, s? di?n tho?i v d?a ch?.";
 
                                                             return;
 
@@ -1496,7 +1595,7 @@ public partial class CheckoutDefault : System.Web.UI.Page
 
                                                         {
 
-                                                            CheckoutMessage.Text = "S? di?n tho?i không h?p l?.";
+                                                            CheckoutMessage.Text = "S? di?n tho?i khng h?p l?.";
 
                                                             return;
 
@@ -1667,14 +1766,14 @@ public partial class CheckoutDefault : System.Web.UI.Page
                                                             {
                                                                 if (!stockLookup.ContainsKey(item.VariantId))
                                                                 {
-                                                                    CheckoutMessage.Text = "S?n ph?m không còn t?n t?i.";
+                                                                    CheckoutMessage.Text = "S?n ph?m khng cn t?n t?i.";
                                                                     return;
                                                                 }
 
                                                                 var stockVariant = stockLookup[item.VariantId];
                                                                 if (!stockVariant.Status)
                                                                 {
-                                                                    CheckoutMessage.Text = "S?n ph?m dang t?m ng?ng bán.";
+                                                                    CheckoutMessage.Text = "S?n ph?m dang t?m ng?ng bn.";
                                                                     return;
                                                                 }
 
@@ -1682,7 +1781,7 @@ public partial class CheckoutDefault : System.Web.UI.Page
                                                                 var effectivePrice = GetEffectivePrice(stockVariant);
                                                                 if (effectivePrice <= 0)
                                                                 {
-                                                                    CheckoutMessage.Text = "S?n ph?m không có giá h?p l?.";
+                                                                    CheckoutMessage.Text = "S?n ph?m khng c gi h?p l?.";
                                                                     return;
                                                                 }
 
@@ -1692,7 +1791,7 @@ public partial class CheckoutDefault : System.Web.UI.Page
                                                                     var productName = productLookup.ContainsKey(stockVariant.ProductId)
                                                                         ? productLookup[stockVariant.ProductId].ProductName
                                                                         : "S?n ph?m";
-                                                                    CheckoutMessage.Text = string.Format("{0} ch? còn {1} S?n ph?m.", productName, stockQty);
+                                                                    CheckoutMessage.Text = string.Format("{0} ch? cn {1} S?n ph?m.", productName, stockQty);
                                                                     return;
                                                                 }
                                                             }
@@ -1820,6 +1919,10 @@ public partial class CheckoutDefault : System.Web.UI.Page
 
                                                                 : null;
 
+                                                            var isOnlinePayment = IsOnlinePaymentMethod(paymentMethod);
+                                                            var onePayChannel = OnePayChannelList.SelectedValue;
+                                                            var onePayCardList = GetOnePayCardList(onePayChannel);
+
                                                             var config = GetPlatformFeeConfig(db);
 
                                                             var shippingFeePercent = config != null ? config.ShippingFeePercent : 0m;
@@ -1892,7 +1995,7 @@ public partial class CheckoutDefault : System.Web.UI.Page
 
                                                                 PaymentMethodId = paymentMethod != null ? (int?)paymentMethod.Id : null,
 
-                                                                PaymentMethod = paymentMethod != null ? paymentMethod.Name : string.Empty,
+                                                                PaymentMethod = paymentMethod != null ? (isOnlinePayment && !string.IsNullOrWhiteSpace(onePayChannel) ? string.Format("{0} - {1}", paymentMethod.Name, GetOnePayChannelLabel(onePayChannel)) : paymentMethod.Name) : string.Empty,
 
                                                                 PaymentStatusId = paymentStatus != null ? (int?)paymentStatus.Id : null,
 
@@ -1968,7 +2071,7 @@ public partial class CheckoutDefault : System.Web.UI.Page
                                                             {
                                                                 OrderId = order.Id,
                                                                 Action = "Create",
-                                                                Note = "Kh?i t?o don hàng",
+                                                                Note = "Kh?i t?o don hng",
                                                                 Status = true,
                                                                 CreatedAt = DateTime.Now,
                                                                 CreatedBy = actor,
@@ -1979,9 +2082,17 @@ public partial class CheckoutDefault : System.Web.UI.Page
 
                                                             SendOrderNotification(order, orderItems);
 
+                                                        if (isOnlinePayment)
+                                                        {
+                                                            var paymentUrl = BuildOnePayPaymentUrl(order, onePayCardList);
+                                                            RemoveCheckedItemsFromCart();
+                                                            Response.Redirect(paymentUrl);
+                                                            return;
                                                         }
 
-                                                        CartService.ClearCart();
+                                                        }
+
+                                                        RemoveCheckedItemsFromCart();
 
                                                         Response.Redirect("/thanh-toan/hoan-tat.aspx?code=" + Server.UrlEncode(orderCode));
     }
@@ -2196,7 +2307,7 @@ private static string GenerateOrderCode()
             {
                 ShopOrderId = shopOrder.Id,
                 Action = "Create",
-                Note = "Kh?i t?o don hàng shop",
+                Note = "Kh?i t?o don hng shop",
                 Status = true,
                 CreatedAt = DateTime.Now,
                 CreatedBy = order.CreatedBy,
@@ -2509,7 +2620,7 @@ private static string GenerateOrderCode()
 
             var fromAddress = new MailAddress(account.Email, string.IsNullOrWhiteSpace(account.DisplayName) ? "LoveIs Store" : account.DisplayName);
 
-            var subject = string.Format("Ðon hàng m?i: {0}", order.OrderCode);
+            var subject = string.Format("on hng m?i: {0}", order.OrderCode);
 
             var baseUrl = string.Empty;
 
@@ -2607,9 +2718,9 @@ private static string GenerateOrderCode()
 
             bodyBuilder.AppendLine("<div>");
 
-            bodyBuilder.AppendLine("<div style=\"font-size:18px;font-weight:bold;\">Ðon hàng m?i</div>");
+            bodyBuilder.AppendLine("<div style=\"font-size:18px;font-weight:bold;\">on hng m?i</div>");
 
-            bodyBuilder.AppendLine("<div style=\"color:#666;\">Mã don hàng: <strong>" + HttpUtility.HtmlEncode(order.OrderCode) + "</strong></div>");
+            bodyBuilder.AppendLine("<div style=\"color:#666;\">M don hng: <strong>" + HttpUtility.HtmlEncode(order.OrderCode) + "</strong></div>");
 
             bodyBuilder.AppendLine("</div></div>");
 
@@ -2617,13 +2728,13 @@ private static string GenerateOrderCode()
 
             bodyBuilder.AppendLine("<div style=\"margin-bottom:16px;\">");
 
-            bodyBuilder.AppendLine("<div style=\"font-weight:bold;margin-bottom:6px;\">Thông tin khách hàng</div>");
+            bodyBuilder.AppendLine("<div style=\"font-weight:bold;margin-bottom:6px;\">Thng tin khch hng</div>");
 
-            bodyBuilder.AppendLine("<div>H? và tên: " + HttpUtility.HtmlEncode(order.CustomerName) + "</div>");
+            bodyBuilder.AppendLine("<div>H? v tn: " + HttpUtility.HtmlEncode(order.CustomerName) + "</div>");
 
-            bodyBuilder.AppendLine("<div>Ði?n tho?i: " + HttpUtility.HtmlEncode(order.Phone) + "</div>");
+            bodyBuilder.AppendLine("<div>i?n tho?i: " + HttpUtility.HtmlEncode(order.Phone) + "</div>");
 
-            bodyBuilder.AppendLine("<div>Ð?a ch?: " + HttpUtility.HtmlEncode(order.AddressLine) + "</div>");
+            bodyBuilder.AppendLine("<div>?a ch?: " + HttpUtility.HtmlEncode(order.AddressLine) + "</div>");
 
             if (!string.IsNullOrWhiteSpace(order.WardName) || !string.IsNullOrWhiteSpace(order.ProvinceName))
 
@@ -2637,13 +2748,13 @@ private static string GenerateOrderCode()
 
             bodyBuilder.AppendLine("<div style=\"margin-bottom:16px;\">");
 
-            bodyBuilder.AppendLine("<div style=\"font-weight:bold;margin-bottom:6px;\">Thông tin don hàng</div>");
+            bodyBuilder.AppendLine("<div style=\"font-weight:bold;margin-bottom:6px;\">Thng tin don hng</div>");
 
-            bodyBuilder.AppendLine("<div>Thanh toán: " + HttpUtility.HtmlEncode(order.PaymentMethod) + "</div>");
+            bodyBuilder.AppendLine("<div>Thanh ton: " + HttpUtility.HtmlEncode(order.PaymentMethod) + "</div>");
 
             bodyBuilder.AppendLine("<div>V?n chuy?n: " + HttpUtility.HtmlEncode(order.ShippingMethod) + "</div>");
 
-            bodyBuilder.AppendLine("<div>Ghi chú: " + HttpUtility.HtmlEncode(order.Note ?? string.Empty) + "</div>");
+            bodyBuilder.AppendLine("<div>Ghi ch: " + HttpUtility.HtmlEncode(order.Note ?? string.Empty) + "</div>");
 
             bodyBuilder.AppendLine("</div>");
 
@@ -2655,11 +2766,11 @@ private static string GenerateOrderCode()
 
             bodyBuilder.AppendLine("<thead><tr>");
 
-            bodyBuilder.AppendLine("<th style=\"text-align:left;padding:8px;border-bottom:1px solid #eee;\">Ðon giá</th>");
+            bodyBuilder.AppendLine("<th style=\"text-align:left;padding:8px;border-bottom:1px solid #eee;\">on gi</th>");
 
             bodyBuilder.AppendLine("<th style=\"text-align:center;padding:8px;border-bottom:1px solid #eee;\">SL</th>");
 
-            bodyBuilder.AppendLine("<th style=\"text-align:right;padding:8px;border-bottom:1px solid #eee;\">Thành ti?n</th>");
+            bodyBuilder.AppendLine("<th style=\"text-align:right;padding:8px;border-bottom:1px solid #eee;\">Thnh ti?n</th>");
 
             bodyBuilder.AppendLine("</tr></thead><tbody>");
 
@@ -2721,9 +2832,9 @@ private static string GenerateOrderCode()
 
             bodyBuilder.AppendLine("<div style=\"min-width:240px;\">");
 
-            bodyBuilder.AppendLine("<div style=\"display:flex;justify-content:space-between;padding:4px 0;\"><span>T?m tính:&nbsp;</span><strong>" + order.Subtotal.ToString("n0") + " </strong></div>");
+            bodyBuilder.AppendLine("<div style=\"display:flex;justify-content:space-between;padding:4px 0;\"><span>T?m tnh:&nbsp;</span><strong>" + order.Subtotal.ToString("n0") + " </strong></div>");
 
-            bodyBuilder.AppendLine("<div style=\"display:flex;justify-content:space-between;padding:4px 0;\"><span>Phí v?n chuy?n:&nbsp;</span><strong>" + order.ShippingFee.ToString("n0") + " </strong></div>");
+            bodyBuilder.AppendLine("<div style=\"display:flex;justify-content:space-between;padding:4px 0;\"><span>Ph v?n chuy?n:&nbsp;</span><strong>" + order.ShippingFee.ToString("n0") + " </strong></div>");
 
             bodyBuilder.AppendLine("<div style=\"display:flex;justify-content:space-between;padding:6px 0;font-size:16px;\">");
 

@@ -36,7 +36,8 @@
                 <div class="col-lg-8">
                     <div class="card checkout-card">
                         <div class="card-body">
-                            <h5 class="card-title">Thông tin giao hàng</h5>
+                            <h5 class="card-title">Thông tin giao hàng</h5>
+
 <asp:Panel ID="AddressBookPanel" runat="server" CssClass="mb-3" Visible="false">
     <label class="form-label">Sổ địa chỉ</label>
     <asp:DropDownList ID="AddressSelect" runat="server" CssClass="form-select" AutoPostBack="true" OnSelectedIndexChanged="AddressSelect_SelectedIndexChanged" />
@@ -73,7 +74,8 @@
 
                     <div class="card checkout-card mt-4">
                         <div class="card-body">
-                            <h5 class="card-title">Hóa đơn công ty (tùy chọn)</h5>
+                            <h5 class="card-title">Hóa đơn công ty (tùy chọn)</h5>
+
 
                             <div class="form-check mb-3">
                                 <asp:CheckBox ID="InvoiceCheckBox" runat="server" CssClass="form-check-input" />
@@ -102,7 +104,8 @@
 
                     <div class="card checkout-card mt-4">
                         <div class="card-body">
-                            <h5 class="card-title">Vận chuyển</h5>
+                            <h5 class="card-title">Vận chuyển</h5>
+
 
                             <asp:RadioButtonList ID="ShippingMethodList" runat="server" CssClass="checkout-radio" RepeatLayout="Flow" />
                             <div class="checkout-hint">Phí vận chuyển được tính theo tỉnh/phường.</div>
@@ -111,9 +114,15 @@
 
                     <div class="card checkout-card mt-4">
                         <div class="card-body">
-                            <h5 class="card-title">Thanh toán</h5>
+                            <h5 class="card-title">Thanh toán</h5>
+
 
                             <asp:RadioButtonList ID="PaymentMethodList" runat="server" CssClass="checkout-radio" RepeatLayout="Flow" />
+                            <asp:HiddenField ID="OnlinePaymentMethodId" runat="server" />
+                            <div id="OnePayChannelSection" class="checkout-online-options" style="display:none;">
+                                <label class="form-label">Chon hinh thuc thanh toan online</label>
+                                <asp:RadioButtonList ID="OnePayChannelList" runat="server" CssClass="checkout-radio" RepeatLayout="Flow" />
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -121,7 +130,8 @@
                 <div class="col-lg-4">
                     <div class="card checkout-card">
                         <div class="card-body">
-                            <h5 class="card-title">Giỏ hàng</h5>
+                            <h5 class="card-title">Giỏ hàng</h5>
+
 
                             <asp:Repeater ID="SummaryGroupRepeater" runat="server">
                                 <ItemTemplate>
@@ -238,6 +248,16 @@
                 });
             }
 
+            function toggleOnlinePaymentOptions() {
+                var onlineId = parseInt($("#<%= OnlinePaymentMethodId.ClientID %>").val(), 10) || 0;
+                var selectedPaymentId = parseInt($("#<%= PaymentMethodList.ClientID %> input:checked").val(), 10) || 0;
+                if (onlineId > 0 && selectedPaymentId === onlineId) {
+                    $("#OnePayChannelSection").show();
+                } else {
+                    $("#OnePayChannelSection").hide();
+                }
+            }
+
             function updateSummary() {
                 var provinceId = parseInt($("#<%= ProvinceDropDown.ClientID %>").val(), 10) || 0;
                 var wardId = parseInt($("#<%= WardDropDown.ClientID %>").val(), 10) || 0;
@@ -286,7 +306,8 @@
                 $ward.append($("<option></option>").val("").text("-- Chon phuong/xa --"));
 
                 if (!provinceId) {
-                    updateSummary();
+                    toggleOnlinePaymentOptions();
+            updateSummary();
                     return;
                 }
 
@@ -296,25 +317,36 @@
                             $ward.append($("<option></option>").val(item.Id).text(item.Name));
                         });
                     }
-                    updateSummary();
+                    toggleOnlinePaymentOptions();
+            updateSummary();
                 });
             }
 
             $(document).on("change", "#<%= ProvinceDropDown.ClientID %>", loadWards);
             $(document).on("change", "#<%= ShippingMethodList.ClientID %> input[type='radio']", updateSummary);
+            $(document).on("change", "#<%= PaymentMethodList.ClientID %> input[type='radio']", toggleOnlinePaymentOptions);
             $(document).on("change", ".coupon-list .coupon-check", updateSummary);
 
+            toggleOnlinePaymentOptions();
             updateSummary();
         })();
     </script>
 </asp:Content>
-
-
-
-
-
-
-
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

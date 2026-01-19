@@ -140,6 +140,23 @@ public static class CartService
         cart.RemoveAll(x => x.VariantId == variantId);
     }
 
+    public static void RemoveVariants(IEnumerable<int> variantIds)
+    {
+        if (variantIds == null)
+        {
+            return;
+        }
+
+        var ids = variantIds.Where(id => id > 0).Distinct().ToList();
+        if (ids.Count == 0)
+        {
+            return;
+        }
+
+        var cart = GetCart();
+        cart.RemoveAll(item => ids.Contains(item.VariantId));
+    }
+
     public static void ClearCart()
     {
         var context = HttpContext.Current;

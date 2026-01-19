@@ -1,0 +1,12 @@
+DOMESTIC
+Vietcombank
+Card number: 9704360000000000002
+Card Name: NGUYEN VAN A       
+Issue date: 01-13             
+OTP: 123456
+Card Number Master : 5123450000000008
+Expiry Date: 05/2028
+CSC: 123
+Card Number Visa : 4000000000001091 
+Expiry Date: 05/2028
+CSC: 123

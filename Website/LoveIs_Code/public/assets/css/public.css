@@ -4587,6 +4587,61 @@ button.search-submit {
     }
 }
 
+.cart-modal {
+    position: fixed;
+    inset: 0;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 2000;
+}
+
+.cart-modal.is-open {
+    display: flex;
+}
+
+.cart-modal__backdrop {
+    position: absolute;
+    inset: 0;
+    background: rgba(20, 18, 16, 0.45);
+}
+
+.cart-modal__dialog {
+    position: relative;
+    width: min(420px, 92vw);
+    background: #ffffff;
+    border-radius: 16px;
+    border: 1px solid #f0d9c2;
+    box-shadow: 0 16px 40px rgba(20, 18, 16, 0.25);
+    z-index: 1;
+}
+
+.cart-modal__header {
+    padding: 16px 18px 0;
+}
+
+.cart-modal__title {
+    font-weight: 700;
+    color: #a72b54;
+    font-size: 18px;
+}
+
+.cart-modal__body {
+    padding: 12px 18px;
+    color: #7a4854;
+    font-size: 14px;
+}
+
+.cart-modal__footer {
+    padding: 0 18px 18px;
+    display: flex;
+    justify-content: flex-end;
+}
+
+.cart-modal__btn {
+    min-width: 100px;
+}
+
 .brand-showcase-section .section-head h3 {
     font-weight: 700;
     color: #e93874;
@@ -5201,4 +5256,169 @@ body {
 
 .product-detail .variant-pill.active:focus {
     border: none;
+}
+
+.checkout-coupon {
+    margin-top: 18px;
+}
+
+.checkout-coupon .coupon-divider {
+    margin: 8px 0 10px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    color: #a77a86;
+    font-size: 13px;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+}
+
+.checkout-coupon .coupon-divider::before,
+.checkout-coupon .coupon-divider::after {
+    content: "";
+    flex: 1;
+    height: 1px;
+    background: #f0d9c2;
+}
+
+.checkout-coupon .coupon-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.checkout-coupon .coupon-card {
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    gap: 10px;
+    align-items: center;
+    padding: 8px 10px;
+    border-radius: 12px;
+    border: 1px solid #f0d9c2;
+    background: #ffffff;
+    box-shadow: 0 6px 14px rgba(178, 120, 97, 0.12);
+    cursor: pointer;
+    position: relative;
+}
+
+.checkout-coupon .coupon-check {
+    position: absolute;
+    opacity: 0;
+    width: 1px;
+    height: 1px;
+    pointer-events: none;
+}
+
+.checkout-coupon .coupon-badge {
+    min-width: 74px;
+    background: linear-gradient(180deg, #ff8a3d 0%, #ff5b2f 100%);
+    color: #fff;
+    border-radius: 10px;
+    padding: 6px 8px;
+    display: grid;
+    gap: 4px;
+    text-align: center;
+    font-weight: 700;
+    position: relative;
+    overflow: hidden;
+}
+
+.checkout-coupon .coupon-badge-label {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+}
+
+.checkout-coupon .coupon-badge-value {
+    font-size: 16px;
+    line-height: 1;
+}
+
+.checkout-coupon .coupon-badge-sub {
+    font-size: 11px;
+    font-weight: 600;
+    opacity: 0.95;
+}
+
+.checkout-coupon .coupon-content {
+    display: grid;
+    gap: 2px;
+    color: #7a4854;
+}
+
+.checkout-coupon .coupon-shop {
+    font-weight: 700;
+    color: #a72b54;
+}
+
+.checkout-coupon .coupon-code {
+    font-size: 12px;
+    color: #a97a86;
+}
+
+.checkout-coupon .coupon-meta {
+    font-size: 11px;
+    color: #c18f9b;
+}
+
+.checkout-coupon .coupon-radio {
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    border: 2px solid #d9c4b2;
+    display: inline-block;
+    position: relative;
+}
+
+.checkout-coupon .coupon-check:checked ~ .coupon-radio {
+    border-color: #ff5b2f;
+    background: #ff5b2f;
+    box-shadow: 0 0 0 4px rgba(255, 91, 47, 0.2);
+}
+
+.checkout-coupon .coupon-check:checked ~ .coupon-content .coupon-shop {
+    color: #ff5b2f;
+}
+
+.checkout-shop-group + .checkout-shop-group {
+    margin-top: 14px;
+}
+
+.checkout-shop-name {
+    font-weight: 700;
+    color: #a72b54;
+    margin-bottom: 8px;
+}
+
+.checkout-shipping-breakdown {
+    margin-top: 6px;
+    display: none;
+    flex-direction: column;
+    gap: 4px;
+    font-size: 12px;
+    color: #a97a86;
+}
+
+.shipping-breakdown-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 2px 0;
+}
+
+@media (max-width: 576px) {
+    .checkout-coupon .coupon-entry {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .checkout-coupon .coupon-card {
+        grid-template-columns: auto 1fr;
+        gap: 10px;
+    }
+
+    .checkout-coupon .coupon-radio {
+        grid-column: 2 / 3;
+        justify-self: end;
+    }
 }

@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
@@ -51,6 +52,8 @@ public class CfSeller
     public string UpdatedBy { get; set; }
 
     public int SortOrder { get; set; }
+
+    public virtual ICollection<SellerKyc> SellerKycs { get; set; }
 }
 
 [Table("cf_shop")]
@@ -122,6 +125,8 @@ public class CfShop
     public string UpdatedBy { get; set; }
 
     public int SortOrder { get; set; }
+
+    public virtual ICollection<ShopDocument> ShopDocuments { get; set; }
 }
 
 [Table("cf_shop_follow")]
@@ -230,6 +235,8 @@ public class CfShopOrder
 
     [StringLength(50)]
     public string OrderStatus { get; set; }
+
+    public int? ShippingCarrierId { get; set; }
 
     public decimal Subtotal { get; set; }
 
@@ -517,3 +524,67 @@ public class CfShopReview
 
     public int SortOrder { get; set; }
 }
+[Table("cf_coupon")]
+public class CfCoupon
+{
+    public int Id { get; set; }
+
+    [Required, StringLength(50)]
+    public string Code { get; set; }
+
+    [Required, StringLength(200)]
+    public string Name { get; set; }
+
+    public string Description { get; set; }
+
+    [Required, StringLength(20)]
+    public string Scope { get; set; }
+
+    public int? ShopId { get; set; }
+
+    [Required, StringLength(20)]
+    public string DiscountType { get; set; }
+
+    public decimal DiscountValue { get; set; }
+
+    public decimal MinOrder { get; set; }
+
+    public decimal? MaxDiscount { get; set; }
+
+    public DateTime? StartAt { get; set; }
+
+    public DateTime? EndAt { get; set; }
+
+    public int? UsageLimit { get; set; }
+
+    public int? UsagePerUser { get; set; }
+
+    public bool Status { get; set; }
+
+    public DateTime CreatedAt { get; set; }
+
+    [StringLength(50)]
+    public string CreatedBy { get; set; }
+
+    public DateTime? UpdatedAt { get; set; }
+
+    [StringLength(50)]
+    public string UpdatedBy { get; set; }
+}
+
+[Table("cf_coupon_usage")]
+public class CfCouponUsage
+{
+    public int Id { get; set; }
+
+    public int CouponId { get; set; }
+
+    public int OrderId { get; set; }
+
+    public int CustomerId { get; set; }
+
+    public decimal DiscountAmount { get; set; }
+
+    public DateTime CreatedAt { get; set; }
+}
+

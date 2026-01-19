@@ -12,6 +12,8 @@ public class CfWard
     [Required, StringLength(200)]
     public string WardName { get; set; }
 
+    public bool IsInnerCity { get; set; }
+
     public bool Status { get; set; }
 
     public DateTime CreatedAt { get; set; }

@@ -11,13 +11,28 @@
 ## Orders
 - cf_order, cf_order_item, cf_order_history.
 - cf_payment_method, cf_payment_status, cf_shipping_method, cf_order_status.
+- cf_shipping_carrier (contact + logo + API credentials + IsDefault), cf_shipping_carrier_method.
 - cf_shop_order, cf_shop_order_history.
+- cf_shop_shipping_config (DefaultShippingCarrierId).
+- cf_shop_shipping_carrier.
+- cf_shop_order luu ShippingCarrierId/ShippingMethod theo shop.
 
 ## Marketplace
 - cf_seller, cf_shop, cf_shop_user.
+- cf_shop_address.
 - cf_return_request, cf_return_item.
 - cf_payment_transaction, cf_shipping_tracking.
 - cf_product_review, cf_shop_review.
+- seller_kyc, seller_kyc_file.
+- shop_document, shop_document_file.
+- seller_kyc_status, shop_document_status, seller_kyc_file_type, shop_document_type, shop_document_file_type.
+
+## Discounts
+- cf_coupon, cf_coupon_usage.
+
+## Auth/Admin
+- cf_user, cf_role, cf_permission.
+- cf_user_role, cf_role_permission, cf_menu_permission.
 
 ## Buyer
 - cf_customer, cf_customer_address, cf_customer_bank.
@@ -45,3 +60,7 @@
 - sql/add_platform_fees_and_limits.sql
 - sql/alter_cf_product_package_dimensions.sql
 - sql/add_performance_indexes.sql
+- sql/add_seller_commerce_features.sql
+- sql/add_shipping_carriers.sql
+- sql/cf_auth.sql
+- sql/create_seller_kyc_and_shop_documents.sql

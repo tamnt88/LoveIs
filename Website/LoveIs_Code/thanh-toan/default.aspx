@@ -123,17 +123,50 @@
                         <div class="card-body">
                             <h5 class="card-title">Giỏ hàng</h5>
 
-                            <asp:Repeater ID="SummaryRepeater" runat="server">
+                            <asp:Repeater ID="SummaryGroupRepeater" runat="server">
                                 <ItemTemplate>
-                                    <div class="checkout-item">
-                                        <div>
-                                            <div class="checkout-item-name"><%# Eval("ProductName") %></div>
-                                            <div class="checkout-item-variant"><%# Eval("VariantText") %></div>
-                                        </div>
-                                        <div class="checkout-item-price"><%# Eval("LineTotal") %></div>
+                                    <div class="checkout-shop-group">
+                                        <div class="checkout-shop-name"><%# Eval("ShopName") %></div>
+                                        <asp:Repeater ID="SummaryItemRepeater" runat="server" DataSource='<%# Eval("Items") %>'>
+                                            <ItemTemplate>
+                                                <div class="checkout-item">
+                                                    <div>
+                                                        <div class="checkout-item-name"><%# Eval("ProductName") %></div>
+                                                        <div class="checkout-item-variant"><%# Eval("VariantText") %></div>
+                                                    </div>
+                                                    <div class="checkout-item-price"><%# Eval("LineTotal") %></div>
+                                                </div>
+                                            </ItemTemplate>
+                                        </asp:Repeater>
                                     </div>
                                 </ItemTemplate>
                             </asp:Repeater>
+
+                            <div class="checkout-coupon mt-3">
+                                <label class="form-label">Ma giam gia</label>
+                                <div class="coupon-divider">Chon ma giam gia da luu</div>
+                                <div class="coupon-list">
+                                    <asp:Repeater ID="CouponRepeater" runat="server">
+                                        <ItemTemplate>
+                                            <label class="coupon-card">
+                                                <input type="checkbox" class="coupon-check" value="<%# Eval("Id") %>" data-code="<%# Eval("Code") %>" <%# (bool)Eval("IsSelected") ? "checked=\"checked\"" : "" %> />
+                                                <span class="coupon-badge">
+                                                    <span class="coupon-badge-label">Moi</span>
+                                                    <span class="coupon-badge-value"><%# Eval("BadgeValue") %></span>
+                                                    <span class="coupon-badge-sub"><%# Eval("BadgeSub") %></span>
+                                                </span>
+                                                <span class="coupon-content">
+                                                    <span class="coupon-shop"><%# Eval("ShopLabel") %></span>
+                                                    <span class="coupon-code">Ma: <%# Eval("Code") %></span>
+                                                    <span class="coupon-meta"><%# Eval("MetaText") %></span>
+                                                </span>
+                                                <span class="coupon-radio"></span>
+                                            </label>
+                                        </ItemTemplate>
+                                    </asp:Repeater>
+                                    <asp:HiddenField ID="SelectedCouponIds" runat="server" />
+                                </div>
+                            </div>
 
                             <div class="checkout-total">
                                 <div class="checkout-total-row">
@@ -143,6 +176,21 @@
                                 <div class="checkout-total-row">
                                     <span>Phí vận chuyển (tạm tính)</span>
                                     <strong><span id="ShippingFeeValue" runat="server"><asp:Literal ID="ShippingFeeLiteral" runat="server" /></span></strong>
+                                </div>
+                                <div id="ShippingFeeBreakdown" class="checkout-shipping-breakdown">
+                                    <asp:Repeater ID="ShippingFeeRepeater" runat="server">
+                                        <ItemTemplate>
+                                            <div class="shipping-breakdown-item">
+                                                <span><%# Eval("ShopName") %></span>
+                                                <span><%# Eval("ShippingFeeText") %></span>
+                                            </div>
+                                        </ItemTemplate>
+                                    </asp:Repeater>
+                                </div>
+                                </div>
+                                <div class="checkout-total-row">
+                                    <span>Giam gia</span>
+                                    <strong><span id="DiscountValue" runat="server"><asp:Literal ID="DiscountLiteral" runat="server" /></span></strong>
                                 </div>
                                 <div class="checkout-total-row total">
                                     <span>Tổng cộng</span>
@@ -173,8 +221,8 @@
                 if (typeof PageMethods !== "undefined" && typeof PageMethods[method] === "function") {
                     if (method === "GetWards") {
                         PageMethods.GetWards(data.provinceId, onSuccess);
-                    } else if (method === "GetShippingSummary") {
-                        PageMethods.GetShippingSummary(data.provinceId, data.shippingMethodId, onSuccess);
+                    } else if (method === "GetCheckoutSummary") {
+                        PageMethods.GetCheckoutSummary(data.provinceId, data.wardId, data.shippingMethodId, data.couponIds, onSuccess);
                     }
                     return;
                 }
@@ -192,18 +240,42 @@
 
             function updateSummary() {
                 var provinceId = parseInt($("#<%= ProvinceDropDown.ClientID %>").val(), 10) || 0;
+                var wardId = parseInt($("#<%= WardDropDown.ClientID %>").val(), 10) || 0;
                 var shippingMethodId = parseInt($("#<%= ShippingMethodList.ClientID %> input:checked").val(), 10) || 0;
+                var couponIds = $(".coupon-list .coupon-check:checked").map(function () {
+                    return parseInt(this.value, 10);
+                }).get();
+                $("#<%= SelectedCouponIds.ClientID %>").val(couponIds.join(","));
 
-                if (!shippingMethodId) {
-                    return;
-                }
-
-                callPageMethod("GetShippingSummary", { provinceId: provinceId, shippingMethodId: shippingMethodId }, function (result) {
-                    if (!result) {
+                callPageMethod("GetCheckoutSummary", {
+                    provinceId: provinceId,
+                    wardId: wardId,
+                    shippingMethodId: shippingMethodId,
+                    couponIds: couponIds
+                }, function (summary) {
+                    if (!summary) {
                         return;
                     }
-                    $("#<%= ShippingFeeValue.ClientID %>").text(result.ShippingFeeText || "");
-                    $("#<%= TotalValue.ClientID %>").text(result.TotalText || "");
+                    $("#<%= ShippingFeeValue.ClientID %>").text(summary.ShippingFeeText || "");
+                    var breakdown = document.getElementById("ShippingFeeBreakdown");
+                    if (breakdown) {
+                        breakdown.innerHTML = "";
+                        if (summary.ShopFees && summary.ShopFees.length) {
+                            summary.ShopFees.forEach(function (item) {
+                                var row = document.createElement("div");
+                                row.className = "shipping-breakdown-item";
+                                var name = document.createElement("span");
+                                name.textContent = item.ShopName || "Shop";
+                                var fee = document.createElement("span");
+                                fee.textContent = item.ShippingFeeText || "";
+                                row.appendChild(name);
+                                row.appendChild(fee);
+                                breakdown.appendChild(row);
+                            });
+                        }
+                    }
+                    $("#<%= DiscountValue.ClientID %>").text(summary.DiscountText || "");
+                    $("#<%= TotalValue.ClientID %>").text(summary.TotalText || "");
                 });
             }
 
@@ -211,7 +283,7 @@
                 var provinceId = parseInt($("#<%= ProvinceDropDown.ClientID %>").val(), 10) || 0;
                 var $ward = $("#<%= WardDropDown.ClientID %>");
                 $ward.empty();
-                $ward.append($("<option></option>").val("").text("-- Chọn phường/xã --"));
+                $ward.append($("<option></option>").val("").text("-- Chon phuong/xa --"));
 
                 if (!provinceId) {
                     updateSummary();
@@ -230,6 +302,8 @@
 
             $(document).on("change", "#<%= ProvinceDropDown.ClientID %>", loadWards);
             $(document).on("change", "#<%= ShippingMethodList.ClientID %> input[type='radio']", updateSummary);
+            $(document).on("change", ".coupon-list .coupon-check", updateSummary);
+
             updateSummary();
         })();
     </script>
@@ -241,3 +315,20 @@
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

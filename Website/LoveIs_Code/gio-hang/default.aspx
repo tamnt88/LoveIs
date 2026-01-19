@@ -123,6 +123,18 @@
                 </div>
             </div>
         </asp:Panel>
+        <div id="CartWarningModal" class="cart-modal" aria-hidden="true">
+            <div class="cart-modal__backdrop" data-cart-modal-close="true"></div>
+            <div class="cart-modal__dialog" role="dialog" aria-modal="true" aria-labelledby="CartWarningTitle">
+                <div class="cart-modal__header">
+                    <div id="CartWarningTitle" class="cart-modal__title">Thông báo</div>
+                </div>
+                <div id="CartWarningMessage" class="cart-modal__body">Vui lòng chọn sản phẩm để thanh toán.</div>
+                <div class="cart-modal__footer">
+                    <button type="button" class="btn btn-dark cart-modal__btn" data-cart-modal-close="true">Quay lại</button>
+                </div>
+            </div>
+        </div>
     </main>
 </asp:Content>
 

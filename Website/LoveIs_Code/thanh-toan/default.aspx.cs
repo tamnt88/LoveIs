@@ -34,6 +34,25 @@ public partial class CheckoutDefault : System.Web.UI.Page
 
     }
 
+        public class CheckoutSummary
+
+    {
+
+        public string ShippingFeeText { get; set; }
+
+        public string DiscountText { get; set; }
+
+        public string TotalText { get; set; }
+
+        public List<ShopShippingFeeDto> ShopFees { get; set; }
+
+    }
+    public class ShopShippingFeeDto
+    {
+        public int ShopId { get; set; }
+        public string ShopName { get; set; }
+        public string ShippingFeeText { get; set; }
+    }
     public class ShippingSummary
 
     {
@@ -45,6 +64,8 @@ public partial class CheckoutDefault : System.Web.UI.Page
         public decimal Total { get; set; }
 
         public string TotalText { get; set; }
+
+        public List<ShopShippingFeeDto> ShopFees { get; set; }
 
     }
 
@@ -104,7 +125,7 @@ public partial class CheckoutDefault : System.Web.UI.Page
 
         string canonical = Request.Url != null ? Request.Url.GetLeftPart(UriPartial.Path) : string.Empty;
 
-        SystemPageSeoApplier.Apply("checkout", SeoTitleLiteral, SeoMetaLiteral, "Thanh toán | LoveIs Store", canonical);
+        SystemPageSeoApplier.Apply("checkout", SeoTitleLiteral, SeoMetaLiteral, "Thanh to�n | LoveIs Store", canonical);
 
     }
 
@@ -126,7 +147,7 @@ public partial class CheckoutDefault : System.Web.UI.Page
 
             ProvinceDropDown.Items.Clear();
 
-            ProvinceDropDown.Items.Add(new ListItem("-- Chọn tỉnh/thành phố --", ""));
+            ProvinceDropDown.Items.Add(new ListItem("-- Ch?n t?nh/th�nh ph? --", ""));
 
             foreach (var item in provinces)
 
@@ -146,7 +167,7 @@ public partial class CheckoutDefault : System.Web.UI.Page
 
         WardDropDown.Items.Clear();
 
-        WardDropDown.Items.Add(new ListItem("-- Chọn phường/xã --", ""));
+        WardDropDown.Items.Add(new ListItem("-- Ch?n phu?ng/x� --", ""));
 
         if (!provinceId.HasValue)
 
@@ -272,7 +293,7 @@ public partial class CheckoutDefault : System.Web.UI.Page
 
     {
 
-        var cart = CartService.GetCart();
+        var cart = GetCheckoutCart();
 
         if (cart.Count == 0)
 
@@ -377,10 +398,11 @@ public partial class CheckoutDefault : System.Web.UI.Page
                     VariantId = item.VariantId,
 
                     ProductId = product != null ? product.Id : 0,
+                    ShopId = product != null && product.ShopId.HasValue ? product.ShopId.Value : 0,
 
                     ProductName = product != null ? product.ProductName : "-",
 
-                    VariantText = attrs.Count > 0 ? string.Join(", ", attrs) : "Mặc định",
+                    VariantText = attrs.Count > 0 ? string.Join(", ", attrs) : "M?c d?nh",
 
                     Quantity = item.Quantity,
 
@@ -388,98 +410,799 @@ public partial class CheckoutDefault : System.Web.UI.Page
 
                     LineTotalValue = lineTotal,
 
-                    LineTotal = price > 0 ? string.Format("{0:N0} đ", lineTotal) : "Liên hệ"
+                    LineTotal = price > 0 ? string.Format("{0:N0} d", lineTotal) : "Li�n h?"
 
                 };
 
             }).ToList();
 
-            SummaryRepeater.DataSource = lines;
+            var shopIds = products.Where(p => p.ShopId.HasValue).Select(p => p.ShopId.Value).Distinct().ToList();
+            var shopNameLookup = db.CfShops.AsNoTracking()
+                .Where(s => shopIds.Contains(s.Id))
+                .Select(s => new { s.Id, s.ShopName })
+                .ToDictionary(s => s.Id, s => s.ShopName);
 
-            SummaryRepeater.DataBind();
+            var grouped = lines.GroupBy(x => x.ShopId)
+                .Select(g => new
+                {
+                    ShopId = g.Key,
+                    ShopName = shopNameLookup.ContainsKey(g.Key) ? shopNameLookup[g.Key] : "Shop",
+                    Items = g.ToList()
+                })
+                .ToList();
+
+            SummaryGroupRepeater.DataSource = grouped;
+            SummaryGroupRepeater.DataBind();
 
             var subtotal = lines.Sum(x => x.LineTotalValue);
 
-            var shippingFee = CalculateShippingFee();
+                        int provinceId;
+            int? provinceValue = int.TryParse(ProvinceDropDown.SelectedValue, out provinceId) ? (int?)provinceId : null;
+            int wardId;
+            int? wardValue = int.TryParse(WardDropDown.SelectedValue, out wardId) ? (int?)wardId : null;
 
-            var total = subtotal + shippingFee;
+            int shippingMethodId;
 
-            SubtotalLiteral.Text = subtotal > 0 ? string.Format("{0:N0} đ", subtotal) : "Liên hệ";
+            int? shippingMethodValue = int.TryParse(ShippingMethodList.SelectedValue, out shippingMethodId) ? (int?)shippingMethodId : null;
 
-            ShippingFeeLiteral.Text = shippingFee > 0 ? string.Format("{0:N0} đ", shippingFee) : "Miễn phí";
+            var shopLookup = CheckoutShippingHelper.BuildShopShippingLookup(provinceValue, wardValue, shippingMethodValue, cart);
 
-            TotalLiteral.Text = total > 0 ? string.Format("{0:N0} đ", total) : "Liên hệ";
+            var customerId = CustomerAuth.GetCustomerId();
+
+            BindCoupons(db, shopLookup, customerId);
+
+            var selectedCouponIds = GetSelectedCouponIds();
+
+            var couponResult = CalculateCouponDiscounts(db, shopLookup, customerId, selectedCouponIds);
+
+            var discount = couponResult.TotalDiscount;
+
+            var breakdown = shopLookup.Values.Select(s => new ShopShippingFeeDto
+            {
+                ShopId = s.ShopId,
+                ShopName = shopNameLookup.ContainsKey(s.ShopId) ? shopNameLookup[s.ShopId] : "Shop",
+                ShippingFeeText = s.ShippingFee > 0 ? string.Format("{0:N0} d", s.ShippingFee) : "Mien phi"
+            }).ToList();
+
+            ShippingFeeRepeater.DataSource = breakdown;
+            ShippingFeeRepeater.DataBind();
+
+            var shippingFee = shopLookup.Values.Sum(x => x.ShippingFee);
+
+            var total = subtotal - discount + shippingFee;
+
+            SubtotalLiteral.Text = subtotal > 0 ? string.Format("{0:N0} d", subtotal) : "Lien he";
+
+            ShippingFeeLiteral.Text = shippingFee > 0 ? string.Format("{0:N0} d", shippingFee) : "Mien phi";
+
+            DiscountLiteral.Text = discount > 0 ? string.Format("{0:N0} d", discount) : "0 d";
+
+            TotalLiteral.Text = total > 0 ? string.Format("{0:N0} d", total) : "Lien he";
 
         }
 
     }
 
+        private List<CartService.CartItem> GetCheckoutCart()
+    {
+        var cart = CartService.GetCart();
+        var selected = GetSelectedVariantIds(Request != null ? Request.QueryString["items"] : null);
+        if (selected.Count == 0)
+        {
+            return cart;
+        }
+        return cart.Where(item => selected.Contains(item.VariantId)).ToList();
+    }
+
+    private static List<int> GetSelectedVariantIds(string raw)
+    {
+        var result = new List<int>();
+        if (string.IsNullOrWhiteSpace(raw))
+        {
+            return result;
+        }
+        var parts = raw.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries);
+        foreach (var part in parts)
+        {
+            int id;
+            if (int.TryParse(part.Trim(), out id) && id > 0 && !result.Contains(id))
+            {
+                result.Add(id);
+            }
+        }
+        return result;
+    }
+
+    private int? GetSelectedShippingMethodId()
+    {
+        int id;
+        return int.TryParse(ShippingMethodList.SelectedValue, out id) ? (int?)id : null;
+    }
+
     private decimal CalculateShippingFee()
+    {
+        int provinceId;
+        int wardId;
+
+        int? provinceValue = int.TryParse(ProvinceDropDown.SelectedValue, out provinceId) ? (int?)provinceId : null;
+        int? wardValue = int.TryParse(WardDropDown.SelectedValue, out wardId) ? (int?)wardId : null;
+
+        var cart = GetCheckoutCart();
+
+        int shippingMethodId;
+
+            int? shippingMethodValue = int.TryParse(ShippingMethodList.SelectedValue, out shippingMethodId) ? (int?)shippingMethodId : null;
+
+        var shopLookup = CheckoutShippingHelper.BuildShopShippingLookup(provinceValue, wardValue, shippingMethodValue, cart);
+
+        return shopLookup.Values.Sum(x => x.ShippingFee);
+    }
+
+    private class CouponDiscountResult
 
     {
 
-        int methodId;
+        public decimal TotalDiscount { get; set; }
 
-        if (!int.TryParse(ShippingMethodList.SelectedValue, out methodId))
+        public Dictionary<int, decimal> ShopDiscountLookup { get; set; }
+
+        public Dictionary<int, decimal> CouponDiscountLookup { get; set; }
+
+        public List<CfCoupon> AppliedCoupons { get; set; }
+
+    }
+
+    private class CouponDisplay
+
+    {
+
+        public int Id { get; set; }
+
+        public string Code { get; set; }
+
+        public string BadgeValue { get; set; }
+
+        public string BadgeSub { get; set; }
+
+        public string ShopLabel { get; set; }
+
+        public string MetaText { get; set; }
+
+        public bool IsSelected { get; set; }
+
+    }
+
+    private void BindCoupons(BeautyStoryContext db, Dictionary<int, ShopShippingFeeSummary> shopLookup, int? customerId)
+
+    {
+
+        if (db == null || shopLookup == null)
 
         {
 
-            return 0;
+            return;
 
         }
 
-        using (var db = new BeautyStoryContext())
+        var coupons = GetAvailableCoupons(db, shopLookup, customerId);
+
+        var shopIds = coupons.Where(c => c.ShopId.HasValue).Select(c => c.ShopId.Value).Distinct().ToList();
+
+        var shopNameLookup = db.CfShops.AsNoTracking()
+
+            .Where(s => shopIds.Contains(s.Id))
+
+            .Select(s => new { s.Id, s.ShopName })
+
+            .ToDictionary(s => s.Id, s => s.ShopName);
+
+        var selectedIds = ParseSelectedCouponIds(SelectedCouponIds.Value);
+
+        var display = coupons.Select(coupon =>
 
         {
 
-            var method = db.CfShippingMethods.FirstOrDefault(m => m.Id == methodId);
+            string shopName = null;
 
-            if (method == null)
+            if (coupon.ShopId.HasValue && shopNameLookup.ContainsKey(coupon.ShopId.Value))
 
             {
 
-                return 0;
+                shopName = shopNameLookup[coupon.ShopId.Value];
 
             }
 
-            var baseFee = method.BaseFee;
-
-            var innerCityFee = method.InnerCityFee > 0 ? method.InnerCityFee : method.BaseFee;
-
-            int provinceId;
-
-            if (!int.TryParse(ProvinceDropDown.SelectedValue, out provinceId))
+            return new CouponDisplay
 
             {
 
-                return baseFee;
+                Id = coupon.Id,
 
-            }
+                Code = coupon.Code,
 
-            var province = db.CfProvinces.FirstOrDefault(p => p.Id == provinceId);
+                BadgeValue = FormatCouponBadgeValue(coupon),
 
-            if (province != null)
+                BadgeSub = FormatCouponBadgeSub(coupon),
+
+                ShopLabel = IsShopScope(coupon) ? ("Ap theo shop: " + (string.IsNullOrWhiteSpace(shopName) ? "Shop" : shopName)) : "He thong",
+
+                MetaText = BuildCouponMetaText(coupon),
+
+                IsSelected = selectedIds.Contains(coupon.Id)
+
+            };
+
+        }).ToList();
+
+        CouponRepeater.DataSource = display;
+
+        CouponRepeater.DataBind();
+
+    }
+
+    private List<int> GetSelectedCouponIds()
+
+    {
+
+        return ParseSelectedCouponIds(SelectedCouponIds.Value);
+
+    }
+
+    private List<int> ParseSelectedCouponIds(string raw)
+
+    {
+
+        var result = new List<int>();
+
+        if (string.IsNullOrWhiteSpace(raw))
+
+        {
+
+            return result;
+
+        }
+
+        var parts = raw.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries);
+
+        foreach (var part in parts)
+
+        {
+
+            int id;
+
+            if (int.TryParse(part.Trim(), out id))
 
             {
 
-                var name = province.ProvinceName ?? string.Empty;
-
-                if (name.Contains("Hồ Chí Mimh") || name.Contains("Hà Nội"))
+                if (!result.Contains(id))
 
                 {
 
-                    return innerCityFee;
+                    result.Add(id);
 
                 }
 
             }
 
-            return baseFee;
-
         }
+
+        return result;
 
     }
 
+    private static string FormatCouponBadgeValue(CfCoupon coupon)
+
+    {
+
+        if (coupon == null)
+
+        {
+
+            return string.Empty;
+
+        }
+
+        var type = (coupon.DiscountType ?? string.Empty).Trim().ToUpperInvariant();
+
+        if (type == "PERCENT" || type == "PERCENTAGE")
+
+        {
+
+            return string.Format("{0}%", coupon.DiscountValue);
+
+        }
+
+        if (coupon.DiscountValue >= 1000)
+
+        {
+
+            var value = Math.Round(coupon.DiscountValue / 1000m, 0);
+
+            return string.Format("{0}k", value);
+
+        }
+
+        return string.Format("{0}", coupon.DiscountValue);
+
+    }
+
+    private static string FormatCouponBadgeSub(CfCoupon coupon)
+
+    {
+
+        if (coupon == null)
+
+        {
+
+            return string.Empty;
+
+        }
+
+        if (coupon.MinOrder > 0)
+
+        {
+
+            return string.Format("Min {0:N0} d", coupon.MinOrder);
+
+        }
+
+        return "Moi";
+
+    }
+
+    private static string BuildCouponMetaText(CfCoupon coupon)
+
+    {
+
+        if (coupon == null)
+
+        {
+
+            return string.Empty;
+
+        }
+
+        if (coupon.EndAt.HasValue)
+
+        {
+
+            return string.Format("HSD: {0:dd/MM/yyyy}", coupon.EndAt.Value);
+
+        }
+
+        return "Khong gioi han";
+
+    }
+
+    private static List<CfCoupon> GetAvailableCoupons(BeautyStoryContext db, Dictionary<int, ShopShippingFeeSummary> shopLookup, int? customerId)
+
+    {
+
+        var now = DateTime.Now;
+
+        var orderSubtotal = shopLookup.Values.Sum(x => x.Subtotal);
+
+        var shopIds = shopLookup.Keys.ToList();
+
+        var coupons = db.CfCoupons.AsNoTracking()
+
+            .Where(c => c.Status)
+
+            .Where(c => c.StartAt == null || c.StartAt <= now)
+
+            .Where(c => c.EndAt == null || c.EndAt >= now)
+
+            .Where(c => c.Scope == "System" || (c.Scope == "Shop" && c.ShopId.HasValue && shopIds.Contains(c.ShopId.Value)))
+
+            .ToList();
+
+        var result = new List<CfCoupon>();
+
+        foreach (var coupon in coupons)
+
+        {
+
+            if (!IsCouponUsageAvailable(db, coupon, customerId))
+
+            {
+
+                continue;
+
+            }
+
+            if (!IsCouponMinOrderValid(coupon, shopLookup, orderSubtotal))
+
+            {
+
+                continue;
+
+            }
+
+            result.Add(coupon);
+
+        }
+
+        return result;
+
+    }
+
+    private static bool IsCouponUsageAvailable(BeautyStoryContext db, CfCoupon coupon, int? customerId)
+
+    {
+
+        if (coupon == null)
+
+        {
+
+            return false;
+
+        }
+
+        if (coupon.UsageLimit.HasValue)
+
+        {
+
+            var totalUsed = db.CfCouponUsages.Count(u => u.CouponId == coupon.Id);
+
+            if (totalUsed >= coupon.UsageLimit.Value)
+
+            {
+
+                return false;
+
+            }
+
+        }
+
+        if (coupon.UsagePerUser.HasValue && customerId.HasValue)
+
+        {
+
+            var usedByCustomer = db.CfCouponUsages.Count(u => u.CouponId == coupon.Id && u.CustomerId == customerId.Value);
+
+            if (usedByCustomer >= coupon.UsagePerUser.Value)
+
+            {
+
+                return false;
+
+            }
+
+        }
+
+        return true;
+
+    }
+
+    private static bool IsCouponMinOrderValid(CfCoupon coupon, Dictionary<int, ShopShippingFeeSummary> shopLookup, decimal orderSubtotal)
+
+    {
+
+        if (coupon == null)
+
+        {
+
+            return false;
+
+        }
+
+        var minOrder = coupon.MinOrder;
+
+        if (minOrder <= 0)
+
+        {
+
+            return true;
+
+        }
+
+        if (IsShopScope(coupon))
+
+        {
+
+            if (!coupon.ShopId.HasValue || !shopLookup.ContainsKey(coupon.ShopId.Value))
+
+            {
+
+                return false;
+
+            }
+
+            return shopLookup[coupon.ShopId.Value].Subtotal >= minOrder;
+
+        }
+
+        return orderSubtotal >= minOrder;
+
+    }
+
+    private static string BuildCouponLabel(CfCoupon coupon, string shopName)
+
+    {
+
+        if (coupon == null)
+
+        {
+
+            return string.Empty;
+
+        }
+
+        var scope = IsShopScope(coupon) ? "Shop" : "He thong";
+
+        var type = (coupon.DiscountType ?? string.Empty).Trim().ToUpperInvariant();
+
+        var valueText = type == "PERCENT" ? string.Format("{0}%", coupon.DiscountValue) : string.Format("{0:N0} d", coupon.DiscountValue);
+
+        if (IsShopScope(coupon))
+
+        {
+
+            var name = !string.IsNullOrWhiteSpace(shopName) ? shopName : "Shop";
+
+            return string.Format("{0} - {1} ({2}: {3})", coupon.Code, valueText, scope, name);
+
+        }
+
+        return string.Format("{0} - {1} ({2})", coupon.Code, valueText, scope);
+
+    }
+
+    private static bool IsShopScope(CfCoupon coupon)
+
+    {
+
+        if (coupon == null)
+
+        {
+
+            return false;
+
+        }
+
+        var scope = (coupon.Scope ?? string.Empty).Trim().ToUpperInvariant();
+
+        return scope == "SHOP";
+
+    }
+
+    private static decimal CalculateCouponValue(CfCoupon coupon, decimal baseAmount)
+
+    {
+
+        if (coupon == null || baseAmount <= 0)
+
+        {
+
+            return 0m;
+
+        }
+
+        var type = (coupon.DiscountType ?? string.Empty).Trim().ToUpperInvariant();
+
+        decimal value;
+
+        if (type == "PERCENT" || type == "PERCENTAGE")
+
+        {
+
+            value = baseAmount * coupon.DiscountValue / 100m;
+
+        }
+
+        else
+
+        {
+
+            value = coupon.DiscountValue;
+
+        }
+
+        if (coupon.MaxDiscount.HasValue && coupon.MaxDiscount.Value > 0)
+
+        {
+
+            value = Math.Min(value, coupon.MaxDiscount.Value);
+
+        }
+
+        return Math.Max(0m, Math.Min(value, baseAmount));
+
+    }
+
+    private static CouponDiscountResult CalculateCouponDiscounts(BeautyStoryContext db, Dictionary<int, ShopShippingFeeSummary> shopLookup, int? customerId, List<int> couponIds)
+
+    {
+
+        var result = new CouponDiscountResult
+
+        {
+
+            TotalDiscount = 0m,
+
+            ShopDiscountLookup = new Dictionary<int, decimal>(),
+
+            CouponDiscountLookup = new Dictionary<int, decimal>(),
+
+            AppliedCoupons = new List<CfCoupon>()
+
+        };
+
+        if (db == null || shopLookup == null || couponIds == null || couponIds.Count == 0)
+
+        {
+
+            return result;
+
+        }
+
+        var orderSubtotal = shopLookup.Values.Sum(x => x.Subtotal);
+
+        var coupons = db.CfCoupons.AsNoTracking()
+
+            .Where(c => couponIds.Contains(c.Id))
+
+            .OrderBy(c => c.Id)
+
+            .ToList();
+
+        foreach (var coupon in coupons)
+
+        {
+
+            if (!coupon.Status)
+
+            {
+
+                continue;
+
+            }
+
+            var now = DateTime.Now;
+
+            if (coupon.StartAt.HasValue && coupon.StartAt.Value > now)
+
+            {
+
+                continue;
+
+            }
+
+            if (coupon.EndAt.HasValue && coupon.EndAt.Value < now)
+
+            {
+
+                continue;
+
+            }
+
+            if (!IsCouponUsageAvailable(db, coupon, customerId))
+
+            {
+
+                continue;
+
+            }
+
+            if (!IsCouponMinOrderValid(coupon, shopLookup, orderSubtotal))
+
+            {
+
+                continue;
+
+            }
+
+            decimal discount;
+
+            if (IsShopScope(coupon))
+
+            {
+
+                if (!coupon.ShopId.HasValue || !shopLookup.ContainsKey(coupon.ShopId.Value))
+
+                {
+
+                    continue;
+
+                }
+
+                var shopId = coupon.ShopId.Value;
+
+                var shopSubtotal = shopLookup[shopId].Subtotal;
+
+                var currentShopDiscount = result.ShopDiscountLookup.ContainsKey(shopId) ? result.ShopDiscountLookup[shopId] : 0m;
+
+                var remaining = Math.Max(0m, shopSubtotal - currentShopDiscount);
+
+                discount = CalculateCouponValue(coupon, shopSubtotal);
+
+                discount = Math.Min(discount, remaining);
+
+                if (discount <= 0)
+
+                {
+
+                    continue;
+
+                }
+
+                result.ShopDiscountLookup[shopId] = currentShopDiscount + discount;
+
+            }
+
+            else
+
+            {
+
+                var remaining = Math.Max(0m, orderSubtotal - result.TotalDiscount);
+
+                discount = CalculateCouponValue(coupon, orderSubtotal);
+
+                discount = Math.Min(discount, remaining);
+
+                if (discount <= 0)
+
+                {
+
+                    continue;
+
+                }
+
+            }
+
+            result.TotalDiscount += discount;
+
+            result.CouponDiscountLookup[coupon.Id] = discount;
+
+            result.AppliedCoupons.Add(coupon);
+
+        }
+
+        result.TotalDiscount = Math.Min(result.TotalDiscount, orderSubtotal);
+
+        return result;
+
+    }
+
+    private static void SaveCouponUsage(BeautyStoryContext db, int orderId, int customerId, CouponDiscountResult result)
+
+    {
+
+        if (db == null || result == null || result.CouponDiscountLookup == null || result.CouponDiscountLookup.Count == 0)
+
+        {
+
+            return;
+
+        }
+
+        foreach (var kv in result.CouponDiscountLookup)
+
+        {
+
+            var usage = new CfCouponUsage
+
+            {
+
+                CouponId = kv.Key,
+
+                OrderId = orderId,
+
+                CustomerId = customerId,
+
+                DiscountAmount = kv.Value,
+
+                CreatedAt = DateTime.Now
+
+            };
+
+            db.CfCouponUsages.Add(usage);
+
+        }
+
+        db.SaveChanges();
+
+    }
     private bool EnsureCustomerSignedIn()
 
     {
@@ -598,7 +1321,7 @@ public partial class CheckoutDefault : System.Web.UI.Page
 
             AddressSelect.Items.Clear();
 
-            AddressSelect.Items.Add(new ListItem("-- Chọn địa chỉ --", ""));
+            AddressSelect.Items.Add(new ListItem("-- Ch?n d?a ch? --", ""));
 
             foreach (var item in addresses)
 
@@ -703,7 +1426,7 @@ public partial class CheckoutDefault : System.Web.UI.Page
     var submitKey = "CHECKOUT_SUBMIT_LOCK";
     if (Session[submitKey] != null)
     {
-        CheckoutMessage.Text = "Don hang dang duoc xu ly. Vui long cho.";
+        CheckoutMessage.Text = "�on h�ng dang du?c x? l�. Vui l�ng ch?.";
         return;
     }
 
@@ -717,13 +1440,13 @@ public partial class CheckoutDefault : System.Web.UI.Page
                                     return;
                                 }
 
-                                var cart = CartService.GetCart();
+                                var cart = GetCheckoutCart();
 
                                                         if (cart.Count == 0)
 
                                                         {
 
-                                                            CheckoutMessage.Text = "Giỏ hàng đang trống.";
+                                                            CheckoutMessage.Text = "Gi? h�ng dang tr?ng.";
 
                                                             return;
 
@@ -745,7 +1468,7 @@ public partial class CheckoutDefault : System.Web.UI.Page
 
                                                             {
 
-                                                                CheckoutMessage.Text = string.Format("Giới hạn đơn hàng: Tối đa {0} sản phẩm/đơn; mỗi sản phẩm tối đa {1}.", limit.MaxItemsPerOrder, limit.MaxQtyPerItem);
+                                                                CheckoutMessage.Text = string.Format("Gi?i h?n don h�ng: T?i da {0} s?n ph?m/don; m?i s?n ph?m t?i da {1}.", limit.MaxItemsPerOrder, limit.MaxQtyPerItem);
 
                                                                 return;
 
@@ -763,7 +1486,7 @@ public partial class CheckoutDefault : System.Web.UI.Page
 
                                                         {
 
-                                                            CheckoutMessage.Text = "Vui lòng nhập họ tên, số điện thoại và địa chỉ.";
+                                                            CheckoutMessage.Text = "Vui l�ng nh?p h? t�n, s? di?n tho?i v� d?a ch?.";
 
                                                             return;
 
@@ -773,7 +1496,7 @@ public partial class CheckoutDefault : System.Web.UI.Page
 
                                                         {
 
-                                                            CheckoutMessage.Text = "Số điện thoại không hợp lệ.";
+                                                            CheckoutMessage.Text = "S? di?n tho?i kh�ng h?p l?.";
 
                                                             return;
 
@@ -944,14 +1667,14 @@ public partial class CheckoutDefault : System.Web.UI.Page
                                                             {
                                                                 if (!stockLookup.ContainsKey(item.VariantId))
                                                                 {
-                                                                    CheckoutMessage.Text = "San pham khong con ton tai.";
+                                                                    CheckoutMessage.Text = "S?n ph?m kh�ng c�n t?n t?i.";
                                                                     return;
                                                                 }
 
                                                                 var stockVariant = stockLookup[item.VariantId];
                                                                 if (!stockVariant.Status)
                                                                 {
-                                                                    CheckoutMessage.Text = "San pham dang tam ngung ban.";
+                                                                    CheckoutMessage.Text = "S?n ph?m dang t?m ng?ng b�n.";
                                                                     return;
                                                                 }
 
@@ -959,7 +1682,7 @@ public partial class CheckoutDefault : System.Web.UI.Page
                                                                 var effectivePrice = GetEffectivePrice(stockVariant);
                                                                 if (effectivePrice <= 0)
                                                                 {
-                                                                    CheckoutMessage.Text = "San pham khong co gia hop le.";
+                                                                    CheckoutMessage.Text = "S?n ph?m kh�ng c� gi� h?p l?.";
                                                                     return;
                                                                 }
 
@@ -968,8 +1691,8 @@ public partial class CheckoutDefault : System.Web.UI.Page
                                                                 {
                                                                     var productName = productLookup.ContainsKey(stockVariant.ProductId)
                                                                         ? productLookup[stockVariant.ProductId].ProductName
-                                                                        : "San pham";
-                                                                    CheckoutMessage.Text = string.Format("{0} chi con {1} san pham.", productName, stockQty);
+                                                                        : "S?n ph?m";
+                                                                    CheckoutMessage.Text = string.Format("{0} ch? c�n {1} S?n ph?m.", productName, stockQty);
                                                                     return;
                                                                 }
                                                             }
@@ -1045,7 +1768,7 @@ public partial class CheckoutDefault : System.Web.UI.Page
 
                                                                     ProductName = product.ProductName,
 
-                                                                    VariantName = attrs.Count > 0 ? string.Join(", ", attrs) : "Mặc định",
+                                                                    VariantName = attrs.Count > 0 ? string.Join(", ", attrs) : "M?c d?nh",
 
                                                                     Quantity = item.Quantity,
 
@@ -1067,23 +1790,29 @@ public partial class CheckoutDefault : System.Web.UI.Page
 
                                                             }
 
-                                                            var shippingFee = CalculateShippingFee();
-
-                                                            var total = subtotal + shippingFee;
-
                                                             int shippingMethodId;
 
-                                                            int? shippingMethodValue = int.TryParse(ShippingMethodList.SelectedValue, out shippingMethodId) ? (int?)shippingMethodId : null;
+            int? shippingMethodValue = int.TryParse(ShippingMethodList.SelectedValue, out shippingMethodId) ? (int?)shippingMethodId : null;
+
+                                                            var shopShippingLookup = CheckoutShippingHelper.BuildShopShippingLookup(provinceValue, wardValue, shippingMethodValue, cart);
+
+                                                            var selectedCouponIds = GetSelectedCouponIds();
+
+                                                            var couponResult = CalculateCouponDiscounts(db, shopShippingLookup, customerIdValue > 0 ? (int?)customerIdValue : null, selectedCouponIds);
+
+                                                            var discount = couponResult.TotalDiscount;
+
+                                                            var shippingFee = shopShippingLookup.Values.Sum(x => x.ShippingFee);
+
+                                                            var total = subtotal - discount + shippingFee;
 
                                                             int paymentMethodId;
 
                                                             int? paymentMethodValue = int.TryParse(PaymentMethodList.SelectedValue, out paymentMethodId) ? (int?)paymentMethodId : null;
 
                                                             var shippingMethod = shippingMethodValue.HasValue
-
                                                                 ? db.CfShippingMethods.FirstOrDefault(m => m.Id == shippingMethodValue.Value)
-
-                                                                : null;
+                                                                : CheckoutShippingHelper.GetDefaultShippingMethod(db);
 
                                                             var paymentMethod = paymentMethodValue.HasValue
 
@@ -1099,7 +1828,7 @@ public partial class CheckoutDefault : System.Web.UI.Page
 
                                                             var infrastructureFee = config != null ? config.InfrastructureFee : 0m;
 
-                                                            var feeBase = subtotal + shippingFee;
+                                                            var feeBase = subtotal - discount + shippingFee;
 
                                                             var shippingFeeAmount = feeBase * shippingFeePercent / 100m;
 
@@ -1175,7 +1904,7 @@ public partial class CheckoutDefault : System.Web.UI.Page
 
                                                                 Subtotal = subtotal,
 
-                                                                Discount = 0,
+                                                                Discount = discount,
 
                                                                 ShippingFeePercent = shippingFeePercent,
 
@@ -1223,7 +1952,15 @@ public partial class CheckoutDefault : System.Web.UI.Page
 
                                                             var shopFeeLookup = BuildShopFeeLookup(orderItems, productLookup, categoryParentLookup, feeCategoryLookup);
 
-                                                            CreateShopOrders(db, order, orderItems, productLookup, shopFeeLookup);
+                                                            CreateShopOrders(db, order, orderItems, productLookup, shopFeeLookup, shopShippingLookup, couponResult.ShopDiscountLookup);
+
+                                                            if (customerIdValue > 0)
+
+                                                            {
+
+                                                                SaveCouponUsage(db, order.Id, customerIdValue, couponResult);
+
+                                                            }
 
                                                             var actor = customerIdValue > 0 ? "customer:" + customerIdValue : "customer";
 
@@ -1231,7 +1968,7 @@ public partial class CheckoutDefault : System.Web.UI.Page
                                                             {
                                                                 OrderId = order.Id,
                                                                 Action = "Create",
-                                                                Note = "Khởi tạo đơn hàng",
+                                                                Note = "Kh?i t?o don h�ng",
                                                                 Status = true,
                                                                 CreatedAt = DateTime.Now,
                                                                 CreatedBy = actor,
@@ -1320,7 +2057,7 @@ private static string GenerateOrderCode()
 
     }
 
-    private static void CreateShopOrders(BeautyStoryContext db, CfOrder order, List<CfOrderItem> orderItems, Dictionary<int, CfProduct> productLookup, Dictionary<int, ShopFeeSummary> shopFeeLookup)
+    private static void CreateShopOrders(BeautyStoryContext db, CfOrder order, List<CfOrderItem> orderItems, Dictionary<int, CfProduct> productLookup, Dictionary<int, ShopFeeSummary> shopFeeLookup, Dictionary<int, ShopShippingFeeSummary> shopShippingLookup, Dictionary<int, decimal> shopDiscountLookup)
 
     {
 
@@ -1362,7 +2099,26 @@ private static string GenerateOrderCode()
 
             var share = order.Subtotal > 0 ? subtotal / order.Subtotal : 0m;
 
-            var shippingFee = order.ShippingFee * share;
+            ShopShippingFeeSummary shippingSummary = null;
+
+            if (shopShippingLookup != null)
+            {
+
+                shopShippingLookup.TryGetValue(group.Key, out shippingSummary);
+
+            }
+
+            var shippingFee = shippingSummary != null ? shippingSummary.ShippingFee : order.ShippingFee * share;
+
+            var shopDiscount = 0m;
+
+            if (shopDiscountLookup != null && shopDiscountLookup.ContainsKey(group.Key))
+
+            {
+
+                shopDiscount = shopDiscountLookup[group.Key];
+
+            }
 
             var shippingFeeAmount = (order.ShippingFeeAmount ?? 0m) * share;
 
@@ -1390,7 +2146,7 @@ private static string GenerateOrderCode()
 
                 ShopId = group.Key,
 
-                ShippingMethod = order.ShippingMethod,
+                ShippingMethod = shippingSummary != null ? shippingSummary.ShippingMethodName : order.ShippingMethod,
 
                 ShippingFee = shippingFee,
 
@@ -1398,7 +2154,9 @@ private static string GenerateOrderCode()
 
                 ShippingFeeAmount = shippingFeeAmount,
 
-                ShippingEta = order.ShippingEta,
+                ShippingEta = shippingSummary != null ? shippingSummary.ShippingEta : order.ShippingEta,
+
+                ShippingCarrierId = shippingSummary != null ? shippingSummary.CarrierId : null,
 
                 PaymentStatus = order.PaymentStatus,
 
@@ -1410,7 +2168,7 @@ private static string GenerateOrderCode()
 
                 Subtotal = subtotal,
 
-                Discount = 0,
+                Discount = shopDiscount,
 
                 PlatformFeePercent = platformFeePercent,
 
@@ -1418,7 +2176,7 @@ private static string GenerateOrderCode()
 
                 InfrastructureFee = infrastructureFee,
 
-                Total = subtotal + shippingFee,
+                Total = subtotal - shopDiscount + shippingFee,
 
                 Status = true,
 
@@ -1438,7 +2196,7 @@ private static string GenerateOrderCode()
             {
                 ShopOrderId = shopOrder.Id,
                 Action = "Create",
-                Note = "Khoi tao don hang shop",
+                Note = "Kh?i t?o don h�ng shop",
                 Status = true,
                 CreatedAt = DateTime.Now,
                 CreatedBy = order.CreatedBy,
@@ -1751,7 +2509,7 @@ private static string GenerateOrderCode()
 
             var fromAddress = new MailAddress(account.Email, string.IsNullOrWhiteSpace(account.DisplayName) ? "LoveIs Store" : account.DisplayName);
 
-            var subject = string.Format("Đơn hàng mới: {0}", order.OrderCode);
+            var subject = string.Format("�on h�ng m?i: {0}", order.OrderCode);
 
             var baseUrl = string.Empty;
 
@@ -1849,9 +2607,9 @@ private static string GenerateOrderCode()
 
             bodyBuilder.AppendLine("<div>");
 
-            bodyBuilder.AppendLine("<div style=\"font-size:18px;font-weight:bold;\">Đơn hàng mới</div>");
+            bodyBuilder.AppendLine("<div style=\"font-size:18px;font-weight:bold;\">�on h�ng m?i</div>");
 
-            bodyBuilder.AppendLine("<div style=\"color:#666;\">Mã đơn hàng: <strong>" + HttpUtility.HtmlEncode(order.OrderCode) + "</strong></div>");
+            bodyBuilder.AppendLine("<div style=\"color:#666;\">M� don h�ng: <strong>" + HttpUtility.HtmlEncode(order.OrderCode) + "</strong></div>");
 
             bodyBuilder.AppendLine("</div></div>");
 
@@ -1859,19 +2617,19 @@ private static string GenerateOrderCode()
 
             bodyBuilder.AppendLine("<div style=\"margin-bottom:16px;\">");
 
-            bodyBuilder.AppendLine("<div style=\"font-weight:bold;margin-bottom:6px;\">Thông tin khách hàng</div>");
+            bodyBuilder.AppendLine("<div style=\"font-weight:bold;margin-bottom:6px;\">Th�ng tin kh�ch h�ng</div>");
 
-            bodyBuilder.AppendLine("<div>Họ và tên: " + HttpUtility.HtmlEncode(order.CustomerName) + "</div>");
+            bodyBuilder.AppendLine("<div>H? v� t�n: " + HttpUtility.HtmlEncode(order.CustomerName) + "</div>");
 
-            bodyBuilder.AppendLine("<div>Điện thoại: " + HttpUtility.HtmlEncode(order.Phone) + "</div>");
+            bodyBuilder.AppendLine("<div>�i?n tho?i: " + HttpUtility.HtmlEncode(order.Phone) + "</div>");
 
-            bodyBuilder.AppendLine("<div>Địa chỉ: " + HttpUtility.HtmlEncode(order.AddressLine) + "</div>");
+            bodyBuilder.AppendLine("<div>�?a ch?: " + HttpUtility.HtmlEncode(order.AddressLine) + "</div>");
 
             if (!string.IsNullOrWhiteSpace(order.WardName) || !string.IsNullOrWhiteSpace(order.ProvinceName))
 
             {
 
-                bodyBuilder.AppendLine("<div>Khu vực: " + HttpUtility.HtmlEncode(string.Format("{0} {1}", order.WardName, order.ProvinceName).Trim()) + "</div>");
+                bodyBuilder.AppendLine("<div>Khu v?c: " + HttpUtility.HtmlEncode(string.Format("{0} {1}", order.WardName, order.ProvinceName).Trim()) + "</div>");
 
             }
 
@@ -1879,29 +2637,29 @@ private static string GenerateOrderCode()
 
             bodyBuilder.AppendLine("<div style=\"margin-bottom:16px;\">");
 
-            bodyBuilder.AppendLine("<div style=\"font-weight:bold;margin-bottom:6px;\">Thông tin đơn hàng</div>");
+            bodyBuilder.AppendLine("<div style=\"font-weight:bold;margin-bottom:6px;\">Th�ng tin don h�ng</div>");
 
-            bodyBuilder.AppendLine("<div>Thanh toán: " + HttpUtility.HtmlEncode(order.PaymentMethod) + "</div>");
+            bodyBuilder.AppendLine("<div>Thanh to�n: " + HttpUtility.HtmlEncode(order.PaymentMethod) + "</div>");
 
-            bodyBuilder.AppendLine("<div>Vận chuyển: " + HttpUtility.HtmlEncode(order.ShippingMethod) + "</div>");
+            bodyBuilder.AppendLine("<div>V?n chuy?n: " + HttpUtility.HtmlEncode(order.ShippingMethod) + "</div>");
 
-            bodyBuilder.AppendLine("<div>Ghi chú: " + HttpUtility.HtmlEncode(order.Note ?? string.Empty) + "</div>");
+            bodyBuilder.AppendLine("<div>Ghi ch�: " + HttpUtility.HtmlEncode(order.Note ?? string.Empty) + "</div>");
 
             bodyBuilder.AppendLine("</div>");
 
             bodyBuilder.AppendLine("<div style=\"margin-bottom:16px;\">");
 
-            bodyBuilder.AppendLine("<div style=\"font-weight:bold;margin-bottom:10px;\">Sản phẩm</div>");
+            bodyBuilder.AppendLine("<div style=\"font-weight:bold;margin-bottom:10px;\">S?n ph?m</div>");
 
             bodyBuilder.AppendLine("<table style=\"width:100%;border-collapse:collapse;font-size:14px;\">");
 
             bodyBuilder.AppendLine("<thead><tr>");
 
-            bodyBuilder.AppendLine("<th style=\"text-align:left;padding:8px;border-bottom:1px solid #eee;\">Sản phẩm</th>");
+            bodyBuilder.AppendLine("<th style=\"text-align:left;padding:8px;border-bottom:1px solid #eee;\">�on gi�</th>");
 
             bodyBuilder.AppendLine("<th style=\"text-align:center;padding:8px;border-bottom:1px solid #eee;\">SL</th>");
 
-            bodyBuilder.AppendLine("<th style=\"text-align:right;padding:8px;border-bottom:1px solid #eee;\">Thành tiền</th>");
+            bodyBuilder.AppendLine("<th style=\"text-align:right;padding:8px;border-bottom:1px solid #eee;\">Th�nh ti?n</th>");
 
             bodyBuilder.AppendLine("</tr></thead><tbody>");
 
@@ -1963,13 +2721,13 @@ private static string GenerateOrderCode()
 
             bodyBuilder.AppendLine("<div style=\"min-width:240px;\">");
 
-            bodyBuilder.AppendLine("<div style=\"display:flex;justify-content:space-between;padding:4px 0;\"><span>Tạm tính:&nbsp;</span><strong>" + order.Subtotal.ToString("n0") + " </strong></div>");
+            bodyBuilder.AppendLine("<div style=\"display:flex;justify-content:space-between;padding:4px 0;\"><span>T?m t�nh:&nbsp;</span><strong>" + order.Subtotal.ToString("n0") + " </strong></div>");
 
-            bodyBuilder.AppendLine("<div style=\"display:flex;justify-content:space-between;padding:4px 0;\"><span>Phí vận chuyển:&nbsp;</span><strong>" + order.ShippingFee.ToString("n0") + " </strong></div>");
+            bodyBuilder.AppendLine("<div style=\"display:flex;justify-content:space-between;padding:4px 0;\"><span>Ph� v?n chuy?n:&nbsp;</span><strong>" + order.ShippingFee.ToString("n0") + " </strong></div>");
 
             bodyBuilder.AppendLine("<div style=\"display:flex;justify-content:space-between;padding:6px 0;font-size:16px;\">");
 
-            bodyBuilder.AppendLine("<span>Tổng cộng:&nbsp;</span><strong style=\"color:#f09a2f;\">" + order.Total.ToString("n0") + " </strong></div>");
+            bodyBuilder.AppendLine("<span>T?ng c?ng:&nbsp;</span><strong style=\"color:#f09a2f;\">" + order.Total.ToString("n0") + " </strong></div>");
 
             bodyBuilder.AppendLine("</div></div>");
 
@@ -2141,133 +2899,143 @@ private static string GenerateOrderCode()
 
     [System.Web.Services.WebMethod]
 
-    public static ShippingSummary GetShippingSummary(int provinceId, int shippingMethodId)
+    public static CheckoutSummary GetCheckoutSummary(int provinceId, int wardId, int shippingMethodId, int[] couponIds)
+{
+        var cart = CartService.GetCart();
+        var selected = GetSelectedVariantIds(System.Web.HttpContext.Current != null ? System.Web.HttpContext.Current.Request.QueryString["items"] : null);
+        if (selected.Count > 0)
+        {
+            cart = cart.Where(item => selected.Contains(item.VariantId)).ToList();
+        }
 
-    {
+        int? provinceValue = provinceId > 0 ? (int?)provinceId : null;
+        int? wardValue = wardId > 0 ? (int?)wardId : null;
 
-        decimal subtotal = 0;
+        int? shippingMethodValue = shippingMethodId > 0 ? (int?)shippingMethodId : null;
 
-        decimal shippingFee = 0;
+            var shopLookup = CheckoutShippingHelper.BuildShopShippingLookup(provinceValue, wardValue, shippingMethodValue, cart);
+
+        var subtotal = shopLookup.Values.Sum(x => x.Subtotal);
+
+        var shippingFee = shopLookup.Values.Sum(x => x.ShippingFee);
+
+        decimal discount = 0m;
 
         using (var db = new BeautyStoryContext())
 
         {
 
-            var cart = CartService.GetCart();
+            var customerId = CustomerAuth.GetCustomerId();
 
-            if (cart.Count > 0)
+            var ids = couponIds != null ? couponIds.ToList() : new List<int>();
 
-            {
+            var couponResult = CalculateCouponDiscounts(db, shopLookup, customerId, ids);
 
-                var variantIds = cart.Select(c => c.VariantId).ToList();
-
-                var variants = db.CfProductVariants
-
-                    .Where(v => variantIds.Contains(v.Id))
-
-                    .Select(v => new { v.Id, v.Price, v.SalePrice })
-
-                    .ToList();
-
-                var variantLookup = variants.ToDictionary(v => v.Id, v => v);
-
-                foreach (var item in cart)
-
-                {
-
-                    if (!variantLookup.ContainsKey(item.VariantId))
-
-                    {
-
-                        continue;
-
-                    }
-
-                    var variant = variantLookup[item.VariantId];
-
-                    var price = GetEffectivePrice(variant.Price, variant.SalePrice);
-
-                    subtotal += price * item.Quantity;
-
-                }
-
-            }
-
-            var method = db.CfShippingMethods.FirstOrDefault(m => m.Id == shippingMethodId);
-
-            if (method != null)
-
-            {
-
-                var baseFee = method.BaseFee;
-
-                var innerCityFee = method.InnerCityFee > 0 ? method.InnerCityFee : method.BaseFee;
-
-                if (provinceId > 0)
-
-                {
-
-                    var province = db.CfProvinces.FirstOrDefault(p => p.Id == provinceId);
-
-                    if (province != null)
-
-                    {
-
-                        var name = province.ProvinceName ?? string.Empty;
-
-                        if (name.Contains("Hồ Chí Minh") || name.Contains("Hà Nội"))
-
-                        {
-
-                            shippingFee = innerCityFee;
-
-                        }
-
-                        else
-
-                        {
-
-                            shippingFee = baseFee;
-
-                        }
-
-                    }
-
-                    else
-
-                    {
-
-                        shippingFee = baseFee;
-
-                    }
-
-                }
-
-                else
-
-                {
-
-                    shippingFee = baseFee;
-
-                }
-
-            }
+            discount = couponResult.TotalDiscount;
 
         }
 
-        var total = subtotal + shippingFee;
+        var total = subtotal - discount + shippingFee;
 
-        return new ShippingSummary
+        List<ShopShippingFeeDto> breakdown = null;
+        using (var db = new BeautyStoryContext())
+        {
+            var shopIds = shopLookup.Keys.ToList();
+            var shopNameLookup = db.CfShops.AsNoTracking()
+                .Where(s => shopIds.Contains(s.Id))
+                .Select(s => new { s.Id, s.ShopName })
+                .ToDictionary(s => s.Id, s => s.ShopName);
+
+            breakdown = shopLookup.Values.Select(s => new ShopShippingFeeDto
+            {
+                ShopId = s.ShopId,
+                ShopName = shopNameLookup.ContainsKey(s.ShopId) ? shopNameLookup[s.ShopId] : "Shop",
+                ShippingFeeText = s.ShippingFee > 0 ? string.Format("{0:N0} d", s.ShippingFee) : "Mien phi"
+            }).ToList();
+        }
+        return new CheckoutSummary
 
         {
 
-            ShippingFeeText = shippingFee > 0 ? string.Format("{0:N0} đ", shippingFee) : "Miễn phí",
+            ShippingFeeText = shippingFee > 0 ? string.Format("{0:N0} d", shippingFee) : "Mien phi",
 
-            TotalText = total > 0 ? string.Format("{0:N0} đ", total) : "Liên hệ"
+            DiscountText = discount > 0 ? string.Format("{0:N0} d", discount) : "0 d",
+
+            TotalText = total > 0 ? string.Format("{0:N0} d", total) : "Lien he",
+            ShopFees = breakdown
 
         };
 
     }
 
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 

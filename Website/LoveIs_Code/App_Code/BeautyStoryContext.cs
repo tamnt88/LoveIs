@@ -21,6 +21,12 @@ public class BeautyStoryContext : DbContext
     public DbSet<CfOrigin> CfOrigins { get; set; }
     public DbSet<CfSeoSlug> CfSeoSlugs { get; set; }
     public DbSet<CfShippingMethod> CfShippingMethods { get; set; }
+    public DbSet<CfShippingCarrier> CfShippingCarriers { get; set; }
+    public DbSet<CfShippingCarrierMethod> CfShippingCarrierMethods { get; set; }
+    public DbSet<CfShopShippingConfig> CfShopShippingConfigs { get; set; }
+    public DbSet<CfShopShippingCarrier> CfShopShippingCarriers { get; set; }
+    public DbSet<CfCoupon> CfCoupons { get; set; }
+    public DbSet<CfCouponUsage> CfCouponUsages { get; set; }
     public DbSet<CfPaymentMethod> CfPaymentMethods { get; set; }
     public DbSet<CfOrderStatus> CfOrderStatuses { get; set; }
     public DbSet<CfPaymentStatus> CfPaymentStatuses { get; set; }
@@ -88,6 +94,15 @@ public class BeautyStoryContext : DbContext
     public DbSet<CfPlatformFeeCategory> CfPlatformFeeCategories { get; set; }
     public DbSet<CfCustomerOrderLimit> CfCustomerOrderLimits { get; set; }
     public DbSet<CfWishlist> CfWishlists { get; set; }
+    public DbSet<SellerKyc> SellerKycs { get; set; }
+    public DbSet<SellerKycFile> SellerKycFiles { get; set; }
+    public DbSet<ShopDocument> ShopDocuments { get; set; }
+    public DbSet<ShopDocumentFile> ShopDocumentFiles { get; set; }
+    public DbSet<SellerKycStatus> SellerKycStatuses { get; set; }
+    public DbSet<ShopDocumentStatus> ShopDocumentStatuses { get; set; }
+    public DbSet<SellerKycFileType> SellerKycFileTypes { get; set; }
+    public DbSet<ShopDocumentType> ShopDocumentTypes { get; set; }
+    public DbSet<ShopDocumentFileType> ShopDocumentFileTypes { get; set; }
 
     protected override void OnModelCreating(DbModelBuilder modelBuilder)
     {
@@ -230,5 +245,61 @@ public class BeautyStoryContext : DbContext
             .WithMany(s => s.SystemPages)
             .HasForeignKey(p => p.StaticPageId)
             .WillCascadeOnDelete(false);
+
+        modelBuilder.Entity<SellerKyc>()
+            .HasRequired(k => k.Seller)
+            .WithMany(s => s.SellerKycs)
+            .HasForeignKey(k => k.SellerId)
+            .WillCascadeOnDelete(false);
+
+        modelBuilder.Entity<SellerKycFile>()
+            .HasRequired(f => f.SellerKyc)
+            .WithMany(k => k.Files)
+            .HasForeignKey(f => f.SellerKycId)
+            .WillCascadeOnDelete(false);
+
+        modelBuilder.Entity<ShopDocument>()
+            .HasRequired(d => d.Shop)
+            .WithMany(s => s.ShopDocuments)
+            .HasForeignKey(d => d.ShopId)
+            .WillCascadeOnDelete(false);
+
+        modelBuilder.Entity<ShopDocumentFile>()
+            .HasRequired(f => f.ShopDocument)
+            .WithMany(d => d.Files)
+            .HasForeignKey(f => f.ShopDocumentId)
+            .WillCascadeOnDelete(false);
+
+        modelBuilder.Entity<SellerKyc>()
+            .HasRequired(k => k.StatusRef)
+            .WithMany(s => s.SellerKycs)
+            .HasForeignKey(k => k.Status)
+            .WillCascadeOnDelete(false);
+
+        modelBuilder.Entity<SellerKycFile>()
+            .HasRequired(f => f.FileTypeRef)
+            .WithMany(t => t.SellerKycFiles)
+            .HasForeignKey(f => f.FileType)
+            .WillCascadeOnDelete(false);
+
+        modelBuilder.Entity<ShopDocument>()
+            .HasRequired(d => d.StatusRef)
+            .WithMany(s => s.ShopDocuments)
+            .HasForeignKey(d => d.Status)
+            .WillCascadeOnDelete(false);
+
+        modelBuilder.Entity<ShopDocument>()
+            .HasRequired(d => d.DocTypeRef)
+            .WithMany(t => t.ShopDocuments)
+            .HasForeignKey(d => d.DocType)
+            .WillCascadeOnDelete(false);
+
+        modelBuilder.Entity<ShopDocumentFile>()
+            .HasRequired(f => f.FileTypeRef)
+            .WithMany(t => t.ShopDocumentFiles)
+            .HasForeignKey(f => f.FileType)
+            .WillCascadeOnDelete(false);
+
+        // Use database FKs for carrier/config relations (no navigation properties).
     }
 }

@@ -85,7 +85,7 @@ public partial class OnePayReturn : System.Web.UI.Page
             return;
         }
 
-        MessageLiteral.Text = "Khong tim thay don hang.";
+        MessageLiteral.Text = "Không tìm thấy đơn hàng.";
     }
 
     private static CfPaymentStatus GetPaymentStatus(BeautyStoryContext db, bool success)

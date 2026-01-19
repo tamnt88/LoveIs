@@ -268,7 +268,7 @@ public static class CheckoutShippingHelper
             if (!string.IsNullOrWhiteSpace(provinceName))
             {
                 var name = provinceName.ToLowerInvariant();
-                return name.Contains("ho chi minh") || name.Contains("hcm") || name.Contains("ha noi") || name.Contains("hn");
+                return name.Contains("ho chi minh") ||name.Contains("hồ chí minh")|| name.Contains("hcm")|| name.Contains("ha noi") || name.Contains("hà nội") || name.Contains("hn");
             }
         }
 

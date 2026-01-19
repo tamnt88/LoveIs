@@ -126,7 +126,7 @@ public partial class CheckoutDefault : System.Web.UI.Page
 
         string canonical = Request.Url != null ? Request.Url.GetLeftPart(UriPartial.Path) : string.Empty;
 
-        SystemPageSeoApplier.Apply("checkout", SeoTitleLiteral, SeoMetaLiteral, "Thanh ton | LoveIs Store", canonical);
+        SystemPageSeoApplier.Apply("checkout", SeoTitleLiteral, SeoMetaLiteral, "Thanh toán | LoveIs Store", canonical);
 
     }
 
@@ -148,7 +148,7 @@ public partial class CheckoutDefault : System.Web.UI.Page
 
             ProvinceDropDown.Items.Clear();
 
-            ProvinceDropDown.Items.Add(new ListItem("-- Ch?n t?nh/thnh ph? --", ""));
+            ProvinceDropDown.Items.Add(new ListItem("-- Chọn tỉnh/thành phố --", ""));
 
             foreach (var item in provinces)
 
@@ -168,7 +168,7 @@ public partial class CheckoutDefault : System.Web.UI.Page
 
         WardDropDown.Items.Clear();
 
-        WardDropDown.Items.Add(new ListItem("-- Ch?n phu?ng/x --", ""));
+        WardDropDown.Items.Add(new ListItem("-- Chọn phường/xã --", ""));
 
         if (!provinceId.HasValue)
 
@@ -297,9 +297,9 @@ public partial class CheckoutDefault : System.Web.UI.Page
     private void BindOnePayChannels()
     {
         OnePayChannelList.Items.Clear();
-        OnePayChannelList.Items.Add(new ListItem("The noi dia", "DOMESTIC"));
-        OnePayChannelList.Items.Add(new ListItem("The quoc te", "INTERNATIONAL"));
-        OnePayChannelList.Items.Add(new ListItem("Vi dien tu", "EWALLET"));
+        OnePayChannelList.Items.Add(new ListItem("Thẻ nội địa", "DOMESTIC"));
+        OnePayChannelList.Items.Add(new ListItem("Thẻ quốc tế", "INTERNATIONAL"));
+        OnePayChannelList.Items.Add(new ListItem("Ví điện tử", "EWALLET"));
         OnePayChannelList.SelectedValue = "DOMESTIC";
     }
 
@@ -337,15 +337,15 @@ public partial class CheckoutDefault : System.Web.UI.Page
         var key = (channel ?? string.Empty).Trim().ToUpperInvariant();
         if (key == "DOMESTIC")
         {
-            return "The noi dia";
+            return "Thẻ nội địa";
         }
         if (key == "INTERNATIONAL")
         {
-            return "The quoc te";
+            return "Thẻ quốc tế";
         }
         if (key == "EWALLET")
         {
-            return "Vi dien tu";
+            return "Ví điện tử";
         }
         return string.Empty;
     }
@@ -490,7 +490,7 @@ public partial class CheckoutDefault : System.Web.UI.Page
 
                     ProductName = product != null ? product.ProductName : "-",
 
-                    VariantText = attrs.Count > 0 ? string.Join(", ", attrs) : "M?c d?nh",
+                    VariantText = attrs.Count > 0 ? string.Join(", ", attrs) : "Mặc định",
 
                     Quantity = item.Quantity,
 
@@ -498,7 +498,7 @@ public partial class CheckoutDefault : System.Web.UI.Page
 
                     LineTotalValue = lineTotal,
 
-                    LineTotal = price > 0 ? string.Format("{0:N0} d", lineTotal) : "Lin h?"
+                    LineTotal = price > 0 ? string.Format("{0:N0} đ", lineTotal) : "Liên hệ"
 
                 };
 
@@ -549,7 +549,7 @@ public partial class CheckoutDefault : System.Web.UI.Page
             {
                 ShopId = s.ShopId,
                 ShopName = shopNameLookup.ContainsKey(s.ShopId) ? shopNameLookup[s.ShopId] : "Shop",
-                ShippingFeeText = s.ShippingFee > 0 ? string.Format("{0:N0} d", s.ShippingFee) : "Mien phi"
+                ShippingFeeText = s.ShippingFee > 0 ? string.Format("{0:N0} đ", s.ShippingFee) : "Miễn phí"
             }).ToList();
 
             ShippingFeeRepeater.DataSource = breakdown;
@@ -559,13 +559,13 @@ public partial class CheckoutDefault : System.Web.UI.Page
 
             var total = subtotal - discount + shippingFee;
 
-            SubtotalLiteral.Text = subtotal > 0 ? string.Format("{0:N0} d", subtotal) : "Lien he";
+            SubtotalLiteral.Text = subtotal > 0 ? string.Format("{0:N0} đ", subtotal) : "Liên hệ";
 
-            ShippingFeeLiteral.Text = shippingFee > 0 ? string.Format("{0:N0} d", shippingFee) : "Mien phi";
+            ShippingFeeLiteral.Text = shippingFee > 0 ? string.Format("{0:N0} đ", shippingFee) : "Miễn phí";
 
-            DiscountLiteral.Text = discount > 0 ? string.Format("{0:N0} d", discount) : "0 d";
+            DiscountLiteral.Text = discount > 0 ? string.Format("{0:N0} đ", discount) : "0 đ";
 
-            TotalLiteral.Text = total > 0 ? string.Format("{0:N0} d", total) : "Lien he";
+            TotalLiteral.Text = total > 0 ? string.Format("{0:N0} đ", total) : "Liên hệ";
 
         }
 
@@ -723,7 +723,7 @@ public partial class CheckoutDefault : System.Web.UI.Page
 
                 BadgeSub = FormatCouponBadgeSub(coupon),
 
-                ShopLabel = IsShopScope(coupon) ? ("Ap theo shop: " + (string.IsNullOrWhiteSpace(shopName) ? "Shop" : shopName)) : "He thong",
+                ShopLabel = IsShopScope(coupon) ? ("Áp theo shop: " + (string.IsNullOrWhiteSpace(shopName) ? "Shop" : shopName)) : "Hệ thống",
 
                 MetaText = BuildCouponMetaText(coupon),
 
@@ -1027,12 +1027,11 @@ public partial class CheckoutDefault : System.Web.UI.Page
 
         }
 
-        var scope = IsShopScope(coupon) ? "Shop" : "He thong";
+        var scope = IsShopScope(coupon) ? "Shop" : "Hệ thống";
 
         var type = (coupon.DiscountType ?? string.Empty).Trim().ToUpperInvariant();
 
-        var valueText = type == "PERCENT" ? string.Format("{0}%", coupon.DiscountValue) : string.Format("{0:N0} d", coupon.DiscountValue);
-
+        var valueText = type == "PERCENT" ? string.Format("{0}%", coupon.DiscountValue) : string.Format("{0:N0} đ", coupon.DiscountValue);
         if (IsShopScope(coupon))
 
         {
@@ -1420,7 +1419,7 @@ public partial class CheckoutDefault : System.Web.UI.Page
 
             AddressSelect.Items.Clear();
 
-            AddressSelect.Items.Add(new ListItem("-- Ch?n d?a ch? --", ""));
+            AddressSelect.Items.Add(new ListItem("-- Chọn địa chỉ --", ""));
 
             foreach (var item in addresses)
 
@@ -1525,7 +1524,7 @@ public partial class CheckoutDefault : System.Web.UI.Page
     var submitKey = "CHECKOUT_SUBMIT_LOCK";
     if (Session[submitKey] != null)
     {
-        CheckoutMessage.Text = "on hng dang du?c x? l. Vui lng ch?.";
+        CheckoutMessage.Text = "Đơn hàng đang được xử lý. Vui lòng chờ.";
         return;
     }
 
@@ -1545,7 +1544,7 @@ public partial class CheckoutDefault : System.Web.UI.Page
 
                                                         {
 
-                                                            CheckoutMessage.Text = "Gi? hng dang tr?ng.";
+                                                            CheckoutMessage.Text = "Giỏ hàng đang trống.";
 
                                                             return;
 
@@ -1567,7 +1566,7 @@ public partial class CheckoutDefault : System.Web.UI.Page
 
                                                             {
 
-                                                                CheckoutMessage.Text = string.Format("Gi?i h?n don hng: T?i da {0} s?n ph?m/don; m?i s?n ph?m t?i da {1}.", limit.MaxItemsPerOrder, limit.MaxQtyPerItem);
+                                                                CheckoutMessage.Text = string.Format("Giới hạn đơn hàng: Tối đa {0} sản phẩm/đơn; mỗi sản phẩm tối đa {1}.", limit.MaxItemsPerOrder, limit.MaxQtyPerItem);
 
                                                                 return;
 
@@ -1585,7 +1584,7 @@ public partial class CheckoutDefault : System.Web.UI.Page
 
                                                         {
 
-                                                            CheckoutMessage.Text = "Vui lng nh?p h? tn, s? di?n tho?i v d?a ch?.";
+                                                            CheckoutMessage.Text = "Vui lòng nhập họ tên, số điện thoại và địa chỉ.";
 
                                                             return;
 
@@ -1595,7 +1594,7 @@ public partial class CheckoutDefault : System.Web.UI.Page
 
                                                         {
 
-                                                            CheckoutMessage.Text = "S? di?n tho?i khng h?p l?.";
+                                                            CheckoutMessage.Text = "Số điện thoại không hợp lệ.";
 
                                                             return;
 
@@ -1766,14 +1765,14 @@ public partial class CheckoutDefault : System.Web.UI.Page
                                                             {
                                                                 if (!stockLookup.ContainsKey(item.VariantId))
                                                                 {
-                                                                    CheckoutMessage.Text = "S?n ph?m khng cn t?n t?i.";
+                                                                    CheckoutMessage.Text = "Sản phẩm không còn tồn tại.";
                                                                     return;
                                                                 }
 
                                                                 var stockVariant = stockLookup[item.VariantId];
                                                                 if (!stockVariant.Status)
                                                                 {
-                                                                    CheckoutMessage.Text = "S?n ph?m dang t?m ng?ng bn.";
+                                                                    CheckoutMessage.Text = "Sản phẩm đang tạm ngừng bán.";
                                                                     return;
                                                                 }
 
@@ -1781,7 +1780,7 @@ public partial class CheckoutDefault : System.Web.UI.Page
                                                                 var effectivePrice = GetEffectivePrice(stockVariant);
                                                                 if (effectivePrice <= 0)
                                                                 {
-                                                                    CheckoutMessage.Text = "S?n ph?m khng c gi h?p l?.";
+                                                                    CheckoutMessage.Text = "Sản phẩm không có giá hợp lệ.";
                                                                     return;
                                                                 }
 
@@ -1790,8 +1789,8 @@ public partial class CheckoutDefault : System.Web.UI.Page
                                                                 {
                                                                     var productName = productLookup.ContainsKey(stockVariant.ProductId)
                                                                         ? productLookup[stockVariant.ProductId].ProductName
-                                                                        : "S?n ph?m";
-                                                                    CheckoutMessage.Text = string.Format("{0} ch? cn {1} S?n ph?m.", productName, stockQty);
+                                                                        : "Sản phẩm";
+                                                                    CheckoutMessage.Text = string.Format("{0} chỉ còn {1} Sản phẩm.", productName, stockQty);
                                                                     return;
                                                                 }
                                                             }
@@ -1867,7 +1866,7 @@ public partial class CheckoutDefault : System.Web.UI.Page
 
                                                                     ProductName = product.ProductName,
 
-                                                                    VariantName = attrs.Count > 0 ? string.Join(", ", attrs) : "M?c d?nh",
+                                                                    VariantName = attrs.Count > 0 ? string.Join(", ", attrs) : "Mặc định",
 
                                                                     Quantity = item.Quantity,
 
@@ -2071,7 +2070,7 @@ public partial class CheckoutDefault : System.Web.UI.Page
                                                             {
                                                                 OrderId = order.Id,
                                                                 Action = "Create",
-                                                                Note = "Kh?i t?o don hng",
+                                                                Note = "Khởi tạo đơn hàng",
                                                                 Status = true,
                                                                 CreatedAt = DateTime.Now,
                                                                 CreatedBy = actor,
@@ -2307,7 +2306,7 @@ private static string GenerateOrderCode()
             {
                 ShopOrderId = shopOrder.Id,
                 Action = "Create",
-                Note = "Kh?i t?o don hng shop",
+                Note = "Khởi tạo đơn hàng shop",
                 Status = true,
                 CreatedAt = DateTime.Now,
                 CreatedBy = order.CreatedBy,
@@ -2620,7 +2619,7 @@ private static string GenerateOrderCode()
 
             var fromAddress = new MailAddress(account.Email, string.IsNullOrWhiteSpace(account.DisplayName) ? "LoveIs Store" : account.DisplayName);
 
-            var subject = string.Format("on hng m?i: {0}", order.OrderCode);
+            var subject = string.Format("Đơn hàng mới: {0}", order.OrderCode);
 
             var baseUrl = string.Empty;
 
@@ -2718,9 +2717,9 @@ private static string GenerateOrderCode()
 
             bodyBuilder.AppendLine("<div>");
 
-            bodyBuilder.AppendLine("<div style=\"font-size:18px;font-weight:bold;\">on hng m?i</div>");
+            bodyBuilder.AppendLine("<div style=\"font-size:18px;font-weight:bold;\">Đơn hàng mới</div>");
 
-            bodyBuilder.AppendLine("<div style=\"color:#666;\">M don hng: <strong>" + HttpUtility.HtmlEncode(order.OrderCode) + "</strong></div>");
+            bodyBuilder.AppendLine("<div style=\"color:#666;\">Mã đơn hàng: <strong>" + HttpUtility.HtmlEncode(order.OrderCode) + "</strong></div>");
 
             bodyBuilder.AppendLine("</div></div>");
 
@@ -2728,19 +2727,19 @@ private static string GenerateOrderCode()
 
             bodyBuilder.AppendLine("<div style=\"margin-bottom:16px;\">");
 
-            bodyBuilder.AppendLine("<div style=\"font-weight:bold;margin-bottom:6px;\">Thng tin khch hng</div>");
+            bodyBuilder.AppendLine("<div style=\"font-weight:bold;margin-bottom:6px;\">Thông tin khách hàng</div>");
 
-            bodyBuilder.AppendLine("<div>H? v tn: " + HttpUtility.HtmlEncode(order.CustomerName) + "</div>");
+            bodyBuilder.AppendLine("<div>Họ và tên: " + HttpUtility.HtmlEncode(order.CustomerName) + "</div>");
 
-            bodyBuilder.AppendLine("<div>i?n tho?i: " + HttpUtility.HtmlEncode(order.Phone) + "</div>");
+            bodyBuilder.AppendLine("<div>Điện thoại: " + HttpUtility.HtmlEncode(order.Phone) + "</div>");
 
-            bodyBuilder.AppendLine("<div>?a ch?: " + HttpUtility.HtmlEncode(order.AddressLine) + "</div>");
+            bodyBuilder.AppendLine("<div>Địa chỉ: " + HttpUtility.HtmlEncode(order.AddressLine) + "</div>");
 
             if (!string.IsNullOrWhiteSpace(order.WardName) || !string.IsNullOrWhiteSpace(order.ProvinceName))
 
             {
 
-                bodyBuilder.AppendLine("<div>Khu v?c: " + HttpUtility.HtmlEncode(string.Format("{0} {1}", order.WardName, order.ProvinceName).Trim()) + "</div>");
+                bodyBuilder.AppendLine("<div>Khu vực: " + HttpUtility.HtmlEncode(string.Format("{0} {1}", order.WardName, order.ProvinceName).Trim()) + "</div>");
 
             }
 
@@ -2748,29 +2747,29 @@ private static string GenerateOrderCode()
 
             bodyBuilder.AppendLine("<div style=\"margin-bottom:16px;\">");
 
-            bodyBuilder.AppendLine("<div style=\"font-weight:bold;margin-bottom:6px;\">Thng tin don hng</div>");
+            bodyBuilder.AppendLine("<div style=\"font-weight:bold;margin-bottom:6px;\">Thông tin đơn hàng</div>");
 
-            bodyBuilder.AppendLine("<div>Thanh ton: " + HttpUtility.HtmlEncode(order.PaymentMethod) + "</div>");
+            bodyBuilder.AppendLine("<div>Thanh toán: " + HttpUtility.HtmlEncode(order.PaymentMethod) + "</div>");
 
-            bodyBuilder.AppendLine("<div>V?n chuy?n: " + HttpUtility.HtmlEncode(order.ShippingMethod) + "</div>");
+            bodyBuilder.AppendLine("<div>Vận chuyển: " + HttpUtility.HtmlEncode(order.ShippingMethod) + "</div>");
 
-            bodyBuilder.AppendLine("<div>Ghi ch: " + HttpUtility.HtmlEncode(order.Note ?? string.Empty) + "</div>");
+            bodyBuilder.AppendLine("<div>Ghi chú: " + HttpUtility.HtmlEncode(order.Note ?? string.Empty) + "</div>");
 
             bodyBuilder.AppendLine("</div>");
 
             bodyBuilder.AppendLine("<div style=\"margin-bottom:16px;\">");
 
-            bodyBuilder.AppendLine("<div style=\"font-weight:bold;margin-bottom:10px;\">S?n ph?m</div>");
+            bodyBuilder.AppendLine("<div style=\"font-weight:bold;margin-bottom:10px;\">Sản phẩm</div>");
 
             bodyBuilder.AppendLine("<table style=\"width:100%;border-collapse:collapse;font-size:14px;\">");
 
             bodyBuilder.AppendLine("<thead><tr>");
 
-            bodyBuilder.AppendLine("<th style=\"text-align:left;padding:8px;border-bottom:1px solid #eee;\">on gi</th>");
+            bodyBuilder.AppendLine("<th style=\"text-align:left;padding:8px;border-bottom:1px solid #eee;\">Đơn giá</th>");
 
             bodyBuilder.AppendLine("<th style=\"text-align:center;padding:8px;border-bottom:1px solid #eee;\">SL</th>");
 
-            bodyBuilder.AppendLine("<th style=\"text-align:right;padding:8px;border-bottom:1px solid #eee;\">Thnh ti?n</th>");
+            bodyBuilder.AppendLine("<th style=\"text-align:right;padding:8px;border-bottom:1px solid #eee;\">Thành tiền</th>");
 
             bodyBuilder.AppendLine("</tr></thead><tbody>");
 
@@ -2832,13 +2831,13 @@ private static string GenerateOrderCode()
 
             bodyBuilder.AppendLine("<div style=\"min-width:240px;\">");
 
-            bodyBuilder.AppendLine("<div style=\"display:flex;justify-content:space-between;padding:4px 0;\"><span>T?m tnh:&nbsp;</span><strong>" + order.Subtotal.ToString("n0") + " </strong></div>");
+            bodyBuilder.AppendLine("<div style=\"display:flex;justify-content:space-between;padding:4px 0;\"><span>Tạm tính:&nbsp;</span><strong>" + order.Subtotal.ToString("n0") + " </strong></div>");
 
-            bodyBuilder.AppendLine("<div style=\"display:flex;justify-content:space-between;padding:4px 0;\"><span>Ph v?n chuy?n:&nbsp;</span><strong>" + order.ShippingFee.ToString("n0") + " </strong></div>");
+            bodyBuilder.AppendLine("<div style=\"display:flex;justify-content:space-between;padding:4px 0;\"><span>Phí vận chuyển:&nbsp;</span><strong>" + order.ShippingFee.ToString("n0") + " </strong></div>");
 
             bodyBuilder.AppendLine("<div style=\"display:flex;justify-content:space-between;padding:6px 0;font-size:16px;\">");
 
-            bodyBuilder.AppendLine("<span>T?ng c?ng:&nbsp;</span><strong style=\"color:#f09a2f;\">" + order.Total.ToString("n0") + " </strong></div>");
+            bodyBuilder.AppendLine("<span>Tổng cộng:&nbsp;</span><strong style=\"color:#f09a2f;\">" + order.Total.ToString("n0") + " </strong></div>");
 
             bodyBuilder.AppendLine("</div></div>");
 
@@ -3061,18 +3060,17 @@ private static string GenerateOrderCode()
             {
                 ShopId = s.ShopId,
                 ShopName = shopNameLookup.ContainsKey(s.ShopId) ? shopNameLookup[s.ShopId] : "Shop",
-                ShippingFeeText = s.ShippingFee > 0 ? string.Format("{0:N0} d", s.ShippingFee) : "Mien phi"
+                ShippingFeeText = s.ShippingFee > 0 ? string.Format("{0:N0} đ", s.ShippingFee) : "Miễn phí"
             }).ToList();
         }
         return new CheckoutSummary
 
         {
 
-            ShippingFeeText = shippingFee > 0 ? string.Format("{0:N0} d", shippingFee) : "Mien phi",
+            ShippingFeeText = shippingFee > 0 ? string.Format("{0:N0} đ", shippingFee) : "Miễn phí",
 
-            DiscountText = discount > 0 ? string.Format("{0:N0} d", discount) : "0 d",
-
-            TotalText = total > 0 ? string.Format("{0:N0} d", total) : "Lien he",
+            DiscountText = discount > 0 ? string.Format("{0:N0} đ", discount) : "0 đ",
+            TotalText = total > 0 ? string.Format("{0:N0} đ", total) : "Liên hệ",
             ShopFees = breakdown
 
         };

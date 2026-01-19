@@ -1,6 +1,7 @@
 # Missing items for a full e-commerce website
 
 ## 1) Real payments & shipping
+- OnePay da co flow co ban (DOMESTIC/INTERNATIONAL/EWALLET) can kiem thu va cau hinh production.
 - VNPay/MoMo/ZaloPay integration.
 - GHN/GHTK/VTPost integration.
 - Webhooks for status sync.
@@ -18,8 +19,9 @@
 - Payout cycles.
 - Settlement reports.
 - Shop wallet UI (Balance/Available/Pending) + ledger view.
-- Payout request flow UI (seller) + admin approval UI + proof upload UI.
+- Payout request flow UI (seller) + admin approval UI + proof upload UI. (da co UI co ban, can refine UX + validation)
 - Release workflow UI (Pending -> Released -> Available) based on hold days or admin approval.
+- Inner city config UI (set `cf_ward.IsInnerCity`) + data seeding theo phuong.
 
 ## 5) Community moderation
 - Report/ban content.

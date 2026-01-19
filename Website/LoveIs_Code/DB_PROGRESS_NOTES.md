@@ -42,6 +42,11 @@ Quy uoc AddressType trong `cf_shop_address`:
 - SQL alter: `sql/alter_cf_shop_address_ward_province.sql`
 - SQL schema cap nhat: `sql/cf_shop_address.sql`, `sql/script_update_18_01_2026.sql`
 
+## Inner city (noi thanh)
+- Them cot `IsInnerCity` trong `cf_ward` de danh dau phuong noi thanh.
+- SQL alter: `sql/alter_cf_ward_inner_city.sql`
+- Tinh phi: `ShippingFeeCalculator` check `IsInnerCity` theo ward.
+
 ## Admin sellers edit (dang su dung DataTables)
 - UI + filter san pham, shop, dia chi kho/tra hang, danh gia shop/san pham: `admin/sellers/edit.aspx`
 - WebMethods + server side: `admin/sellers/edit.aspx.cs`
@@ -53,16 +58,34 @@ Quy uoc AddressType trong `cf_shop_address`:
 
 ## Luong checkout va van chuyen (UI/API + du lieu)
 - **UI checkout (khach hang)**: khi chon san pham vao gio, he thong group theo `ShopId`.
+- **Chon san pham**: chi checkout cac item duoc tick (querystring `items` trong gio hang).
 - **API tinh phi**: backend lay config tu `cf_shop_shipping_config` (DefaultShippingMethodId + DefaultShippingCarrierId).
 - **Fallback**: neu shop chua co config, lay `cf_shipping_method.IsDefault = 1` va carrier co `cf_shipping_carrier.IsDefault = 1`.
 - **Fallback tiep**: neu chua co carrier default, chon carrier theo `SortOrder` tang dan.
 - **Tinh phi theo hang**: su dung `ShippingFeeCalculator.CalculateFee(carrierCode, method, isInnerCity)` (dang tra phi gia lap, se thay bang API sau).
 - **Tinh phi**: phi van chuyen duoc tinh theo method default (BaseFee/InnerCityFee) + ap dung FreeShipping (FreeShippingEnabled + FreeShippingMinOrder).
+- **Chon method**: UI cho chon `ShippingMethodList` (tieu chuan/nhanh) va dua vao tinh phi.
 - **Luu don**: tao `cf_order`, `cf_shop_order`; luu `ShippingMethodId` va `ShippingCarrierId` tren `cf_shop_order`.
 - **Shop order**: tinh phi theo tung shop (shop config -> method/carrier), luu `ShippingMethod`, `ShippingEta`, `ShippingCarrierId` tren `cf_shop_order`.
+- **Breakdown theo shop**: UI co the hien `ShippingFeeBreakdown` (phi theo tung shop) va tong phi = tong cac shop; hien dang co placeholder, co the an (display none) khi chua can.
 - **UI seller fulfill**: seller duoc phep doi `ShippingCarrierId` (hang van chuyen) neu can.
 - **Cap nhat chenh lech**: neu doi hang lam doi phi, ghi vao `cf_shipping_fee_adjustment` (OldFee/NewFee/DeltaFee/Payer/OrderId/ShopId/ShopOrderId).
 - **Tracking**: cap nhat `cf_shipping_tracking` theo `cf_shop_order`.
+
+## Coupon trong checkout
+- UI cho chon nhieu coupon (he thong + theo shop), luu vao hidden `SelectedCouponIds`.
+- Rule kiem tra: StartAt/EndAt, UsageLimit, UsagePerUser, MinOrder, MaxDiscount.
+- Coupon shop chi ap dung tren tong gia tri cua shop do; coupon system ap dung tren tong gia tri don hang.
+- Phi van chuyen khong giam theo coupon (chi giam gia hang hoa).
+- Code: `thanh-toan/default.aspx` + `thanh-toan/default.aspx.cs`.
+
+## OnePay (online payment)
+- UI: chon online -> hien `OnePayChannelList` (DOMESTIC, INTERNATIONAL, EWALLET).
+- Build payment url: `BuildOnePayPaymentUrl` -> `OnePayHelper.BuildPaymentUrl`.
+- Config: `web.config` keys `OnePay:MerchantId`, `OnePay:AccessCode`, `OnePay:HashCode`, `OnePay:BaseUrl`, `OnePay:UrlPrefix`.
+- Return/IPN: validate secure hash, update `cf_order` + `cf_shop_order` payment status, ghi `cf_payment_transaction`.
+- Tracking bank/card: `cf_payment_transaction` luu BankCode, BankName, CardType, CardNumber, ResponseCode.
+- Wallet hook: thanh toan thanh cong -> ghi `PENDING_IN` va tao release cho shop.
 
 ## Auth/admin (chua note truoc do)
 - SQL cau truc: `sql/cf_auth.sql`
@@ -83,8 +106,9 @@ Quy uoc AddressType trong `cf_shop_address`:
 - Helper: `App_Code/ShopWalletService.cs` (ghi `PENDING_IN` va tao `cf_shop_wallet_release`)
 - Config hold days: `cf_system_setting` key `WalletHoldDays` (default 7 neu chua co)
 - Seed setting: `sql/seed_wallet_hold_days_setting.sql`
-- Admin API: `admin/system/wallet-release.aspx` (ApproveRelease -> Released, ReleaseToAvailable -> Available, ReleaseDue).
-- Seller API: `seller/finance-cashflow.aspx` (CreatePayoutRequest).
+- Admin API + UI: `admin/system/wallet-release.aspx` (ApproveRelease -> Released, ReleaseToAvailable -> Available, ReleaseDue).
+- Admin payout proof: upload chung tu tung dong + preview file (inline upload, luu `/upload/payout-proofs`).
+- Seller API + UI: `seller/finance-cashflow.aspx` (CreatePayoutRequest, GetPayoutFormData, GetPayoutRequests).
 
 ## Tinh trang da xu ly
 - Bo District trong address + cap nhat WardId/ProvinceId.

@@ -186,7 +186,8 @@
                                 "<form class='d-flex flex-column gap-1' method='post' enctype='multipart/form-data'>" +
                                 "<input type='hidden' name='InlineUpload' value='1' />" +
                                 "<input type='hidden' name='PayoutId' value='" + item.Id + "' />" +
-                                "<input type='file' name='ProofFile' class='form-control form-control-sm' accept='image/*,application/pdf' />" +
+                                "<input type='file' name='ProofFile' class='form-control form-control-sm js-proof-file' data-preview='" + item.Id + "' accept='image/*,application/pdf' />" +
+                                "<div class='small text-muted' id='ProofPreview-" + item.Id + "'></div>" +
                                 "<input type='text' name='ProofNote' class='form-control form-control-sm' placeholder='Ghi chu' />" +
                                 "<div class='d-flex gap-1'>" +
                                 "<button class='btn btn-sm btn-primary' type='submit'>Upload + Da chi tien</button>" +
@@ -257,6 +258,35 @@
                     postJson("wallet-release.aspx/RejectPayout", { payoutRequestId: rejectId, note: "Admin tu choi" }, function () {
                         loadPayouts();
                     });
+                }
+            });
+
+            document.addEventListener("change", function (evt) {
+                var target = evt.target;
+                if (!target || !target.classList || !target.classList.contains("js-proof-file")) {
+                    return;
+                }
+
+                var previewId = target.getAttribute("data-preview");
+                var previewEl = document.getElementById("ProofPreview-" + previewId);
+                if (!previewEl) {
+                    return;
+                }
+
+                previewEl.innerHTML = "";
+                if (!target.files || target.files.length === 0) {
+                    return;
+                }
+
+                var file = target.files[0];
+                if (file.type && file.type.indexOf("image/") === 0) {
+                    var reader = new FileReader();
+                    reader.onload = function (e) {
+                        previewEl.innerHTML = "<img src='" + e.target.result + "' style='max-width:120px;max-height:80px;border:1px solid #eee;border-radius:6px;' />";
+                    };
+                    reader.readAsDataURL(file);
+                } else {
+                    previewEl.textContent = file.name;
                 }
             });
 

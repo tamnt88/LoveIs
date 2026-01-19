@@ -32,9 +32,9 @@ public partial class OnePayIpn : System.Web.UI.Page
                     }
                     order.UpdatedAt = DateTime.Now;
                     order.UpdatedBy = "onepay-ipn";
+                    var shopOrders = db.CfShopOrders.Where(so => so.OrderId == order.Id).ToList();
                     if (paymentStatus != null)
                     {
-                        var shopOrders = db.CfShopOrders.Where(so => so.OrderId == order.Id).ToList();
                         foreach (var shopOrder in shopOrders)
                         {
                             shopOrder.PaymentStatus = paymentStatus.Name;
@@ -69,6 +69,12 @@ public partial class OnePayIpn : System.Web.UI.Page
                     transaction.UpdatedAt = DateTime.Now;
                     transaction.UpdatedBy = "onepay-ipn";
                     db.SaveChanges();
+
+                    if (isSuccess)
+                    {
+                        ShopWalletService.AddPendingForPaidOrder(db, order, shopOrders, "onepay-ipn");
+                        db.SaveChanges();
+                    }
                 }
             }
         }

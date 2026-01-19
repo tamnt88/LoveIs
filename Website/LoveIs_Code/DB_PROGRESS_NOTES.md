@@ -20,17 +20,17 @@ Tai lieu nay tong hop cau truc DB (muc quan trong), cac thay doi gan day va nhun
 - DbSet + mapping: `App_Code/BeautyStoryContext.cs`
 
 Bang chinh:
-- `seller_kyc`
-- `seller_kyc_file`
-- `shop_document`
-- `shop_document_file`
+- `cf_seller_kyc`
+- `cf_seller_kyc_file`
+- `cf_shop_document`
+- `cf_shop_document_file`
 
 Lookup:
-- `seller_kyc_status`
-- `shop_document_status`
-- `seller_kyc_file_type`
-- `shop_document_type`
-- `shop_document_file_type`
+- `cf_seller_kyc_status`
+- `cf_shop_document_status`
+- `cf_seller_kyc_file_type`
+- `cf_shop_document_type`
+- `cf_shop_document_file_type`
 
 Quy uoc AddressType trong `cf_shop_address`:
 - Tai lieu: `SHOP_ADDRESS_TYPES.md`
@@ -73,16 +73,34 @@ Quy uoc AddressType trong `cf_shop_address`:
 - SQL tao bang: `sql/add_seller_commerce_features.sql`
 - Bang: `cf_coupon`, `cf_coupon_usage`
 
+## Vi shop + rut tien (moi them)
+- SQL tao bang: `sql/create_shop_wallet_and_bank.sql`, `sql/create_shop_wallet_release.sql`
+- SQL alter OnePay transaction: `sql/alter_cf_payment_transaction_bank.sql`
+- Bang: `cf_shop_bank`, `cf_shop_wallet`, `cf_shop_wallet_txn`, `cf_shop_wallet_release`, `cf_shop_payout_request`, `cf_shop_payout_proof`
+- Model: `App_Code/MarketplaceModels.cs`
+- DbSet: `App_Code/BeautyStoryContext.cs`
+- Hook OnePay: `thanh-toan/onepay-return.aspx.cs`, `thanh-toan/onepay-ipn.aspx.cs`
+- Helper: `App_Code/ShopWalletService.cs` (ghi `PENDING_IN` va tao `cf_shop_wallet_release`)
+- Config hold days: `cf_system_setting` key `WalletHoldDays` (default 7 neu chua co)
+- Seed setting: `sql/seed_wallet_hold_days_setting.sql`
+- Admin API: `admin/system/wallet-release.aspx` (ApproveRelease -> Released, ReleaseToAvailable -> Available, ReleaseDue).
+- Seller API: `seller/finance-cashflow.aspx` (CreatePayoutRequest).
+
 ## Tinh trang da xu ly
 - Bo District trong address + cap nhat WardId/ProvinceId.
 - Them KYC + shop documents schema, models, mapping.
 - Admin sellers edit da co tab, filter, va server-side DataTables.
 - Bo sung carrier van chuyen: `sql/add_shipping_carriers.sql` (cf_shipping_carrier, cf_shipping_carrier_method) co contact + logo + API credentials.
 - Shop-level carrier config: `sql/alter_shipping_carrier_config.sql` (DefaultShippingCarrierId + cf_shop_shipping_carrier + ShippingCarrierId on cf_shop_order).
+- OnePay transaction: luu ngan hang/card + response code vao `cf_payment_transaction`.
+- Vi shop: ghi `PENDING_IN` khi OnePay thanh toan thanh cong; tao release record de admin duyet.
 
 ## Tinh trang can lam tiep
 - UI/flow KYC upload (seller/admin): UI upload CCCD mat truoc/mat sau + luong duyet/tu choi.
 - UI/flow Shop documents upload (seller/admin): UI upload giay to shop + luong duyet/tu choi.
+- UI/flow vi shop: man hinh so du + lich su giao dich (ledger).
+- UI/flow rut tien: seller tao lenh rut, admin duyet + upload chung tu, cap nhat payout + wallet.
+- Release engine: cron/admin action de chuyen `PendingBalance` -> `AvailableBalance` theo `cf_shop_wallet_release` (Pending -> Released -> Available).
 - Normalize tieng Viet cho cac file SQL/HTML bi loi font (neu can).
 
 ## Note quan trong

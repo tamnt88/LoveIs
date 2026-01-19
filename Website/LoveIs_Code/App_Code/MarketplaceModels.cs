@@ -425,6 +425,187 @@ public class CfPaymentTransaction
     public int SortOrder { get; set; }
 }
 
+[Table("cf_shop_bank")]
+public class CfShopBank
+{
+    public int Id { get; set; }
+    public int ShopId { get; set; }
+
+    [StringLength(255)]
+    public string BankName { get; set; }
+
+    [StringLength(255)]
+    public string AccountName { get; set; }
+
+    [StringLength(100)]
+    public string AccountNumber { get; set; }
+
+    [StringLength(255)]
+    public string Branch { get; set; }
+
+    public bool IsDefault { get; set; }
+    public bool Status { get; set; }
+
+    public DateTime CreatedAt { get; set; }
+
+    [StringLength(100)]
+    public string CreatedBy { get; set; }
+
+    public DateTime? UpdatedAt { get; set; }
+
+    [StringLength(100)]
+    public string UpdatedBy { get; set; }
+
+    public int SortOrder { get; set; }
+}
+
+[Table("cf_shop_wallet")]
+public class CfShopWallet
+{
+    public int Id { get; set; }
+    public int ShopId { get; set; }
+    public decimal Balance { get; set; }
+    public decimal AvailableBalance { get; set; }
+    public decimal PendingBalance { get; set; }
+    public bool Status { get; set; }
+    public DateTime CreatedAt { get; set; }
+
+    [StringLength(100)]
+    public string CreatedBy { get; set; }
+
+    public DateTime? UpdatedAt { get; set; }
+
+    [StringLength(100)]
+    public string UpdatedBy { get; set; }
+
+    public int SortOrder { get; set; }
+}
+
+[Table("cf_shop_wallet_txn")]
+public class CfShopWalletTxn
+{
+    public int Id { get; set; }
+    public int ShopId { get; set; }
+    public int? OrderId { get; set; }
+    public int? ShopOrderId { get; set; }
+
+    [StringLength(50)]
+    public string Type { get; set; }
+
+    public decimal Amount { get; set; }
+    public decimal BalanceBefore { get; set; }
+    public decimal BalanceAfter { get; set; }
+    public decimal AvailableBefore { get; set; }
+    public decimal AvailableAfter { get; set; }
+    public decimal PendingBefore { get; set; }
+    public decimal PendingAfter { get; set; }
+
+    public string Note { get; set; }
+    public string MetaJson { get; set; }
+
+    public DateTime CreatedAt { get; set; }
+
+    [StringLength(100)]
+    public string CreatedBy { get; set; }
+}
+
+[Table("cf_shop_wallet_release")]
+public class CfShopWalletRelease
+{
+    public int Id { get; set; }
+    public int ShopId { get; set; }
+    public int? OrderId { get; set; }
+    public int? ShopOrderId { get; set; }
+    public decimal Amount { get; set; }
+    public DateTime ReleaseAt { get; set; }
+
+    [StringLength(50)]
+    public string Status { get; set; }
+
+    public string Note { get; set; }
+    public DateTime? ApprovedAt { get; set; }
+
+    [StringLength(100)]
+    public string ApprovedBy { get; set; }
+
+    public DateTime? ReleasedAt { get; set; }
+
+    [StringLength(100)]
+    public string ReleasedBy { get; set; }
+
+    public DateTime CreatedAt { get; set; }
+
+    [StringLength(100)]
+    public string CreatedBy { get; set; }
+
+    public DateTime? UpdatedAt { get; set; }
+
+    [StringLength(100)]
+    public string UpdatedBy { get; set; }
+
+    public int SortOrder { get; set; }
+}
+
+[Table("cf_shop_payout_request")]
+public class CfShopPayoutRequest
+{
+    public int Id { get; set; }
+    public int ShopId { get; set; }
+    public int BankAccountId { get; set; }
+    public decimal Amount { get; set; }
+
+    [StringLength(50)]
+    public string Status { get; set; }
+
+    public string Note { get; set; }
+    public DateTime RequestedAt { get; set; }
+
+    [StringLength(100)]
+    public string RequestedBy { get; set; }
+
+    public DateTime? ApprovedAt { get; set; }
+
+    [StringLength(100)]
+    public string ApprovedBy { get; set; }
+
+    public DateTime? PaidAt { get; set; }
+
+    [StringLength(100)]
+    public string PaidBy { get; set; }
+
+    public DateTime CreatedAt { get; set; }
+
+    [StringLength(100)]
+    public string CreatedBy { get; set; }
+
+    public DateTime? UpdatedAt { get; set; }
+
+    [StringLength(100)]
+    public string UpdatedBy { get; set; }
+
+    public int SortOrder { get; set; }
+}
+
+[Table("cf_shop_payout_proof")]
+public class CfShopPayoutProof
+{
+    public int Id { get; set; }
+    public int PayoutRequestId { get; set; }
+
+    [StringLength(1000)]
+    public string FileUrl { get; set; }
+
+    [StringLength(255)]
+    public string FileName { get; set; }
+
+    public DateTime UploadedAt { get; set; }
+
+    [StringLength(100)]
+    public string UploadedBy { get; set; }
+
+    public bool Status { get; set; }
+}
+
 [Table("cf_shipping_tracking")]
 public class CfShippingTracking
 {

@@ -23,9 +23,12 @@
 - cf_return_request, cf_return_item.
 - cf_payment_transaction, cf_shipping_tracking.
 - cf_product_review, cf_shop_review.
-- seller_kyc, seller_kyc_file.
-- shop_document, shop_document_file.
-- seller_kyc_status, shop_document_status, seller_kyc_file_type, shop_document_type, shop_document_file_type.
+- cf_seller_kyc, cf_seller_kyc_file.
+- cf_shop_document, cf_shop_document_file.
+- cf_seller_kyc_status, cf_shop_document_status, cf_seller_kyc_file_type, cf_shop_document_type, cf_shop_document_file_type.
+- cf_shop_bank.
+- cf_shop_wallet, cf_shop_wallet_txn, cf_shop_wallet_release.
+- cf_shop_payout_request, cf_shop_payout_proof.
 
 ## Discounts
 - cf_coupon, cf_coupon_usage.
@@ -64,3 +67,7 @@
 - sql/add_shipping_carriers.sql
 - sql/cf_auth.sql
 - sql/create_seller_kyc_and_shop_documents.sql
+- sql/create_shop_wallet_and_bank.sql
+- sql/create_shop_wallet_release.sql
+- sql/seed_wallet_hold_days_setting.sql
+- sql/alter_cf_payment_transaction_bank.sql

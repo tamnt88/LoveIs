@@ -60,6 +60,12 @@ public class BeautyStoryContext : DbContext
     public DbSet<CfReturnItem> CfReturnItems { get; set; }
     public DbSet<CfReturnStatus> CfReturnStatuses { get; set; }
     public DbSet<CfPaymentTransaction> CfPaymentTransactions { get; set; }
+    public DbSet<CfShopBank> CfShopBanks { get; set; }
+    public DbSet<CfShopWallet> CfShopWallets { get; set; }
+    public DbSet<CfShopWalletTxn> CfShopWalletTxns { get; set; }
+    public DbSet<CfShopWalletRelease> CfShopWalletReleases { get; set; }
+    public DbSet<CfShopPayoutRequest> CfShopPayoutRequests { get; set; }
+    public DbSet<CfShopPayoutProof> CfShopPayoutProofs { get; set; }
     public DbSet<CfShippingTracking> CfShippingTrackings { get; set; }
     public DbSet<CfProductReview> CfProductReviews { get; set; }
     public DbSet<CfShopReview> CfShopReviews { get; set; }

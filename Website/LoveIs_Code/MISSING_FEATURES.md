@@ -17,6 +17,9 @@
 ## 4) Seller reconciliation
 - Payout cycles.
 - Settlement reports.
+- Shop wallet UI (Balance/Available/Pending) + ledger view.
+- Payout request flow UI (seller) + admin approval UI + proof upload UI.
+- Release workflow UI (Pending -> Released -> Available) based on hold days or admin approval.
 
 ## 5) Community moderation
 - Report/ban content.

@@ -4618,12 +4618,37 @@ button.search-submit {
 
 .cart-modal__header {
     padding: 16px 18px 0;
+    position: relative;
 }
 
 .cart-modal__title {
     font-weight: 700;
     color: #a72b54;
     font-size: 18px;
+}
+
+.cart-modal__close {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    width: 32px;
+    height: 32px;
+    border: 0;
+    border-radius: 50%;
+    background: transparent;
+    color: #a72b54;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.cart-modal__close:hover {
+    background: #f6e5dc;
+}
+
+.cart-modal__close i {
+    font-size: 14px;
 }
 
 .cart-modal__body {

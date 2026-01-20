@@ -128,14 +128,15 @@
             <div class="cart-modal__dialog" role="dialog" aria-modal="true" aria-labelledby="CartWarningTitle">
                 <div class="cart-modal__header">
                     <div id="CartWarningTitle" class="cart-modal__title">Thông báo</div>
+                    <button type="button" class="cart-modal__close" aria-label="Đóng thông báo" data-cart-modal-close="true">
+                        <i class="fa-solid fa-xmark"></i>
+                    </button>
                 </div>
                 <div id="CartWarningMessage" class="cart-modal__body">Vui lòng chọn sản phẩm để thanh toán.</div>
-                <div class="cart-modal__footer">
-                    <button type="button" class="btn btn-dark cart-modal__btn" data-cart-modal-close="true">Quay lại</button>
-                </div>
             </div>
         </div>
     </main>
+
 </asp:Content>
 
 <asp:Content ID="PageScripts" ContentPlaceHolderID="PageScripts" runat="server">

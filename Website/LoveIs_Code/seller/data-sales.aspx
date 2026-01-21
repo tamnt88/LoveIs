@@ -36,19 +36,27 @@
         <div class="data-panel-grid">
             <div class="card data-panel">
                 <div class="data-panel-title">Phân Bổ Theo Danh Mục</div>
-                <div id="category-pie-chart" class="data-chart-placeholder pie-chart has-canvas"></div>
-                <div id="category-pie-legend" class="pie-legend"></div>
+                <div class="category-pie-grid">
+                    <div id="category-pie-chart" class="data-chart-placeholder pie-chart has-canvas"></div>
+                    <div id="category-pie-legend" class="pie-legend"></div>
+                </div>
             </div>
             <div class="card data-panel">
                 <div class="data-panel-title">Xu Hướng Bán Hàng</div>
                 <div id="weekly-orders-chart" class="data-chart-placeholder line-chart has-canvas"></div>
             </div>
         </div>
+
+        <div class="card data-panel data-panel-full">
+            <div class="data-panel-title">Doanh Thu Theo Ngày</div>
+            <div id="weekly-revenue-chart" class="data-chart-placeholder bar-chart has-canvas"></div>
+        </div>
     </div>
 
     <script>
         window.weeklyOrderData = <%= WeeklyOrderDataJson %>;
         window.categoryDistributionData = <%= CategoryDistributionJson %>;
+        window.weeklyRevenueData = <%= WeeklyRevenueDataJson %>;
 
         (function () {
             var data = window.weeklyOrderData || [];
@@ -137,7 +145,7 @@
                     svg.appendChild(circle);
                     circle.addEventListener("mouseenter", (function (point) {
                         return function () {
-                            tooltip.textContent = point.date + ": " + point.count + " đơn";
+                            tooltip.innerHTML = "<div class=\"tooltip-title\">" + point.date + "</div><div class=\"tooltip-value\">Số đơn : " + point.count + "</div>";
                             tooltip.style.left = point.x + "px";
                             tooltip.style.top = point.y + "px";
                             tooltip.classList.add("show");
@@ -239,19 +247,37 @@
                     path.setAttribute("fill", colors[j % colors.length]);
                     path.style.cursor = "pointer";
 
+                    var percentText = Math.round((data[j].Count / total) * 100);
+                    if (percentText > 0) {
+                        var labelPos = polarToCartesian(center, center, radius * 0.55, startAngle + sliceAngle / 2);
+                        var percentLabel = document.createElementNS("http://www.w3.org/2000/svg", "text");
+                        percentLabel.setAttribute("x", labelPos.x.toString());
+                        percentLabel.setAttribute("y", (labelPos.y + 4).toString());
+                        percentLabel.setAttribute("text-anchor", "middle");
+                        percentLabel.setAttribute("font-size", "12");
+                        percentLabel.setAttribute("font-weight", "700");
+                        percentLabel.setAttribute("fill", "#ffffff");
+                        percentLabel.textContent = percentText + "%";
+                        svg.appendChild(percentLabel);
+                    }
+
                     path.addEventListener("mouseenter", (function (item, angle) {
                         return function () {
                             var percent = total > 0 ? Math.round((item.Count / total) * 100) : 0;
                             var pos = polarToCartesian(center, center, radius * 0.6, angle);
                             tooltip.textContent = item.Name + " (" + percent + "%)";
-                            tooltip.style.left = pos.x + "px";
-                            tooltip.style.top = pos.y + "px";
                             tooltip.classList.add("show");
                         };
                     })(data[j], startAngle + sliceAngle / 2));
 
                     path.addEventListener("mouseleave", function () {
                         tooltip.classList.remove("show");
+                    });
+
+                    path.addEventListener("mousemove", function (event) {
+                        var rect = container.getBoundingClientRect();
+                        tooltip.style.left = (event.clientX - rect.left + 10) + "px";
+                        tooltip.style.top = (event.clientY - rect.top + 10) + "px";
                     });
 
                     svg.appendChild(path);
@@ -272,6 +298,109 @@
 
             renderPie();
             window.addEventListener("resize", renderPie);
+        })();
+
+        (function () {
+            var data = window.weeklyRevenueData || [];
+            var container = document.getElementById("weekly-revenue-chart");
+            if (!container || !data.length) return;
+
+            function formatCurrency(value) {
+                return value.toLocaleString("vi-VN") + " đ";
+            }
+
+            function renderBar() {
+                var width = container.clientWidth;
+                var height = 280;
+                var padding = { left: 70, right: 24, top: 24, bottom: 40 };
+                var innerWidth = Math.max(0, width - padding.left - padding.right);
+                var innerHeight = Math.max(0, height - padding.top - padding.bottom);
+                var max = 1;
+
+                for (var i = 0; i < data.length; i++) {
+                    if (data[i].Total > max) {
+                        max = data[i].Total;
+                    }
+                }
+
+                container.innerHTML = "";
+
+                var tooltip = document.createElement("div");
+                tooltip.className = "data-line-tooltip";
+
+                var svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+                svg.setAttribute("viewBox", "0 0 " + width + " " + height);
+                svg.setAttribute("class", "data-chart-canvas");
+                svg.setAttribute("preserveAspectRatio", "none");
+
+                var axis = document.createElementNS("http://www.w3.org/2000/svg", "path");
+                axis.setAttribute("d", "M " + padding.left + " " + padding.top + " V " + (height - padding.bottom) + " H " + (width - padding.right));
+                axis.setAttribute("fill", "none");
+                axis.setAttribute("stroke", "#2e1a22");
+                axis.setAttribute("stroke-width", "2");
+                svg.appendChild(axis);
+
+                var xStep = data.length > 0 ? innerWidth / data.length : innerWidth;
+                var barWidth = Math.max(12, xStep * 0.6);
+
+                for (var j = 0; j < data.length; j++) {
+                    var barHeight = max > 0 ? (data[j].Total / max) * innerHeight : 0;
+                    var x = padding.left + xStep * j + (xStep - barWidth) / 2;
+                    var y = padding.top + innerHeight - barHeight;
+
+                    var rect = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+                    rect.setAttribute("x", x.toString());
+                    rect.setAttribute("y", y.toString());
+                    rect.setAttribute("width", barWidth.toString());
+                    rect.setAttribute("height", barHeight.toString());
+                    rect.setAttribute("rx", "6");
+                    rect.setAttribute("fill", "#6a1c3d");
+                    rect.style.cursor = "pointer";
+
+                    rect.addEventListener("mouseenter", (function (point, centerX, centerY) {
+                        return function () {
+                            tooltip.innerHTML = "<div class=\"tooltip-title\">" + point.DateText + "</div><div class=\"tooltip-value\">Doanh thu : " + formatCurrency(point.Total) + "</div>";
+                            tooltip.style.left = centerX + "px";
+                            tooltip.style.top = centerY + "px";
+                            tooltip.classList.add("show");
+                        };
+                    })(data[j], x + barWidth / 2, y));
+
+                    rect.addEventListener("mouseleave", function () {
+                        tooltip.classList.remove("show");
+                    });
+
+                    svg.appendChild(rect);
+
+                    var label = document.createElementNS("http://www.w3.org/2000/svg", "text");
+                    label.setAttribute("x", (x + barWidth / 2).toString());
+                    label.setAttribute("y", (height - padding.bottom + 18).toString());
+                    label.setAttribute("text-anchor", "middle");
+                    label.setAttribute("font-size", "12");
+                    label.setAttribute("fill", "#2e1a22");
+                    label.textContent = data[j].Day;
+                    svg.appendChild(label);
+                }
+
+                var tickValues = [0, Math.round(max / 2), max];
+                for (var t = 0; t < tickValues.length; t++) {
+                    var tickY = padding.top + innerHeight - (tickValues[t] / max) * innerHeight;
+                    var tick = document.createElementNS("http://www.w3.org/2000/svg", "text");
+                    tick.setAttribute("x", (padding.left - 10).toString());
+                    tick.setAttribute("y", (tickY + 4).toString());
+                    tick.setAttribute("text-anchor", "end");
+                    tick.setAttribute("font-size", "11");
+                    tick.setAttribute("fill", "#6f5b63");
+                    tick.textContent = formatCurrency(tickValues[t]);
+                    svg.appendChild(tick);
+                }
+
+                container.appendChild(svg);
+                container.appendChild(tooltip);
+            }
+
+            renderBar();
+            window.addEventListener("resize", renderBar);
         })();
     </script>
 </asp:Content>

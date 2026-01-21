@@ -46,6 +46,7 @@ public partial class SellerProductReviews : System.Web.UI.Page
             if (shopIds.Count == 0)
             {
                 BindEmpty();
+                BindSummaryEmpty();
                 return;
             }
 
@@ -57,6 +58,7 @@ public partial class SellerProductReviews : System.Web.UI.Page
             if (productIds.Count == 0)
             {
                 BindEmpty();
+                BindSummaryEmpty();
                 return;
             }
 
@@ -186,11 +188,113 @@ public partial class SellerProductReviews : System.Web.UI.Page
             ProductReviewRepeater.DataSource = viewModels;
             ProductReviewRepeater.DataBind();
 
+            BindSummary(productIds, shopIds);
             BindCounts(productIds);
             PaginationLiteral.Text = BuildPagination(totalPages);
             PaginationInfoLiteral.Text = BuildPaginationInfo(totalReviews);
             SearchTextBox.Text = _searchText;
         }
+    }
+
+    private void BindSummary(List<int> productIds, List<int> shopIds)
+    {
+        using (var db = new BeautyStoryContext())
+        {
+            var reviewQuery = db.CfProductReviews
+                .Where(r => r.Status && productIds.Contains(r.ProductId));
+
+            var reviews = reviewQuery.ToList();
+            if (reviews.Count == 0)
+            {
+                BindSummaryEmpty();
+                return;
+            }
+
+            var totalReviews = reviews.Count;
+            var avgRating = reviews.Average(r => r.Rating);
+            var goodRate = reviews.Count(r => r.Rating >= 4) / (double)totalReviews * 100.0;
+
+            ReviewScoreLiteral.Text = avgRating.ToString("0.0", CultureInfo.InvariantCulture);
+            ReviewScoreStarsLiteral.Text = RenderStars((int)Math.Round(avgRating), string.Empty);
+            TotalReviewsLiteral.Text = totalReviews.ToString(CultureInfo.InvariantCulture);
+            GoodReviewRateLiteral.Text = goodRate.ToString("0.#", CultureInfo.InvariantCulture) + "%";
+
+            var totalOrders = db.CfShopOrders
+                .Where(o => o.Status && shopIds.Contains(o.ShopId))
+                .Select(o => o.OrderId)
+                .Distinct()
+                .Count();
+
+            var reviewRate = totalOrders > 0 ? (totalReviews * 100.0) / totalOrders : 0.0;
+            ReviewRateLiteral.Text = reviewRate.ToString("0.#", CultureInfo.InvariantCulture) + "%";
+
+            var today = DateTime.Today;
+            var start30 = today.AddDays(-30);
+            var start60 = today.AddDays(-60);
+
+            var currentReviews = reviews.Count(r => r.CreatedAt >= start30);
+            var previousReviews = reviews.Count(r => r.CreatedAt >= start60 && r.CreatedAt < start30);
+            SetTrend(TotalReviewsTrend, currentReviews, previousReviews);
+
+            var currentOrders = db.CfShopOrders
+                .Where(o => o.Status && shopIds.Contains(o.ShopId) && o.CreatedAt >= start30)
+                .Select(o => o.OrderId)
+                .Distinct()
+                .Count();
+            var previousOrders = db.CfShopOrders
+                .Where(o => o.Status && shopIds.Contains(o.ShopId) && o.CreatedAt >= start60 && o.CreatedAt < start30)
+                .Select(o => o.OrderId)
+                .Distinct()
+                .Count();
+
+            var currentRate = currentOrders > 0 ? (currentReviews * 100.0) / currentOrders : 0.0;
+            var previousRate = previousOrders > 0 ? (previousReviews * 100.0) / previousOrders : 0.0;
+            SetTrend(ReviewRateTrend, currentRate, previousRate);
+
+            var currentGood = reviews.Count(r => r.CreatedAt >= start30 && r.Rating >= 4);
+            var previousGood = reviews.Count(r => r.CreatedAt >= start60 && r.CreatedAt < start30 && r.Rating >= 4);
+            var currentGoodRate = currentReviews > 0 ? (currentGood * 100.0) / currentReviews : 0.0;
+            var previousGoodRate = previousReviews > 0 ? (previousGood * 100.0) / previousReviews : 0.0;
+            SetTrend(GoodReviewRateTrend, currentGoodRate, previousGoodRate);
+
+            var highlightedGood = reviewQuery.Count(r =>
+                r.Rating >= 4
+                && ((r.Content != null && r.Content != "") || (r.ImageUrls != null && r.ImageUrls != "")));
+            HighlightedGoodReviewLiteral.Text = highlightedGood.ToString(CultureInfo.InvariantCulture);
+
+            var recentStart = DateTime.Now.AddHours(-48);
+            var recentReviews = reviewQuery.Count(r => r.CreatedAt >= recentStart);
+            RecentReviewLiteral.Text = recentReviews.ToString(CultureInfo.InvariantCulture);
+        }
+    }
+
+    private void BindSummaryEmpty()
+    {
+        ReviewScoreLiteral.Text = "0.0";
+        ReviewScoreStarsLiteral.Text = string.Empty;
+        TotalReviewsLiteral.Text = "0";
+        ReviewRateLiteral.Text = "0%";
+        GoodReviewRateLiteral.Text = "0%";
+        HighlightedGoodReviewLiteral.Text = "0";
+        RecentReviewLiteral.Text = "0";
+
+        TotalReviewsTrend.InnerText = "so với 30 ngày trước: 0%";
+        ReviewRateTrend.InnerText = "so với 30 ngày trước: 0%";
+        GoodReviewRateTrend.InnerText = "so với 30 ngày trước: 0%";
+        TotalReviewsTrend.Attributes["class"] = "review-trend";
+        ReviewRateTrend.Attributes["class"] = "review-trend";
+        GoodReviewRateTrend.Attributes["class"] = "review-trend";
+    }
+
+    private static void SetTrend(System.Web.UI.HtmlControls.HtmlGenericControl target, double current, double previous)
+    {
+        var diff = current - previous;
+        var percent = previous > 0 ? (diff / previous) * 100.0 : (current > 0 ? 100.0 : 0.0);
+        var arrow = diff >= 0 ? "↑" : "↓";
+        var className = diff >= 0 ? "review-trend up" : "review-trend down";
+
+        target.Attributes["class"] = className;
+        target.InnerText = string.Format("so với 30 ngày trước: {0} {1}%", arrow, Math.Abs(percent).ToString("0.#", CultureInfo.InvariantCulture));
     }
 
     private void BindCounts(List<int> productIds)

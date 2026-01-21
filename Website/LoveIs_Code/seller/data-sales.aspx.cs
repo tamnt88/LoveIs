@@ -9,11 +9,13 @@ public partial class SellerDataSales : System.Web.UI.Page
 {
     protected string WeeklyOrderDataJson { get; private set; }
     protected string CategoryDistributionJson { get; private set; }
+    protected string WeeklyRevenueDataJson { get; private set; }
 
     protected void Page_Load(object sender, EventArgs e)
     {
         WeeklyOrderDataJson = "[]";
         CategoryDistributionJson = "[]";
+        WeeklyRevenueDataJson = "[]";
         var sellerId = SellerAuth.GetSellerId();
         if (!sellerId.HasValue)
         {
@@ -22,6 +24,7 @@ public partial class SellerDataSales : System.Web.UI.Page
 
         WeeklyOrderDataJson = new JavaScriptSerializer().Serialize(BuildWeeklyOrderData(sellerId.Value));
         CategoryDistributionJson = new JavaScriptSerializer().Serialize(BuildCategoryDistribution(sellerId.Value));
+        WeeklyRevenueDataJson = new JavaScriptSerializer().Serialize(BuildWeeklyRevenueData(sellerId.Value));
     }
 
     private static List<WeeklyOrderPoint> BuildWeeklyOrderData(int sellerId)
@@ -142,5 +145,69 @@ public partial class SellerDataSales : System.Web.UI.Page
     {
         public string Name { get; set; }
         public int Count { get; set; }
+    }
+
+    private static List<WeeklyRevenuePoint> BuildWeeklyRevenueData(int sellerId)
+    {
+        DateTime today = DateTime.Today;
+        int dayIndex = (int)today.DayOfWeek;
+        int mondayOffset = dayIndex == 0 ? -6 : 1 - dayIndex;
+        DateTime monday = today.AddDays(mondayOffset);
+        DateTime nextMonday = monday.AddDays(7);
+
+        using (var db = new BeautyStoryContext())
+        {
+            var shopIds = db.CfShops
+                .Where(s => s.SellerId == sellerId)
+                .Select(s => s.Id)
+                .ToList();
+
+            if (shopIds.Count == 0)
+            {
+                return BuildWeeklyRevenuePoints(monday, new Dictionary<DateTime, decimal>());
+            }
+
+            var dayTotals = db.CfShopOrders
+                .Where(o => o.Status && shopIds.Contains(o.ShopId) && o.CreatedAt >= monday && o.CreatedAt < nextMonday)
+                .GroupBy(o => DbFunctions.TruncateTime(o.CreatedAt))
+                .Select(g => new { Date = g.Key, Total = g.Sum(x => x.Total) })
+                .ToList()
+                .Where(x => x.Date.HasValue)
+                .ToDictionary(x => x.Date.Value, x => x.Total);
+
+            return BuildWeeklyRevenuePoints(monday, dayTotals);
+        }
+    }
+
+    private static List<WeeklyRevenuePoint> BuildWeeklyRevenuePoints(DateTime monday, IDictionary<DateTime, decimal> dayTotals)
+    {
+        var labels = new[] { "Thứ 2", "Thứ 3", "Thứ 4", "Thứ 5", "Thứ 6", "Thứ 7", "Chủ Nhật" };
+        var points = new List<WeeklyRevenuePoint>();
+
+        for (int i = 0; i < labels.Length; i++)
+        {
+            DateTime date = monday.AddDays(i).Date;
+            decimal total;
+            if (!dayTotals.TryGetValue(date, out total))
+            {
+                total = 0m;
+            }
+
+            points.Add(new WeeklyRevenuePoint
+            {
+                Day = labels[i],
+                DateText = date.ToString("dd/MM/yyyy", CultureInfo.InvariantCulture),
+                Total = total
+            });
+        }
+
+        return points;
+    }
+
+    private sealed class WeeklyRevenuePoint
+    {
+        public string Day { get; set; }
+        public string DateText { get; set; }
+        public decimal Total { get; set; }
     }
 }

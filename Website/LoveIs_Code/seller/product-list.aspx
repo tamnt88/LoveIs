@@ -82,7 +82,7 @@
                             <div class="product-cell">
                                 <img class="product-thumb" src="<%# Eval("ImageUrl") %>" alt="<%# Eval("ProductName") %>" />
                                 <div>
-                                    <div class="product-name"><%# Eval("ProductName") %></div>
+                                    <a class="product-name" href="<%# Eval("ProductUrl") %>"><%# Eval("ProductName") %></a>
                                     <div class="product-sku">SKU: <%# Eval("Sku") %></div>
                                     <div class="product-price"><%# Eval("PriceLabel") %></div>
                                 </div>

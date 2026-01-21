@@ -57,15 +57,36 @@ public partial class SellerProductAdd : System.Web.UI.Page
         }
 
         var name = (ProductNameInput.Text ?? string.Empty).Trim();
-        var categoryId = ParseInt(CategoryDropdown.SelectedValue);
-        var shopId = ParseInt(WarehouseDropdown.SelectedValue);
+        var categoryId = ParseInt(CategoryIdInput.Value);
         var price = ParseDecimal(PriceInput.Text);
         var stock = ParseInt(StockInput.Text);
+        var variantRows = ParseVariantRows(VariantRowsInput.Value);
+        var validVariantRows = variantRows
+            .Where(r => r.Mappings != null && r.Mappings.Count > 0)
+            .ToList();
 
-        if (string.IsNullOrWhiteSpace(name) || !categoryId.HasValue || !shopId.HasValue || price <= 0 || !stock.HasValue || stock.Value < 0)
+        if (string.IsNullOrWhiteSpace(name) || !categoryId.HasValue)
         {
-            FormMessageLiteral.Text = "<div class=\"alert alert-warning mt-3\">Vui lòng nhập đầy đủ Tên sản phẩm, Ngành hàng, Gửi từ, Giá và Kho hàng.</div>";
+            FormMessageLiteral.Text = "<div class=\"alert alert-warning mt-3\">Vui lòng nhập đầy đủ Tên sản phẩm và Ngành hàng.</div>";
             return;
+        }
+
+        if (validVariantRows.Count == 0)
+        {
+            if (price <= 0 || !stock.HasValue || stock.Value < 0)
+            {
+                FormMessageLiteral.Text = "<div class=\"alert alert-warning mt-3\">Vui lòng nhập đầy đủ Giá và Kho hàng.</div>";
+                return;
+            }
+        }
+        else
+        {
+            var hasInvalidRow = validVariantRows.Any(r => r.Price <= 0 || !r.Stock.HasValue || r.Stock.Value < 0);
+            if (hasInvalidRow)
+            {
+                FormMessageLiteral.Text = "<div class=\"alert alert-warning mt-3\">Vui lòng nhập đủ Giá và Kho hàng cho từng biến thể.</div>";
+                return;
+            }
         }
 
         var salePrice = ParseNullableDecimal(SalePriceInput.Text);
@@ -77,6 +98,24 @@ public partial class SellerProductAdd : System.Web.UI.Page
         using (var db = new BeautyStoryContext())
         {
             var now = DateTime.Now;
+            var sellerId = SellerAuth.GetSellerId();
+            if (!sellerId.HasValue)
+            {
+                Response.Redirect("/seller/login.aspx");
+                return;
+            }
+
+            var shopId = db.CfShops
+                .Where(s => s.SellerId == sellerId.Value)
+                .OrderBy(s => s.Id)
+                .Select(s => (int?)s.Id)
+                .FirstOrDefault();
+            if (!shopId.HasValue)
+            {
+                FormMessageLiteral.Text = "<div class=\"alert alert-warning mt-3\">Chưa có shop để tạo sản phẩm.</div>";
+                return;
+            }
+
             var uploadRoot = Server.MapPath("~/upload");
             if (!Directory.Exists(uploadRoot))
             {
@@ -114,31 +153,23 @@ public partial class SellerProductAdd : System.Web.UI.Page
                 product.UpdatedAt = now;
                 product.UpdatedBy = "Seller";
 
-                var variant = db.CfProductVariants
+                var existingVariants = db.CfProductVariants
                     .Where(v => v.ProductId == product.Id)
-                    .OrderBy(v => v.SortOrder)
-                    .FirstOrDefault();
-                if (variant == null)
+                    .ToList();
+                var existingVariantIds = existingVariants.Select(v => v.Id).ToList();
+                if (existingVariantIds.Count > 0)
                 {
-                    variant = new CfProductVariant
+                    var mappings = db.CfProductVariantAttributes
+                        .Where(m => existingVariantIds.Contains(m.VariantId))
+                        .ToList();
+                    if (mappings.Count > 0)
                     {
-                        ProductId = product.Id,
-                        VariantName = "Mặc định",
-                        Status = publish,
-                        CreatedAt = now,
-                        CreatedBy = "Seller",
-                        SortOrder = 0
-                    };
-                    db.CfProductVariants.Add(variant);
+                        db.CfProductVariantAttributes.RemoveRange(mappings);
+                    }
+                    db.CfProductVariants.RemoveRange(existingVariants);
                 }
 
-                variant.Sku = (SkuInput.Text ?? string.Empty).Trim();
-                variant.Price = price;
-                variant.SalePrice = salePrice;
-                variant.StockQty = stock.Value;
-                variant.Status = publish;
-                variant.UpdatedAt = now;
-                variant.UpdatedBy = "Seller";
+                CreateProductVariants(db, product.Id, validVariantRows, string.Empty, price, salePrice, stock, publish, now);
             }
             else
             {
@@ -166,88 +197,7 @@ public partial class SellerProductAdd : System.Web.UI.Page
                 db.CfProducts.Add(product);
                 db.SaveChanges();
 
-                var skuBase = (SkuInput.Text ?? string.Empty).Trim();
-                var group1Name = NormalizeOptional(VariantGroup1NameInput.Text);
-                var group1Values = ParseVariantValues(VariantGroup1ValuesInput.Text);
-                var group2Name = NormalizeOptional(VariantGroup2NameInput.Text);
-                var group2Values = ParseVariantValues(VariantGroup2ValuesInput.Text);
-
-                if (group1Values.Count == 0 && group2Values.Count == 0)
-                {
-                    var variant = new CfProductVariant
-                    {
-                        ProductId = product.Id,
-                        VariantName = "Mặc định",
-                        Sku = skuBase,
-                        Price = price,
-                        SalePrice = salePrice,
-                        StockQty = stock.Value,
-                        Status = publish,
-                        CreatedAt = now,
-                        CreatedBy = "Seller",
-                        SortOrder = 0
-                    };
-                    db.CfProductVariants.Add(variant);
-                }
-                else
-                {
-                    var attributes = new List<CfVariantAttribute>();
-                    if (!string.IsNullOrWhiteSpace(group1Name))
-                    {
-                        attributes.Add(UpsertVariantAttribute(db, group1Name, now));
-                    }
-                    if (!string.IsNullOrWhiteSpace(group2Name))
-                    {
-                        attributes.Add(UpsertVariantAttribute(db, group2Name, now));
-                    }
-
-                    db.SaveChanges();
-
-                    var group1Attribute = attributes.Count > 0 ? attributes[0] : null;
-                    var group2Attribute = attributes.Count > 1 ? attributes[1] : null;
-                    var group1ValueEntities = UpsertVariantValues(db, group1Attribute, group1Values, now);
-                    var group2ValueEntities = UpsertVariantValues(db, group2Attribute, group2Values, now);
-
-                    db.SaveChanges();
-
-                    var combinations = BuildVariantCombinations(group1Attribute, group1ValueEntities, group2Attribute, group2ValueEntities);
-                    var sortOrder = 0;
-                    foreach (var combo in combinations)
-                    {
-                        var variantName = combo.DisplayName;
-                        var sku = string.IsNullOrWhiteSpace(skuBase) ? string.Empty : skuBase + "-" + (sortOrder + 1).ToString(CultureInfo.InvariantCulture);
-                        var variant = new CfProductVariant
-                        {
-                            ProductId = product.Id,
-                            VariantName = variantName,
-                            Sku = sku,
-                            Price = price,
-                            SalePrice = salePrice,
-                            StockQty = stock.Value,
-                            Status = publish,
-                            CreatedAt = now,
-                            CreatedBy = "Seller",
-                            SortOrder = sortOrder
-                        };
-                        db.CfProductVariants.Add(variant);
-                        db.SaveChanges();
-
-                        foreach (var mapping in combo.Mappings)
-                        {
-                            db.CfProductVariantAttributes.Add(new CfProductVariantAttribute
-                            {
-                                VariantId = variant.Id,
-                                AttributeId = mapping.AttributeId,
-                                AttributeValueId = mapping.ValueId,
-                                Status = true,
-                                CreatedAt = now,
-                                CreatedBy = "Seller",
-                                SortOrder = 0
-                            });
-                        }
-                        sortOrder++;
-                    }
-                }
+                CreateProductVariants(db, product.Id, validVariantRows, string.Empty, price, salePrice, stock, publish, now);
             }
 
             if (imageUrls.Count > 0)
@@ -286,23 +236,76 @@ public partial class SellerProductAdd : System.Web.UI.Page
 
         using (var db = new BeautyStoryContext())
         {
-            var categories = db.CfCategories
-                .Where(c => c.Status && !c.ParentId.HasValue)
-                .OrderBy(c => c.SortOrder)
-                .ThenBy(c => c.CategoryName)
-                .Select(c => new
-                {
-                    c.Id,
-                    c.CategoryName
-                })
+            var attributes = db.CfVariantAttributes
+                .Where(a => a.Status)
+                .OrderBy(a => a.SortOrder)
+                .ThenBy(a => a.AttributeName)
+                .Select(a => new { a.Id, a.AttributeName })
                 .ToList();
 
-            CategoryDropdown.DataSource = categories;
-            CategoryDropdown.DataTextField = "CategoryName";
-            CategoryDropdown.DataValueField = "Id";
-            CategoryDropdown.DataBind();
+            var values = db.CfVariantAttributeValues
+                .Where(v => v.Status)
+                .OrderBy(v => v.SortOrder)
+                .ThenBy(v => v.ValueName)
+                .Select(v => new { v.Id, v.AttributeId, v.ValueName })
+                .ToList();
 
-            CategoryDropdown.Items.Insert(0, new System.Web.UI.WebControls.ListItem("Vui lòng chọn", ""));
+            var variantData = new
+            {
+                attributes = attributes.Select(a => new { id = a.Id, name = a.AttributeName }).ToList(),
+                values = values.Select(v => new { id = v.Id, attributeId = v.AttributeId, name = v.ValueName }).ToList()
+            };
+
+            var variantRows = new List<object>();
+            if (_productId.HasValue)
+            {
+                var variants = db.CfProductVariants
+                    .Where(v => v.ProductId == _productId.Value)
+                    .OrderBy(v => v.SortOrder)
+                    .ThenBy(v => v.Id)
+                    .ToList();
+
+                var variantIds = variants.Select(v => v.Id).ToList();
+                var mappings = db.CfProductVariantAttributes
+                    .Where(m => variantIds.Contains(m.VariantId))
+                    .OrderBy(m => m.Id)
+                    .ToList()
+                    .GroupBy(m => m.VariantId)
+                    .ToDictionary(g => g.Key, g => g.ToList());
+
+                foreach (var variant in variants)
+                {
+                    variantRows.Add(new
+                    {
+                        name = variant.VariantName,
+                        sku = variant.Sku,
+                        active = variant.Status,
+                        mappings = mappings.ContainsKey(variant.Id)
+                            ? mappings[variant.Id].Select(m => new VariantMappingDto { AttributeId = m.AttributeId, ValueId = m.AttributeValueId }).ToList()
+                            : new List<VariantMappingDto>(),
+                        price = variant.Price,
+                        salePrice = variant.SalePrice,
+                        stock = variant.StockQty
+                    });
+                }
+            }
+
+            var variantPayload = new
+            {
+                data = variantData,
+                rows = variantRows
+            };
+
+            VariantDataLiteral.Text = "<script>window.variantData = " + new System.Web.Script.Serialization.JavaScriptSerializer().Serialize(variantPayload.data) +
+                "; window.variantRows = " + new System.Web.Script.Serialization.JavaScriptSerializer().Serialize(variantPayload.rows) + ";</script>";
+
+            var allCategories = db.CfCategories
+                .Where(c => c.Status)
+                .OrderBy(c => c.SortOrder)
+                .ThenBy(c => c.CategoryName)
+                .ToList();
+
+            CategoryMenuLiteral.Text = RenderCategoryMenu(allCategories);
 
             var brands = db.CfBrands
                 .Where(b => b.Status)
@@ -327,22 +330,6 @@ public partial class SellerProductAdd : System.Web.UI.Page
             OriginDropdown.DataValueField = "Id";
             OriginDropdown.DataBind();
             OriginDropdown.Items.Insert(0, new System.Web.UI.WebControls.ListItem("Vui lòng chọn", ""));
-
-            var warehouses = db.CfShops
-                .Where(s => s.SellerId == sellerId.Value)
-                .OrderBy(s => s.ShopName)
-                .Select(s => new { s.Id, s.ShopName })
-                .ToList();
-            WarehouseDropdown.DataSource = warehouses;
-            WarehouseDropdown.DataTextField = "ShopName";
-            WarehouseDropdown.DataValueField = "Id";
-            WarehouseDropdown.DataBind();
-            WarehouseDropdown.Items.Insert(0, new System.Web.UI.WebControls.ListItem("Vui lòng chọn", ""));
-
-            ProductConditionDropdown.Items.Clear();
-            ProductConditionDropdown.Items.Add(new System.Web.UI.WebControls.ListItem("Vui lòng chọn", ""));
-            ProductConditionDropdown.Items.Add(new System.Web.UI.WebControls.ListItem("Mới", "new"));
-            ProductConditionDropdown.Items.Add(new System.Web.UI.WebControls.ListItem("Đã qua sử dụng", "used"));
 
             ListingStatusDropdown.Items.Clear();
             ListingStatusDropdown.Items.Add(new System.Web.UI.WebControls.ListItem("Vui lòng chọn", ""));
@@ -376,7 +363,6 @@ public partial class SellerProductAdd : System.Web.UI.Page
 
             ProductNameInput.Text = product.ProductName ?? string.Empty;
             DescriptionInput.Text = product.Description ?? string.Empty;
-            CategoryDropdown.SelectedValue = product.CategoryId.ToString(CultureInfo.InvariantCulture);
             if (product.BrandId.HasValue)
             {
                 BrandDropdown.SelectedValue = product.BrandId.Value.ToString(CultureInfo.InvariantCulture);
@@ -385,10 +371,9 @@ public partial class SellerProductAdd : System.Web.UI.Page
             {
                 OriginDropdown.SelectedValue = product.OriginId.Value.ToString(CultureInfo.InvariantCulture);
             }
-            if (product.ShopId.HasValue)
-            {
-                WarehouseDropdown.SelectedValue = product.ShopId.Value.ToString(CultureInfo.InvariantCulture);
-            }
+
+            CategoryIdInput.Value = product.CategoryId.ToString(CultureInfo.InvariantCulture);
+            CategorySelectedLiteral.Text = ResolveCategoryPath(product.CategoryId);
 
             WeightInput.Text = product.PackageWeightGrams.HasValue ? product.PackageWeightGrams.Value.ToString(CultureInfo.InvariantCulture) : string.Empty;
             LengthInput.Text = product.PackageLengthCm.HasValue ? product.PackageLengthCm.Value.ToString(CultureInfo.InvariantCulture) : string.Empty;
@@ -401,7 +386,6 @@ public partial class SellerProductAdd : System.Web.UI.Page
                 .FirstOrDefault();
             if (variant != null)
             {
-                SkuInput.Text = variant.Sku ?? string.Empty;
                 PriceInput.Text = variant.Price.ToString(CultureInfo.InvariantCulture);
                 SalePriceInput.Text = variant.SalePrice.HasValue ? variant.SalePrice.Value.ToString(CultureInfo.InvariantCulture) : string.Empty;
                 StockInput.Text = variant.StockQty.ToString(CultureInfo.InvariantCulture);
@@ -430,14 +414,10 @@ public partial class SellerProductAdd : System.Web.UI.Page
         }
 
         ProductNameInput.Enabled = false;
-        CategoryDropdown.Enabled = false;
+        CategorySelectBtn.Disabled = true;
         BrandDropdown.Enabled = false;
         OriginDropdown.Enabled = false;
-        WarehouseDropdown.Enabled = false;
         DescriptionInput.Enabled = false;
-        OriginTextInput.Enabled = false;
-        SkuInput.Enabled = false;
-        MaterialInput.Enabled = false;
         PriceInput.Enabled = false;
         SalePriceInput.Enabled = false;
         StockInput.Enabled = false;
@@ -445,16 +425,91 @@ public partial class SellerProductAdd : System.Web.UI.Page
         LengthInput.Enabled = false;
         WidthInput.Enabled = false;
         HeightInput.Enabled = false;
-        ProductConditionDropdown.Enabled = false;
         ListingStatusDropdown.Enabled = false;
-        VariantGroup1NameInput.Enabled = false;
-        VariantGroup1ValuesInput.Enabled = false;
-        VariantGroup2NameInput.Enabled = false;
-        VariantGroup2ValuesInput.Enabled = false;
         ImageUpload.Enabled = false;
         VideoUpload.Enabled = false;
+        AddVariantGroupBtn.Disabled = true;
+        BuildVariantsBtn.Disabled = true;
+        ViewModeInput.Value = "view";
         SaveDraftButton.Visible = false;
         SavePublishButton.Visible = false;
+    }
+    private static string RenderCategoryMenu(List<CfCategory> categories)
+    {
+        var lookup = categories
+            .Where(c => c.Status)
+            .GroupBy(c => c.ParentId ?? 0)
+            .ToDictionary(g => g.Key, g => g.OrderBy(x => x.SortOrder).ThenBy(x => x.CategoryName).ToList());
+
+        var roots = lookup.ContainsKey(0) ? lookup[0] : new List<CfCategory>();
+        var sb = new System.Text.StringBuilder();
+        sb.Append("<ul class=\"category-menu\">");
+        foreach (var root in roots)
+        {
+            RenderCategoryNode(sb, lookup, root, root.CategoryName, 1);
+        }
+        sb.Append("</ul>");
+        return sb.ToString();
+    }
+
+    private static void RenderCategoryNode(System.Text.StringBuilder sb, Dictionary<int, List<CfCategory>> lookup, CfCategory node, string path, int depth)
+    {
+        var hasChildren = lookup.ContainsKey(node.Id) && lookup[node.Id].Count > 0;
+        sb.Append("<li>");
+        sb.Append("<div class=\"category-item");
+        if (hasChildren)
+        {
+            sb.Append(" has-children");
+        }
+        sb.Append("\" data-category-id=\"");
+        sb.Append(node.Id.ToString(CultureInfo.InvariantCulture));
+        sb.Append("\" data-category-label=\"");
+        sb.Append(HttpUtility.HtmlEncode(path));
+        sb.Append("\">");
+        sb.Append(HttpUtility.HtmlEncode(node.CategoryName));
+        sb.Append("</div>");
+
+        if (hasChildren && depth < 3)
+        {
+            sb.Append("<ul class=\"category-submenu\">");
+            foreach (var child in lookup[node.Id])
+            {
+                RenderCategoryNode(sb, lookup, child, path + " > " + child.CategoryName, depth + 1);
+            }
+            sb.Append("</ul>");
+        }
+
+        sb.Append("</li>");
+    }
+
+    private string ResolveCategoryPath(int categoryId)
+    {
+        using (var db = new BeautyStoryContext())
+        {
+            var category = db.CfCategories.FirstOrDefault(c => c.Id == categoryId);
+            if (category == null)
+            {
+                return "Vui lòng chọn";
+            }
+
+            var names = new List<string>();
+            var current = category;
+            while (current != null)
+            {
+                if (!string.IsNullOrWhiteSpace(current.CategoryName))
+                {
+                    names.Add(current.CategoryName);
+                }
+                if (!current.ParentId.HasValue)
+                {
+                    break;
+                }
+                current = db.CfCategories.FirstOrDefault(c => c.Id == current.ParentId.Value);
+            }
+
+            names.Reverse();
+            return names.Count > 0 ? string.Join(" > ", names) : category.CategoryName;
+        }
     }
 
     private static int? ParseInt(string raw)
@@ -487,167 +542,142 @@ public partial class SellerProductAdd : System.Web.UI.Page
         return value > 0 ? (decimal?)value : null;
     }
 
-    private static string NormalizeOptional(string raw)
+    private static List<VariantRowDto> ParseVariantRows(string raw)
     {
         if (string.IsNullOrWhiteSpace(raw))
         {
-            return null;
+            return new List<VariantRowDto>();
         }
 
-        return raw.Trim();
+        try
+        {
+            var serializer = new System.Web.Script.Serialization.JavaScriptSerializer();
+            var rows = serializer.Deserialize<List<VariantRowDto>>(raw);
+            return rows ?? new List<VariantRowDto>();
+        }
+        catch
+        {
+            return new List<VariantRowDto>();
+        }
     }
 
-    private static List<string> ParseVariantValues(string raw)
+    private static void CreateProductVariants(
+        BeautyStoryContext db,
+        int productId,
+        List<VariantRowDto> variantRows,
+        string skuBase,
+        decimal fallbackPrice,
+        decimal? fallbackSalePrice,
+        int? fallbackStock,
+        bool publish,
+        DateTime now)
     {
-        var values = new List<string>();
-        if (string.IsNullOrWhiteSpace(raw))
+        var rows = variantRows ?? new List<VariantRowDto>();
+        if (rows.Count == 0)
         {
-            return values;
-        }
-
-        var parts = raw.Split(new[] { ',', ';', '\n', '\r' }, StringSplitOptions.RemoveEmptyEntries);
-        foreach (var part in parts)
-        {
-            var value = part.Trim();
-            if (string.IsNullOrWhiteSpace(value))
+            var variant = new CfProductVariant
             {
-                continue;
-            }
-            if (!values.Contains(value))
-            {
-                values.Add(value);
-            }
-        }
-
-        return values;
-    }
-
-    private static CfVariantAttribute UpsertVariantAttribute(BeautyStoryContext db, string name, DateTime now)
-    {
-        var lower = name.Trim().ToLowerInvariant();
-        var existing = db.CfVariantAttributes.FirstOrDefault(a => a.AttributeName.ToLower() == lower);
-        if (existing != null)
-        {
-            return existing;
-        }
-
-        var attribute = new CfVariantAttribute
-        {
-            AttributeName = name.Trim(),
-            Status = true,
-            CreatedAt = now,
-            CreatedBy = "Seller",
-            SortOrder = 0
-        };
-        db.CfVariantAttributes.Add(attribute);
-        return attribute;
-    }
-
-    private static List<CfVariantAttributeValue> UpsertVariantValues(BeautyStoryContext db, CfVariantAttribute attribute, List<string> values, DateTime now)
-    {
-        var result = new List<CfVariantAttributeValue>();
-        if (attribute == null || values == null || values.Count == 0)
-        {
-            return result;
-        }
-
-        var attrId = attribute.Id;
-        foreach (var value in values)
-        {
-            var lower = value.ToLowerInvariant();
-            var existing = db.CfVariantAttributeValues.FirstOrDefault(v => v.AttributeId == attrId && v.ValueName.ToLower() == lower);
-            if (existing != null)
-            {
-                result.Add(existing);
-                continue;
-            }
-
-            var entry = new CfVariantAttributeValue
-            {
-                AttributeId = attrId,
-                ValueName = value,
-                Status = true,
+                ProductId = productId,
+                VariantName = "Mặc định",
+                Sku = skuBase,
+                Price = fallbackPrice,
+                SalePrice = fallbackSalePrice,
+                StockQty = fallbackStock ?? 0,
+                Status = publish,
                 CreatedAt = now,
                 CreatedBy = "Seller",
                 SortOrder = 0
             };
-            db.CfVariantAttributeValues.Add(entry);
-            result.Add(entry);
+            db.CfProductVariants.Add(variant);
+            return;
         }
 
-        return result;
+        var attributeIds = rows
+            .SelectMany(r => r.Mappings ?? new List<VariantMappingDto>())
+            .Select(m => m.AttributeId)
+            .Distinct()
+            .ToList();
+        var valueIds = rows
+            .SelectMany(r => r.Mappings ?? new List<VariantMappingDto>())
+            .Select(m => m.ValueId)
+            .Distinct()
+            .ToList();
+        var attributes = db.CfVariantAttributes
+            .Where(a => attributeIds.Contains(a.Id))
+            .ToDictionary(a => a.Id, a => a.AttributeName);
+        var values = db.CfVariantAttributeValues
+            .Where(v => valueIds.Contains(v.Id))
+            .ToDictionary(v => v.Id, v => v.ValueName);
+
+        var sortOrder = 0;
+        foreach (var row in rows)
+        {
+            var mappingList = row.Mappings ?? new List<VariantMappingDto>();
+            var variantName = row.Name;
+            if (string.IsNullOrWhiteSpace(variantName))
+            {
+                var valueNames = new List<string>();
+                foreach (var mapping in mappingList)
+                {
+                    string valueName;
+                    if (values.TryGetValue(mapping.ValueId, out valueName) && !string.IsNullOrWhiteSpace(valueName))
+                    {
+                        valueNames.Add(valueName);
+                    }
+                }
+                variantName = valueNames.Count > 0
+                    ? string.Join(" + ", valueNames)
+                    : "Biến thể " + (sortOrder + 1).ToString(CultureInfo.InvariantCulture);
+            }
+
+            var variant = new CfProductVariant
+            {
+                ProductId = productId,
+                VariantName = variantName,
+                Sku = !string.IsNullOrWhiteSpace(row.Sku)
+                    ? row.Sku.Trim()
+                    : (string.IsNullOrWhiteSpace(skuBase) ? string.Empty : skuBase + "-" + (sortOrder + 1).ToString(CultureInfo.InvariantCulture)),
+                Price = row.Price > 0 ? row.Price : fallbackPrice,
+                SalePrice = row.SalePrice.HasValue && row.SalePrice.Value > 0 ? row.SalePrice : fallbackSalePrice,
+                StockQty = row.Stock.HasValue ? row.Stock.Value : (fallbackStock ?? 0),
+                Status = row.Active ?? publish,
+                CreatedAt = now,
+                CreatedBy = "Seller",
+                SortOrder = sortOrder
+            };
+            db.CfProductVariants.Add(variant);
+            db.SaveChanges();
+
+            foreach (var mapping in mappingList)
+            {
+                db.CfProductVariantAttributes.Add(new CfProductVariantAttribute
+                {
+                    VariantId = variant.Id,
+                    AttributeId = mapping.AttributeId,
+                    AttributeValueId = mapping.ValueId,
+                    Status = true,
+                    CreatedAt = now,
+                    CreatedBy = "Seller",
+                    SortOrder = 0
+                });
+            }
+
+            sortOrder++;
+        }
     }
 
-    private static List<VariantCombination> BuildVariantCombinations(
-        CfVariantAttribute group1,
-        List<CfVariantAttributeValue> group1Values,
-        CfVariantAttribute group2,
-        List<CfVariantAttributeValue> group2Values)
+    private class VariantRowDto
     {
-        var combos = new List<VariantCombination>();
-        if (group1Values.Count == 0 && group2Values.Count == 0)
-        {
-            return combos;
-        }
-
-        if (group2Values.Count == 0)
-        {
-            foreach (var value in group1Values)
-            {
-                combos.Add(new VariantCombination
-                {
-                    DisplayName = value.ValueName,
-                    Mappings = new List<VariantMapping>
-                    {
-                        new VariantMapping { AttributeId = group1.Id, ValueId = value.Id }
-                    }
-                });
-            }
-            return combos;
-        }
-
-        if (group1Values.Count == 0)
-        {
-            foreach (var value in group2Values)
-            {
-                combos.Add(new VariantCombination
-                {
-                    DisplayName = value.ValueName,
-                    Mappings = new List<VariantMapping>
-                    {
-                        new VariantMapping { AttributeId = group2.Id, ValueId = value.Id }
-                    }
-                });
-            }
-            return combos;
-        }
-
-        foreach (var value1 in group1Values)
-        {
-            foreach (var value2 in group2Values)
-            {
-                combos.Add(new VariantCombination
-                {
-                    DisplayName = value1.ValueName + " - " + value2.ValueName,
-                    Mappings = new List<VariantMapping>
-                    {
-                        new VariantMapping { AttributeId = group1.Id, ValueId = value1.Id },
-                        new VariantMapping { AttributeId = group2.Id, ValueId = value2.Id }
-                    }
-                });
-            }
-        }
-
-        return combos;
+        public string Name { get; set; }
+        public string Sku { get; set; }
+        public bool? Active { get; set; }
+        public List<VariantMappingDto> Mappings { get; set; }
+        public decimal Price { get; set; }
+        public decimal? SalePrice { get; set; }
+        public int? Stock { get; set; }
     }
 
-    private class VariantCombination
-    {
-        public string DisplayName { get; set; }
-        public List<VariantMapping> Mappings { get; set; }
-    }
-
-    private class VariantMapping
+    private class VariantMappingDto
     {
         public int AttributeId { get; set; }
         public int ValueId { get; set; }

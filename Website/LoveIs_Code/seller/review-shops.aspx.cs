@@ -4,6 +4,7 @@ using System.Globalization;
 using System.Linq;
 using System.Text;
 using System.Web;
+using System.Web.UI.HtmlControls;
 
 public partial class SellerShopReviews : System.Web.UI.Page
 {
@@ -46,6 +47,7 @@ public partial class SellerShopReviews : System.Web.UI.Page
             if (shopIds.Count == 0)
             {
                 BindEmpty();
+                BindSummaryEmpty();
                 return;
             }
 
@@ -138,11 +140,78 @@ public partial class SellerShopReviews : System.Web.UI.Page
             ShopReviewRepeater.DataSource = viewModels;
             ShopReviewRepeater.DataBind();
 
+            BindSummary(shopIds);
             BindCounts(shopIds);
             PaginationLiteral.Text = BuildPagination(totalPages);
             PaginationInfoLiteral.Text = BuildPaginationInfo(totalReviews);
             SearchTextBox.Text = _searchText;
         }
+    }
+
+    private void BindSummary(List<int> shopIds)
+    {
+        using (var db = new BeautyStoryContext())
+        {
+            var reviews = db.CfShopReviews
+                .Where(r => r.Status && shopIds.Contains(r.ShopId))
+                .ToList();
+
+            if (reviews.Count == 0)
+            {
+                BindSummaryEmpty();
+                return;
+            }
+
+            var total = reviews.Count;
+            var average = reviews.Average(r => r.Rating);
+            var quality = reviews.Average(r => r.QualityRating);
+            var description = reviews.Average(r => r.DescriptionRating);
+            var shipping = reviews.Average(r => r.ShippingRating);
+            var service = reviews.Average(r => r.ServiceRating);
+
+            ShopScoreLiteral.Text = average.ToString("0.0", CultureInfo.InvariantCulture);
+            ShopScoreCountLiteral.Text = string.Format("{0} đánh giá", total);
+            QualityScoreLiteral.Text = quality.ToString("0.0", CultureInfo.InvariantCulture);
+            DescriptionScoreLiteral.Text = description.ToString("0.0", CultureInfo.InvariantCulture);
+            ShippingScoreLiteral.Text = shipping.ToString("0.0", CultureInfo.InvariantCulture);
+            ServiceScoreLiteral.Text = service.ToString("0.0", CultureInfo.InvariantCulture);
+
+            SetStarRow(5, reviews, total, Star5CountLiteral, Star5Bar);
+            SetStarRow(4, reviews, total, Star4CountLiteral, Star4Bar);
+            SetStarRow(3, reviews, total, Star3CountLiteral, Star3Bar);
+            SetStarRow(2, reviews, total, Star2CountLiteral, Star2Bar);
+            SetStarRow(1, reviews, total, Star1CountLiteral, Star1Bar);
+        }
+    }
+
+    private void BindSummaryEmpty()
+    {
+        ShopScoreLiteral.Text = "0.0";
+        ShopScoreCountLiteral.Text = "0 đánh giá";
+        QualityScoreLiteral.Text = "0.0";
+        DescriptionScoreLiteral.Text = "0.0";
+        ShippingScoreLiteral.Text = "0.0";
+        ServiceScoreLiteral.Text = "0.0";
+
+        Star5CountLiteral.Text = "0";
+        Star4CountLiteral.Text = "0";
+        Star3CountLiteral.Text = "0";
+        Star2CountLiteral.Text = "0";
+        Star1CountLiteral.Text = "0";
+
+        Star5Bar.Style["width"] = "0%";
+        Star4Bar.Style["width"] = "0%";
+        Star3Bar.Style["width"] = "0%";
+        Star2Bar.Style["width"] = "0%";
+        Star1Bar.Style["width"] = "0%";
+    }
+
+    private static void SetStarRow(int rating, List<CfShopReview> reviews, int total, System.Web.UI.WebControls.Literal countLiteral, System.Web.UI.HtmlControls.HtmlGenericControl bar)
+    {
+        var count = reviews.Count(r => r.Rating == rating);
+        var percent = total > 0 ? (count * 100.0m) / total : 0m;
+        countLiteral.Text = count.ToString(CultureInfo.InvariantCulture);
+        bar.Style["width"] = percent.ToString("0.#", CultureInfo.InvariantCulture) + "%";
     }
 
     private void BindCounts(List<int> shopIds)

@@ -15,51 +15,45 @@
                     <div class="review-card-body">
                         <div class="review-label">Đánh Giá Shop</div>
                         <div class="review-score">
-                            <span class="review-score-value">4.6</span>
+                            <span class="review-score-value"><asp:Literal ID="ReviewScoreLiteral" runat="server" /></span>
                             <span class="review-score-total">/5</span>
                         </div>
-                        <div class="review-stars">
-                            <i class="fa-solid fa-star"></i>
-                            <i class="fa-solid fa-star"></i>
-                            <i class="fa-solid fa-star"></i>
-                            <i class="fa-solid fa-star"></i>
-                            <i class="fa-solid fa-star-half-stroke"></i>
-                        </div>
+                        <div class="review-stars"><asp:Literal ID="ReviewScoreStarsLiteral" runat="server" /></div>
                     </div>
                 </div>
 
                 <div class="card review-card">
                     <div class="review-card-body">
                         <div class="review-label">Tổng lượt đánh giá</div>
-                        <div class="review-value">12</div>
-                        <div class="review-trend up">so với 30 ngày trước: ↑ 12%</div>
+                        <div class="review-value"><asp:Literal ID="TotalReviewsLiteral" runat="server" /></div>
+                        <div class="review-trend" runat="server" id="TotalReviewsTrend"></div>
                     </div>
                 </div>
 
                 <div class="card review-card">
                     <div class="review-card-body">
                         <div class="review-label">Tỷ lệ đánh giá đơn hàng</div>
-                        <div class="review-value">8%</div>
-                        <div class="review-trend up">so với 30 ngày trước: ↑ 5%</div>
+                        <div class="review-value"><asp:Literal ID="ReviewRateLiteral" runat="server" /></div>
+                        <div class="review-trend" runat="server" id="ReviewRateTrend"></div>
                     </div>
                 </div>
 
                 <div class="card review-card">
                     <div class="review-card-body">
                         <div class="review-label">Tỷ lệ đánh giá tốt</div>
-                        <div class="review-value">92%</div>
-                        <div class="review-trend down">so với 30 ngày trước: ↓ 2%</div>
+                        <div class="review-value"><asp:Literal ID="GoodReviewRateLiteral" runat="server" /></div>
+                        <div class="review-trend" runat="server" id="GoodReviewRateTrend"></div>
                     </div>
                 </div>
             </div>
 
-            <div class="review-mini-grid">
+            <div class="review-mini-grid" style="display: none;">
                 <div class="card review-mini-card">
                     <div class="review-mini-head">
                         <div class="review-mini-title">Đánh giá tốt cụ thể sản phẩm nổi</div>
                         <a class="review-mini-link" href="#">Xem →</a>
                     </div>
-                    <div class="review-mini-value">0</div>
+                    <div class="review-mini-value"><asp:Literal ID="HighlightedGoodReviewLiteral" runat="server" /></div>
                     <div class="review-mini-desc">Các đánh giá có 4 &amp; 5 sao có bình luận hoặc hình ảnh</div>
                 </div>
                 <div class="card review-mini-card">
@@ -67,7 +61,7 @@
                         <div class="review-mini-title">Đánh giá gần đây</div>
                         <a class="review-mini-link" href="#">Xem →</a>
                     </div>
-                    <div class="review-mini-value">0</div>
+                    <div class="review-mini-value"><asp:Literal ID="RecentReviewLiteral" runat="server" /></div>
                     <div class="review-mini-desc">Đánh giá mới nhất cập nhật trong vòng dưới 48h</div>
                 </div>
             </div>
@@ -167,29 +161,5 @@
             </div>
         </div>
 
-        <aside class="reviews-aside">
-            <h3>Công cụ đánh giá</h3>
-            <div class="review-tool-card">
-                <div class="review-tool-head">
-                    <span class="review-tool-icon"><i class="fa-solid fa-star"></i></span>
-                    <div>
-                        <div class="review-tool-title">Xu Thưởng Đánh Giá</div>
-                        <div class="review-tool-desc">Tặng xu cho khách đánh giá mình từ đơn hàng hoàn thành để nhận thêm nội dung review!</div>
-                    </div>
-                </div>
-                <button class="review-tool-btn" type="button">Tìm hiểu ngay</button>
-            </div>
-
-            <div class="review-tip-card">
-                <div class="review-tip-title"><i class="fa-regular fa-lightbulb"></i> Mẹo phản hồi đánh giá</div>
-                <ul>
-                    <li>Phản hồi trong vòng 24h để tăng uy tín</li>
-                    <li>Cảm ơn khách hàng trước khi giải đáp</li>
-                    <li>Giải quyết vấn đề nếu đánh giá tiêu cực</li>
-                    <li>Khuyến khích khách mua lại ở cuối</li>
-                    <li>Giữ thái độ chuyên nghiệp, thân thiện</li>
-                </ul>
-            </div>
-        </aside>
     </div>
 </asp:Content>

@@ -8,28 +8,40 @@
                 <p>Dữ liệu chi tiết về hoạt động bán hàng</p>
             </div>
         </div>
+        <div class="data-toolbar">
+            <div class="data-filter">
+                <i class="fa-regular fa-calendar"></i>
+                <select id="SalesRangeSelect">
+                    <option value="7" <% if (RangeDays == 7) { %>selected<% } %>>7 ngày qua</option>
+                    <option value="30" <% if (RangeDays == 30) { %>selected<% } %>>30 ngày qua</option>
+                </select>
+            </div>
+            <a class="btn-address-outline" href="/seller/data-sales.aspx?range=<%= RangeDays %>&export=1">
+                <i class="fa-solid fa-download"></i>
+                Xuất Excel
+            </a>
+        </div>
 
         <div class="data-stat-grid">
             <div class="card data-stat-card">
                 <span class="data-stat-icon info-maroon"><i class="fa-solid fa-chart-line"></i></span>
                 <div class="data-stat-label">Tổng Đơn Hàng</div>
-                <div class="data-stat-value">424</div>
-                <div class="data-stat-trend up">+22%</div>
+                <div class="data-stat-value"><asp:Literal ID="TotalOrdersLiteral" runat="server" /></div>
             </div>
             <div class="card data-stat-card">
                 <span class="data-stat-icon info-blue"><i class="fa-solid fa-cart-shopping"></i></span>
                 <div class="data-stat-label">Giá Trị Đơn TB</div>
-                <div class="data-stat-value">285.000 đ</div>
+                <div class="data-stat-value"><asp:Literal ID="AverageOrderValueLiteral" runat="server" /></div>
             </div>
             <div class="card data-stat-card">
                 <span class="data-stat-icon info-purple"><i class="fa-solid fa-arrow-trend-up"></i></span>
                 <div class="data-stat-label">Tỷ Lệ Chuyển Đổi</div>
-                <div class="data-stat-value">3.8%</div>
+                <div class="data-stat-value"><asp:Literal ID="ConversionRateLiteral" runat="server" /></div>
             </div>
             <div class="card data-stat-card">
                 <span class="data-stat-icon info-green"><i class="fa-solid fa-rotate-right"></i></span>
                 <div class="data-stat-label">Khách Quay Lại</div>
-                <div class="data-stat-value">42%</div>
+                <div class="data-stat-value"><asp:Literal ID="ReturningCustomerLiteral" runat="server" /></div>
             </div>
         </div>
 
@@ -54,6 +66,15 @@
     </div>
 
     <script>
+        (function () {
+            var select = document.getElementById("SalesRangeSelect");
+            if (!select) return;
+            select.addEventListener("change", function () {
+                var value = select.value || "7";
+                window.location.href = "/seller/data-sales.aspx?range=" + encodeURIComponent(value);
+            });
+        })();
+
         window.weeklyOrderData = <%= WeeklyOrderDataJson %>;
         window.categoryDistributionData = <%= CategoryDistributionJson %>;
         window.weeklyRevenueData = <%= WeeklyRevenueDataJson %>;

@@ -2402,6 +2402,84 @@ button:disabled {
     margin-bottom: 6px;
 }
 
+.review-product-name:link,
+.review-product-name:visited,
+.review-product-name:hover,
+.review-product-name:active {
+    color: inherit;
+    text-decoration: none;
+}
+
+.review-reply-modal {
+    position: fixed;
+    inset: 0;
+    background: rgba(31, 10, 18, 0.45);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+    z-index: 1000;
+}
+
+.review-reply-modal.open {
+    display: flex;
+}
+
+.review-reply-dialog {
+    width: min(520px, 100%);
+    background: #fff;
+    border-radius: 14px;
+    border: 1px solid #eee5ea;
+    box-shadow: 0 12px 26px rgba(46, 26, 34, 0.2);
+    display: flex;
+    flex-direction: column;
+}
+
+.review-reply-head {
+    padding: 12px 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 1px solid #efe6eb;
+    font-weight: 700;
+}
+
+.review-reply-close {
+    border: 0;
+    background: transparent;
+    font-size: 22px;
+    line-height: 1;
+    cursor: pointer;
+    color: #6f5b65;
+}
+
+.review-reply-body {
+    padding: 14px 16px 8px;
+}
+
+.review-reply-info {
+    border: 1px dashed #e4dbe0;
+    border-radius: 10px;
+    padding: 10px 12px;
+    background: #fff;
+    margin-bottom: 10px;
+    font-size: 13px;
+    color: #4b3a41;
+}
+
+.review-reply-info-title {
+    font-weight: 700;
+    margin-bottom: 6px;
+    color: var(--seller-primary);
+}
+
+.review-reply-actions {
+    padding: 10px 16px 16px;
+    display: flex;
+    gap: 10px;
+    justify-content: flex-end;
+}
+
 .review-product-meta {
     font-size: 12px;
     color: #7a6a72;
@@ -2487,6 +2565,24 @@ button:disabled {
     font-weight: 700;
     margin-bottom: 6px;
     color: var(--seller-primary);
+}
+
+.review-reply-form {
+    border: 1px dashed #e4dbe0;
+    border-radius: 10px;
+    padding: 10px 12px;
+    background: #fff;
+    display: grid;
+    gap: 8px;
+}
+
+.review-reply-input {
+    border: 1px solid #e4dbe0;
+    border-radius: 8px;
+    padding: 8px 10px;
+    font-size: 13px;
+    resize: vertical;
+    width: 100%;
 }
 
 .review-action {
@@ -2709,6 +2805,22 @@ button:disabled {
     border-radius: 10px;
     padding: 12px;
     font-size: 13px;
+}
+
+.review-reply-inline {
+    border: 0;
+    background: transparent;
+    color: var(--seller-primary);
+    font-size: 12px;
+    font-weight: 600;
+    padding: 0;
+    cursor: pointer;
+    justify-self: end;
+    align-self: center;
+}
+
+.review-reply-inline:hover {
+    text-decoration: underline;
 }
 
 .tag-title {

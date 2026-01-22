@@ -112,7 +112,7 @@
                                     <img src="<%# Eval("ProductImageUrl") %>" alt="Ảnh sản phẩm" />
                                 </div>
                                 <div>
-                                    <div class="review-product-name"><%# Eval("ProductName") %></div>
+                                    <a class="review-product-name" href="<%# Eval("ProductUrl") %>"><%# Eval("ProductName") %></a>
                                     <div class="review-product-meta"><%# Eval("ProductMeta") %></div>
                                 </div>
                             </div>
@@ -140,6 +140,12 @@
                                 <div class="review-helpful">
                                     <i class="fa-regular fa-thumbs-up"></i>
                                     Hữu ích (<%# Eval("HelpfulCount") %>)
+                                    <button type="button"
+                                        class="btn-outline small review-reply-trigger"
+                                        data-review-id="<%# Eval("ReviewId") %>"
+                                        data-reply-content="<%# System.Web.HttpUtility.HtmlAttributeEncode(Eval("ReplyContent") as string ?? string.Empty) %>">
+                                        <%# Eval("ReplyActionLabel") %>
+                                    </button>
                                 </div>
                                 <asp:PlaceHolder ID="ReplyHolder" runat="server" Visible='<%# Eval("HasReply") %>'>
                                     <div class="review-reply">
@@ -162,4 +168,61 @@
         </div>
 
     </div>
+    <div class="review-reply-modal" id="ProductReplyModal" aria-hidden="true">
+        <div class="review-reply-dialog" role="dialog" aria-modal="true">
+            <div class="review-reply-head">
+                <div>Phản hồi đánh giá</div>
+                <button type="button" class="review-reply-close" data-close="ProductReplyModal">&times;</button>
+            </div>
+            <div class="review-reply-body">
+                <asp:HiddenField ID="ProductReplyIdField" runat="server" />
+                <asp:TextBox ID="ProductReplyTextBox" runat="server" CssClass="review-reply-input" TextMode="MultiLine" Rows="5" placeholder="Nhập phản hồi cho khách hàng..." />
+            </div>
+            <div class="review-reply-actions">
+                <asp:LinkButton ID="SubmitProductReplyButton" runat="server" CssClass="btn-primary small" OnClick="SubmitProductReplyButton_Click">Gửi phản hồi</asp:LinkButton>
+                <button type="button" class="btn-outline small" data-close="ProductReplyModal">Hủy</button>
+            </div>
+        </div>
+    </div>
+    <script>
+        (function () {
+            function openModal(modalId, reviewId, content) {
+                var modal = document.getElementById(modalId);
+                if (!modal) return;
+                var idField = document.getElementById("<%= ProductReplyIdField.ClientID %>");
+                var textBox = document.getElementById("<%= ProductReplyTextBox.ClientID %>");
+                if (idField) idField.value = reviewId || "";
+                if (textBox) textBox.value = content || "";
+                modal.classList.add("open");
+                modal.setAttribute("aria-hidden", "false");
+            }
+
+            function closeModal(modal) {
+                if (!modal) return;
+                modal.classList.remove("open");
+                modal.setAttribute("aria-hidden", "true");
+            }
+
+            document.querySelectorAll(".review-reply-trigger").forEach(function (btn) {
+                btn.addEventListener("click", function () {
+                    openModal("ProductReplyModal", btn.getAttribute("data-review-id"), btn.getAttribute("data-reply-content"));
+                });
+            });
+
+            document.querySelectorAll("[data-close='ProductReplyModal']").forEach(function (btn) {
+                btn.addEventListener("click", function () {
+                    closeModal(document.getElementById("ProductReplyModal"));
+                });
+            });
+
+            var overlay = document.getElementById("ProductReplyModal");
+            if (overlay) {
+                overlay.addEventListener("click", function (event) {
+                    if (event.target === overlay) {
+                        closeModal(overlay);
+                    }
+                });
+            }
+        })();
+    </script>
 </asp:Content>

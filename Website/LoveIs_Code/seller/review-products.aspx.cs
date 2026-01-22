@@ -4,6 +4,7 @@ using System.Globalization;
 using System.Linq;
 using System.Text;
 using System.Web;
+using System.Web.UI.WebControls;
 
 public partial class SellerProductReviews : System.Web.UI.Page
 {
@@ -63,7 +64,7 @@ public partial class SellerProductReviews : System.Web.UI.Page
             }
 
             var reviewsQuery = db.CfProductReviews
-                .Where(r => r.Status && productIds.Contains(r.ProductId));
+                .Where(r => r.Status && r.IsVerified && productIds.Contains(r.ProductId));
 
             if (_ratingFilter > 0)
             {
@@ -121,6 +122,12 @@ public partial class SellerProductReviews : System.Web.UI.Page
                 .ToList()
                 .ToDictionary(p => p.Id, p => p);
 
+            var productSlugs = db.CfSeoSlugs
+                .Where(s => s.EntityType == "Product" && productIds.Contains(s.EntityId))
+                .ToList()
+                .GroupBy(s => s.EntityId)
+                .ToDictionary(g => g.Key, g => g.First().SeoSlug);
+
             var customerIds = reviews.Select(r => r.CustomerId).Distinct().ToList();
             var customerLookup = db.CfCustomers
                 .Where(c => customerIds.Contains(c.Id))
@@ -166,12 +173,16 @@ public partial class SellerProductReviews : System.Web.UI.Page
                     : "-";
                 var orderCode = order != null ? order.OrderCode : "-";
                 var productMeta = "Đơn: " + orderCode;
+                var productSlug = productSlugs.ContainsKey(review.ProductId) ? productSlugs[review.ProductId] : string.Empty;
+                var productUrl = string.IsNullOrWhiteSpace(productSlug) ? "#" : "/san-pham/" + productSlug + "#product-reviews";
 
                 viewModels.Add(new ProductReviewViewModel
                 {
+                    ReviewId = review.Id,
                     ProductName = product != null ? product.ProductName : "-",
                     ProductMeta = productMeta,
                     ProductImageUrl = imageUrl,
+                    ProductUrl = productUrl,
                     BuyerName = buyerName,
                     BuyerAvatarUrl = "/images/fav.png",
                     CreatedAtLabel = review.CreatedAt.ToString("yyyy-MM-dd HH:mm", CultureInfo.InvariantCulture),
@@ -181,6 +192,7 @@ public partial class SellerProductReviews : System.Web.UI.Page
                     HelpfulCount = review.HelpfulCount,
                     ReplyContent = review.ReplyContent,
                     HasReply = !string.IsNullOrWhiteSpace(review.ReplyContent),
+                    ReplyActionLabel = string.IsNullOrWhiteSpace(review.ReplyContent) ? "Phản hồi" : "Cập nhật phản hồi",
                     ActionUrl = "/seller/product-review-detail.aspx?id=" + review.Id
                 });
             }
@@ -201,7 +213,7 @@ public partial class SellerProductReviews : System.Web.UI.Page
         using (var db = new BeautyStoryContext())
         {
             var reviewQuery = db.CfProductReviews
-                .Where(r => r.Status && productIds.Contains(r.ProductId));
+                .Where(r => r.Status && r.IsVerified && productIds.Contains(r.ProductId));
 
             var reviews = reviewQuery.ToList();
             if (reviews.Count == 0)
@@ -302,7 +314,7 @@ public partial class SellerProductReviews : System.Web.UI.Page
         using (var db = new BeautyStoryContext())
         {
             var baseQuery = db.CfProductReviews
-                .Where(r => r.Status && productIds.Contains(r.ProductId));
+                .Where(r => r.Status && r.IsVerified && productIds.Contains(r.ProductId));
 
             var counts = baseQuery
                 .GroupBy(r => r.Rating)
@@ -442,9 +454,11 @@ public partial class SellerProductReviews : System.Web.UI.Page
 
     public class ProductReviewViewModel
     {
+        public int ReviewId { get; set; }
         public string ProductName { get; set; }
         public string ProductMeta { get; set; }
         public string ProductImageUrl { get; set; }
+        public string ProductUrl { get; set; }
         public string BuyerName { get; set; }
         public string BuyerAvatarUrl { get; set; }
         public string CreatedAtLabel { get; set; }
@@ -454,6 +468,7 @@ public partial class SellerProductReviews : System.Web.UI.Page
         public int HelpfulCount { get; set; }
         public string ReplyContent { get; set; }
         public bool HasReply { get; set; }
+        public string ReplyActionLabel { get; set; }
         public string ActionUrl { get; set; }
     }
 
@@ -466,6 +481,52 @@ public partial class SellerProductReviews : System.Web.UI.Page
     protected void ApplyFiltersButton_Click(object sender, EventArgs e)
     {
         Response.Redirect(BuildBaseUrl(resetPage: true));
+    }
+
+    protected void SubmitProductReplyButton_Click(object sender, EventArgs e)
+    {
+        int reviewId;
+        if (!int.TryParse(ProductReplyIdField.Value, out reviewId) || reviewId <= 0)
+        {
+            return;
+        }
+
+        var sellerId = SellerAuth.GetSellerId();
+        if (!sellerId.HasValue)
+        {
+            Response.Redirect("/seller/login.aspx");
+            return;
+        }
+
+        var replyText = (ProductReplyTextBox.Text ?? string.Empty).Trim();
+
+        using (var db = new BeautyStoryContext())
+        {
+            var shopIds = db.CfShops
+                .Where(s => s.SellerId == sellerId.Value)
+                .Select(s => s.Id)
+                .ToList();
+
+            var productIds = db.CfProducts
+                .Where(p => p.Status && p.ShopId.HasValue && shopIds.Contains(p.ShopId.Value))
+                .Select(p => p.Id)
+                .ToList();
+
+            var review = db.CfProductReviews
+                .FirstOrDefault(r => r.Id == reviewId && r.Status && productIds.Contains(r.ProductId));
+            if (review == null)
+            {
+                return;
+            }
+
+            review.ReplyContent = replyText;
+            review.UpdatedAt = DateTime.Now;
+            review.UpdatedBy = "seller:" + sellerId.Value.ToString(CultureInfo.InvariantCulture);
+            db.SaveChanges();
+        }
+
+        BindReviews();
+        DataBind();
     }
 
     public string GetTabClass(string key)

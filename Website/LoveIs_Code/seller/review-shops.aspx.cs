@@ -5,6 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Web;
 using System.Web.UI.HtmlControls;
+using System.Web.UI.WebControls;
 
 public partial class SellerShopReviews : System.Web.UI.Page
 {
@@ -52,7 +53,7 @@ public partial class SellerShopReviews : System.Web.UI.Page
             }
 
             var reviewsQuery = db.CfShopReviews
-                .Where(r => r.Status && shopIds.Contains(r.ShopId));
+                .Where(r => r.Status && r.IsVerified && shopIds.Contains(r.ShopId));
 
             if (_ratingFilter > 0)
             {
@@ -121,6 +122,7 @@ public partial class SellerShopReviews : System.Web.UI.Page
 
                 viewModels.Add(new ShopReviewViewModel
                 {
+                    ReviewId = review.Id,
                     BuyerName = buyerName,
                     BuyerAvatarUrl = "/images/fav.png",
                     OrderCount = orderCount,
@@ -133,7 +135,8 @@ public partial class SellerShopReviews : System.Web.UI.Page
                     ServiceRating = review.ServiceRating,
                     HelpfulCount = review.HelpfulCount,
                     ReplyContent = review.ReplyContent,
-                    HasReply = !string.IsNullOrWhiteSpace(review.ReplyContent)
+                    HasReply = !string.IsNullOrWhiteSpace(review.ReplyContent),
+                    ReplyActionLabel = string.IsNullOrWhiteSpace(review.ReplyContent) ? "Phản hồi" : "Cập nhật phản hồi"
                 });
             }
 
@@ -153,7 +156,7 @@ public partial class SellerShopReviews : System.Web.UI.Page
         using (var db = new BeautyStoryContext())
         {
             var reviews = db.CfShopReviews
-                .Where(r => r.Status && shopIds.Contains(r.ShopId))
+                .Where(r => r.Status && r.IsVerified && shopIds.Contains(r.ShopId))
                 .ToList();
 
             if (reviews.Count == 0)
@@ -219,7 +222,7 @@ public partial class SellerShopReviews : System.Web.UI.Page
         using (var db = new BeautyStoryContext())
         {
             var baseQuery = db.CfShopReviews
-                .Where(r => r.Status && shopIds.Contains(r.ShopId));
+                .Where(r => r.Status && r.IsVerified && shopIds.Contains(r.ShopId));
 
             var counts = baseQuery
                 .GroupBy(r => r.Rating)
@@ -345,6 +348,7 @@ public partial class SellerShopReviews : System.Web.UI.Page
 
     public class ShopReviewViewModel
     {
+        public int ReviewId { get; set; }
         public string BuyerName { get; set; }
         public string BuyerAvatarUrl { get; set; }
         public int OrderCount { get; set; }
@@ -358,6 +362,7 @@ public partial class SellerShopReviews : System.Web.UI.Page
         public int HelpfulCount { get; set; }
         public string ReplyContent { get; set; }
         public bool HasReply { get; set; }
+        public string ReplyActionLabel { get; set; }
     }
 
     public class RatingCount
@@ -369,6 +374,47 @@ public partial class SellerShopReviews : System.Web.UI.Page
     protected void ApplyFiltersButton_Click(object sender, EventArgs e)
     {
         Response.Redirect(BuildBaseUrl(resetPage: true));
+    }
+
+    protected void SubmitShopReplyButton_Click(object sender, EventArgs e)
+    {
+        int reviewId;
+        if (!int.TryParse(ShopReplyIdField.Value, out reviewId) || reviewId <= 0)
+        {
+            return;
+        }
+
+        var sellerId = SellerAuth.GetSellerId();
+        if (!sellerId.HasValue)
+        {
+            Response.Redirect("/seller/login.aspx");
+            return;
+        }
+
+        var replyText = (ShopReplyTextBox.Text ?? string.Empty).Trim();
+
+        using (var db = new BeautyStoryContext())
+        {
+            var shopIds = db.CfShops
+                .Where(s => s.SellerId == sellerId.Value)
+                .Select(s => s.Id)
+                .ToList();
+
+            var review = db.CfShopReviews
+                .FirstOrDefault(r => r.Id == reviewId && r.Status && shopIds.Contains(r.ShopId));
+            if (review == null)
+            {
+                return;
+            }
+
+            review.ReplyContent = replyText;
+            review.UpdatedAt = DateTime.Now;
+            review.UpdatedBy = "seller:" + sellerId.Value.ToString(CultureInfo.InvariantCulture);
+            db.SaveChanges();
+        }
+
+        BindReviews();
+        DataBind();
     }
 
     public string GetTabClass(string key)

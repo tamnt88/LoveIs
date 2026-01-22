@@ -299,7 +299,10 @@ public partial class CheckoutDefault : System.Web.UI.Page
         OnePayChannelList.Items.Clear();
         OnePayChannelList.Items.Add(new ListItem("Thẻ nội địa", "DOMESTIC"));
         OnePayChannelList.Items.Add(new ListItem("Thẻ quốc tế", "INTERNATIONAL"));
-        OnePayChannelList.Items.Add(new ListItem("Ví điện tử", "EWALLET"));
+        OnePayChannelList.Items.Add(new ListItem("Ví điện tử/QR", "EWALLET"));
+        OnePayChannelList.Items.Add(new ListItem("Apple Pay", "APPLEPAY"));
+        OnePayChannelList.Items.Add(new ListItem("Samsung Pay", "SAMSUNGPAY"));
+        OnePayChannelList.Items.Add(new ListItem("Google Pay", "GOOGLEPAY"));
         OnePayChannelList.SelectedValue = "DOMESTIC";
     }
 
@@ -329,6 +332,18 @@ public partial class CheckoutDefault : System.Web.UI.Page
         {
             return "EWALLET,QR,VIETQR";
         }
+        if (key == "APPLEPAY")
+        {
+            return "APPLEPAY";
+        }
+        if (key == "SAMSUNGPAY")
+        {
+            return "SAMSUNGPAY";
+        }
+        if (key == "GOOGLEPAY")
+        {
+            return "GOOGLEPAY";
+        }
         return string.Empty;
     }
 
@@ -341,11 +356,23 @@ public partial class CheckoutDefault : System.Web.UI.Page
         }
         if (key == "INTERNATIONAL")
         {
-            return "Thẻ quốc tế";
+            return "The quoc te";
         }
         if (key == "EWALLET")
         {
-            return "Ví điện tử";
+            return "Vi dien tu/QR";
+        }
+        if (key == "APPLEPAY")
+        {
+            return "Apple Pay";
+        }
+        if (key == "SAMSUNGPAY")
+        {
+            return "Samsung Pay";
+        }
+        if (key == "GOOGLEPAY")
+        {
+            return "Google Pay";
         }
         return string.Empty;
     }

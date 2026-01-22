@@ -273,7 +273,7 @@ public static class ShopWalletService
             AvailableAfter = wallet.AvailableBalance,
             PendingBefore = pendingBefore,
             PendingAfter = wallet.PendingBalance,
-            Note = "ủy lệnh rút, trả lại số dư khả dụng",
+            Note = "Hủy lệnh rút, trả lại số dư khả dụng",
             CreatedAt = DateTime.Now,
             CreatedBy = actor
         });

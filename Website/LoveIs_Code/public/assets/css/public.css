@@ -2668,6 +2668,119 @@ h1, h2, h3, h4, h5, h6, .h1, .h2, .h3, .h4, .h5, .h6, h1 a, h2 a, h3 a, h4 a, h5
     margin-bottom: 0;
 }
 
+.checkout-online-options .checkout-radio label {
+    display: flex !important;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+    width: 100%;
+}
+
+.checkout-online-options .onepay-option-title {
+    font-weight: 600;
+    min-width: 120px;
+}
+
+.checkout-online-options .onepay-option-logos {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    row-gap: 8px;
+    flex-wrap: wrap;
+    justify-content: flex-start;
+    margin-top: 2px;
+}
+
+.checkout-online-options .onepay-option-logos img {
+    height: 24px;
+    width: auto;
+    display: block;
+}
+
+.checkout-online-options .onepay-badge {
+    font-size: 11px;
+    line-height: 1.2;
+    padding: 2px 6px;
+    border-radius: 999px;
+    border: 1px solid #f0d9c2;
+    background: #fff3ec;
+    color: #a72b54;
+    white-space: nowrap;
+}
+
+.checkout-online-options .checkout-radio span {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+}
+
+.checkout-online-options .checkout-radio input[type="radio"] {
+    margin-top: 4px;
+}
+
+.checkout-online-options .onepay-hidden {
+    display: none;
+}
+
+.checkout-online-options .onepay-tabs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 12px;
+}
+
+.checkout-online-options .onepay-tab {
+    border: 1px solid #f0d9c2;
+    background: #fff7f1;
+    color: #7a4854;
+    padding: 6px 12px;
+    border-radius: 999px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.checkout-online-options .onepay-tab.is-active {
+    background: #a72b54;
+    border-color: #a72b54;
+    color: #fff;
+}
+
+.checkout-online-options .onepay-panels {
+    border: 1px solid #f0d9c2;
+    border-radius: 12px;
+    background: #fff;
+    padding: 12px;
+}
+
+.checkout-online-options .onepay-panel {
+    display: none;
+}
+
+.checkout-online-options .onepay-panel.is-active {
+    display: block;
+}
+
+.checkout-online-options .onepay-panel-title {
+    font-size: 14px;
+    font-weight: 700;
+    color: #6f2d45;
+    margin-bottom: 8px;
+}
+
+.checkout-online-options .onepay-panel-logos {
+    display: grid;
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+    gap: 10px 12px;
+}
+
+.checkout-online-options .onepay-panel-logos img {
+    width: 100%;
+    max-height: 28px;
+    object-fit: contain;
+}
+
 .checkout-page .checkout-hint {
     font-size: 0.9rem;
     color: var(--theme-primary-color);

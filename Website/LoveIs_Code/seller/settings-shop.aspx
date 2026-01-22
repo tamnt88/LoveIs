@@ -13,56 +13,6 @@
 
         <div class="card settings-card">
             <div class="settings-card-title">
-                <i class="fa-solid fa-house"></i>
-                Thông tin shop
-            </div>
-            <div class="settings-grid">
-                <div class="form-group">
-                    <label>Tên shop</label>
-                    <asp:TextBox ID="ShopNameInput" runat="server" CssClass="form-control" />
-                </div>
-                <div class="form-group form-group-full">
-                    <label>Mô tả shop</label>
-                    <asp:TextBox ID="DescriptionInput" runat="server" CssClass="form-control" TextMode="MultiLine" Rows="4" />
-                </div>
-                <div class="form-group">
-                    <label>Số điện thoại</label>
-                    <asp:TextBox ID="PhoneInput" runat="server" CssClass="form-control" />
-                </div>
-                <div class="form-group">
-                    <label>Email</label>
-                    <asp:TextBox ID="EmailInput" runat="server" CssClass="form-control" TextMode="Email" />
-                </div>
-            </div>
-        </div>
-
-        <div class="card settings-card">
-            <div class="settings-card-title">
-                <i class="fa-regular fa-images"></i>
-                Logo &amp; hình ảnh
-            </div>
-            <div class="settings-grid logo-grid">
-                <div class="form-group">
-                    <label>Logo shop</label>
-                    <div class="image-upload-card">
-                        <asp:Image ID="LogoPreview" runat="server" CssClass="image-preview square" />
-                        <asp:FileUpload ID="LogoUpload" runat="server" CssClass="d-none" accept="image/*" />
-                        <button type="button" class="btn-address-outline" id="LogoUploadTrigger">Tải lên logo</button>
-                    </div>
-                </div>
-                <div class="form-group">
-                    <label>Banner shop</label>
-                    <div class="image-upload-card wide">
-                        <asp:Image ID="BannerPreview" runat="server" CssClass="image-preview wide" />
-                        <asp:FileUpload ID="BannerUpload" runat="server" CssClass="d-none" accept="image/*" />
-                        <button type="button" class="btn-address-outline" id="BannerUploadTrigger">Tải lên banner</button>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div class="card settings-card">
-            <div class="settings-card-title">
                 <i class="fa-regular fa-file-lines"></i>
                 Thông tin kinh doanh
             </div>
@@ -82,6 +32,68 @@
             </div>
         </div>
 
+        <div class="card settings-card">
+            <div class="settings-card-title">
+                <i class="fa-solid fa-id-card"></i>
+                Xác thực người bán (KYC)
+            </div>
+            <asp:Literal ID="KycMessageLiteral" runat="server" />
+            <div class="settings-grid">
+                <div class="form-group form-group-full">
+                    <label>Trạng thái</label>
+                    <asp:TextBox ID="KycStatusInput" runat="server" CssClass="form-control" ReadOnly="true" />
+                    <div class="helper-text" id="KycStatusNote" runat="server"></div>
+                </div>
+                <div class="form-group">
+                    <label>Họ và tên</label>
+                    <asp:TextBox ID="KycFullNameInput" runat="server" CssClass="form-control" />
+                </div>
+                <div class="form-group">
+                    <label>Ngày sinh</label>
+                    <asp:TextBox ID="KycBirthDateInput" runat="server" CssClass="form-control" TextMode="Date" />
+                </div>
+                <div class="form-group">
+                    <label>Số CCCD/CMND</label>
+                    <asp:TextBox ID="KycIdNumberInput" runat="server" CssClass="form-control" />
+                </div>
+                <div class="form-group">
+                    <label>Ngày cấp</label>
+                    <asp:TextBox ID="KycIdIssuedDateInput" runat="server" CssClass="form-control" TextMode="Date" />
+                </div>
+                <div class="form-group form-group-full">
+                    <label>Nơi cấp</label>
+                    <asp:TextBox ID="KycIdIssuedPlaceInput" runat="server" CssClass="form-control" />
+                </div>
+                <div class="form-group">
+                    <label>CCCD mặt trước</label>
+                    <div class="image-upload-card">
+                        <asp:Image ID="KycFrontPreview" runat="server" CssClass="image-preview square" />
+                        <asp:FileUpload ID="KycFrontUpload" runat="server" CssClass="d-none" accept="image/*" />
+                        <button type="button" class="btn-address-outline" id="KycFrontTrigger">Tải lên</button>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>CCCD mặt sau</label>
+                    <div class="image-upload-card">
+                        <asp:Image ID="KycBackPreview" runat="server" CssClass="image-preview square" />
+                        <asp:FileUpload ID="KycBackUpload" runat="server" CssClass="d-none" accept="image/*" />
+                        <button type="button" class="btn-address-outline" id="KycBackTrigger">Tải lên</button>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Selfie cầm CCCD</label>
+                    <div class="image-upload-card">
+                        <asp:Image ID="KycSelfiePreview" runat="server" CssClass="image-preview square" />
+                        <asp:FileUpload ID="KycSelfieUpload" runat="server" CssClass="d-none" accept="image/*" />
+                        <button type="button" class="btn-address-outline" id="KycSelfieTrigger">Tải lên</button>
+                    </div>
+                </div>
+            </div>
+            <div class="settings-actions">
+                <asp:LinkButton ID="SubmitKycButton" runat="server" CssClass="btn-address-primary" OnClick="SubmitKycButton_Click">Gửi xác thực</asp:LinkButton>
+            </div>
+        </div>
+
         <div class="settings-actions">
             <asp:LinkButton ID="CancelButton" runat="server" CssClass="btn-address-outline" OnClick="CancelButton_Click">Hủy</asp:LinkButton>
             <asp:LinkButton ID="SaveButton" runat="server" CssClass="btn-address-primary" OnClick="SaveButton_Click">Lưu thay đổi</asp:LinkButton>
@@ -89,33 +101,28 @@
     </div>
     <script>
         (function () {
-            var logoInput = document.getElementById('<%= LogoUpload.ClientID %>');
-            var bannerInput = document.getElementById('<%= BannerUpload.ClientID %>');
             var saveButton = document.getElementById('<%= SaveButton.ClientID %>');
             if (!saveButton) return;
 
-            function bindUpload(input) {
-                if (!input) return;
-                input.addEventListener('change', function () {
-                    if (input.files && input.files.length > 0) {
-                        saveButton.click();
-                    }
+            var kycFrontInput = document.getElementById('<%= KycFrontUpload.ClientID %>');
+            var kycBackInput = document.getElementById('<%= KycBackUpload.ClientID %>');
+            var kycSelfieInput = document.getElementById('<%= KycSelfieUpload.ClientID %>');
+            var kycFrontTrigger = document.getElementById('KycFrontTrigger');
+            var kycBackTrigger = document.getElementById('KycBackTrigger');
+            var kycSelfieTrigger = document.getElementById('KycSelfieTrigger');
+            if (kycFrontTrigger && kycFrontInput) {
+                kycFrontTrigger.addEventListener('click', function () {
+                    kycFrontInput.click();
                 });
             }
-
-            bindUpload(logoInput);
-            bindUpload(bannerInput);
-
-            var logoTrigger = document.getElementById('LogoUploadTrigger');
-            var bannerTrigger = document.getElementById('BannerUploadTrigger');
-            if (logoTrigger && logoInput) {
-                logoTrigger.addEventListener('click', function () {
-                    logoInput.click();
+            if (kycBackTrigger && kycBackInput) {
+                kycBackTrigger.addEventListener('click', function () {
+                    kycBackInput.click();
                 });
             }
-            if (bannerTrigger && bannerInput) {
-                bannerTrigger.addEventListener('click', function () {
-                    bannerInput.click();
+            if (kycSelfieTrigger && kycSelfieInput) {
+                kycSelfieTrigger.addEventListener('click', function () {
+                    kycSelfieInput.click();
                 });
             }
         })();

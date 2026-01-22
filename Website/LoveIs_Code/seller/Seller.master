@@ -32,7 +32,7 @@
                             <i class="fa-solid fa-angle-down"></i>
                         </button>
                         <div class="seller-user-dropdown" id="SellerUserDropdown">
-                            <a href="/seller/settings-account.aspx"><i class="fa-regular fa-user"></i> Thông Tin Tài Khoản</a>
+                            <a href="/seller/settings-account.aspx"><i class="fa-regular fa-user"></i> Thông tin cửa hàng</a>
                             <a href="/seller/settings-shop.aspx"><i class="fa-solid fa-gear"></i> Thiết Lập Shop</a>
                             <a href="/seller/settings-account.aspx#password"><i class="fa-solid fa-key"></i> Đổi Mật Khẩu</a>
                             <div class="dropdown-divider"></div>

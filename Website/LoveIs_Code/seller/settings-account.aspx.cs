@@ -28,59 +28,38 @@ public partial class SellerSettingsAccount : System.Web.UI.Page
 
         using (var db = new BeautyStoryContext())
         {
-            var seller = db.CfSellers.FirstOrDefault(s => s.Id == sellerId.Value);
-            if (seller == null)
+            var shop = db.CfShops.FirstOrDefault(s => s.SellerId == sellerId.Value);
+            if (shop == null)
             {
-                AccountMessageLiteral.Text = "<div class='text-danger small'>Không tìm thấy tài khoản.</div>";
+                AccountMessageLiteral.Text = "<div class='text-danger small'>Không tìm thấy thông tin shop.</div>";
                 return;
             }
 
-            seller.DisplayName = (DisplayNameInput.Text ?? string.Empty).Trim();
-            seller.Email = (EmailInput.Text ?? string.Empty).Trim();
-            seller.Phone = (PhoneInput.Text ?? string.Empty).Trim();
+            shop.ShopName = (ShopNameInput.Text ?? string.Empty).Trim();
+            shop.Description = (DescriptionInput.Text ?? string.Empty).Trim();
 
-            var birthDateRaw = (BirthDateInput.Text ?? string.Empty).Trim();
-            if (string.IsNullOrWhiteSpace(birthDateRaw))
+            var seller = db.CfSellers.FirstOrDefault(s => s.Id == sellerId.Value);
+            if (seller != null)
             {
-                seller.BirthDate = null;
-            }
-            else
-            {
-                DateTime birthDate;
-                if (DateTime.TryParseExact(birthDateRaw, "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out birthDate))
-                {
-                    seller.BirthDate = birthDate;
-                }
-                else
-                {
-                    AccountMessageLiteral.Text = "<div class='text-danger small'>Ngày sinh không hợp lệ.</div>";
-                    return;
-                }
+                seller.Phone = (PhoneInput.Text ?? string.Empty).Trim();
+                seller.Email = (EmailInput.Text ?? string.Empty).Trim();
+                seller.UpdatedAt = DateTime.Now;
             }
 
-            if (AvatarUpload.HasFile)
+            var logoUrl = SaveUpload(LogoUpload, shop.LogoUrl, "logo");
+            if (!string.IsNullOrWhiteSpace(logoUrl))
             {
-                var ext = Path.GetExtension(AvatarUpload.FileName);
-                if (!IsAllowedImageExtension(ext))
-                {
-                    AccountMessageLiteral.Text = "<div class='text-danger small'>Định dạng ảnh không hợp lệ.</div>";
-                    return;
-                }
-
-                var fileName = "seller-avatar-" + seller.Id + "-" + DateTime.Now.ToString("yyyyMMddHHmmss") + ext;
-                var relativePath = "/upload/seller/" + fileName;
-                var savePath = Server.MapPath(relativePath);
-                var directory = Path.GetDirectoryName(savePath);
-                if (!string.IsNullOrWhiteSpace(directory) && !Directory.Exists(directory))
-                {
-                    Directory.CreateDirectory(directory);
-                }
-
-                AvatarUpload.SaveAs(savePath);
-                seller.AvatarUrl = relativePath;
+                shop.LogoUrl = logoUrl;
             }
 
-            seller.UpdatedAt = DateTime.Now;
+            var bannerUrl = SaveUpload(BannerUpload, shop.BannerUrl, "banner");
+            if (!string.IsNullOrWhiteSpace(bannerUrl))
+            {
+                shop.BannerUrl = bannerUrl;
+            }
+
+            shop.UpdatedAt = DateTime.Now;
+            shop.UpdatedBy = "Seller:" + sellerId.Value.ToString(CultureInfo.InvariantCulture);
             db.SaveChanges();
         }
 
@@ -176,11 +155,6 @@ public partial class SellerSettingsAccount : System.Web.UI.Page
                 return;
             }
 
-            DisplayNameInput.Text = seller.DisplayName ?? string.Empty;
-            EmailInput.Text = seller.Email ?? string.Empty;
-            PhoneInput.Text = seller.Phone ?? string.Empty;
-            BirthDateInput.Text = seller.BirthDate.HasValue ? seller.BirthDate.Value.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture) : string.Empty;
-
             if (seller.PasswordChangedAt.HasValue)
             {
                 PasswordChangedAtLiteral.Text = seller.PasswordChangedAt.Value.ToString("dd/MM/yyyy", CultureInfo.InvariantCulture);
@@ -190,32 +164,19 @@ public partial class SellerSettingsAccount : System.Web.UI.Page
                 PasswordChangedAtLiteral.Text = "Chưa có";
             }
 
-            if (!string.IsNullOrWhiteSpace(seller.AvatarUrl))
+            var shop = db.CfShops.FirstOrDefault(s => s.SellerId == sellerId.Value);
+            if (shop == null)
             {
-                AvatarImage.ImageUrl = seller.AvatarUrl;
-                AvatarImage.Visible = true;
-                AvatarInitialsLiteral.Visible = false;
+                return;
             }
-            else
-            {
-                var initials = "NA";
-                if (!string.IsNullOrWhiteSpace(seller.DisplayName))
-                {
-                    var parts = seller.DisplayName.Trim().Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
-                    if (parts.Length >= 2)
-                    {
-                        initials = (parts[0][0].ToString() + parts[parts.Length - 1][0]).ToUpperInvariant();
-                    }
-                    else if (parts.Length == 1)
-                    {
-                        initials = parts[0][0].ToString().ToUpperInvariant();
-                    }
-                }
 
-                AvatarInitialsLiteral.Text = initials;
-                AvatarInitialsLiteral.Visible = true;
-                AvatarImage.Visible = false;
-            }
+            ShopNameInput.Text = shop.ShopName ?? string.Empty;
+            DescriptionInput.Text = shop.Description ?? string.Empty;
+            LogoPreview.ImageUrl = string.IsNullOrWhiteSpace(shop.LogoUrl) ? "/images/fav.png" : shop.LogoUrl;
+            BannerPreview.ImageUrl = string.IsNullOrWhiteSpace(shop.BannerUrl) ? "/images/fav.png" : shop.BannerUrl;
+
+            PhoneInput.Text = seller.Phone ?? string.Empty;
+            EmailInput.Text = seller.Email ?? string.Empty;
         }
     }
 
@@ -255,5 +216,33 @@ public partial class SellerSettingsAccount : System.Web.UI.Page
 
         var lower = ext.ToLowerInvariant();
         return lower == ".png" || lower == ".jpg" || lower == ".jpeg" || lower == ".gif";
+    }
+
+    private string SaveUpload(System.Web.UI.WebControls.FileUpload upload, string existingUrl, string prefix)
+    {
+        if (upload == null || !upload.HasFile)
+        {
+            return string.Empty;
+        }
+
+        var extension = Path.GetExtension(upload.FileName);
+        if (!IsAllowedImageExtension(extension))
+        {
+            return string.Empty;
+        }
+
+        var safeExt = extension.ToLowerInvariant();
+        var folder = "/upload/seller";
+        var physicalFolder = Server.MapPath(folder);
+        if (!Directory.Exists(physicalFolder))
+        {
+            Directory.CreateDirectory(physicalFolder);
+        }
+
+        var fileName = string.Format("{0}-{1}{2}", prefix, Guid.NewGuid().ToString("N"), safeExt);
+        var physicalPath = Path.Combine(physicalFolder, fileName);
+        upload.SaveAs(physicalPath);
+
+        return folder + "/" + fileName;
     }
 }

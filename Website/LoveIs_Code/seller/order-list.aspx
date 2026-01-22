@@ -10,11 +10,15 @@
         </div>
         <div class="order-tabs">
             <a class="tab <%# GetTabClass("all") %>" href="/seller/order-list.aspx?status=all">Tất cả</a>
-            <a class="tab <%# GetTabClass("NEW") %>" href="/seller/order-list.aspx?status=NEW">Chờ xác nhận</a>
-            <a class="tab <%# GetTabClass("CONFIRMED") %>" href="/seller/order-list.aspx?status=CONFIRMED">Chờ lấy hàng</a>
-            <a class="tab <%# GetTabClass("SHIPPING") %>" href="/seller/order-list.aspx?status=SHIPPING">Đang giao</a>
-            <a class="tab <%# GetTabClass("COMPLETED") %>" href="/seller/order-list.aspx?status=COMPLETED">Đã giao</a>
-            <a class="tab <%# GetTabClass("CANCELLED") %>" href="/seller/order-list.aspx?status=CANCELLED">Trả hàng/Hoàn tiền/Hủy</a>
+            <a class="tab <%# GetTabClass("NEW") %>" href="/seller/order-list.aspx?status=NEW">Đơn mới</a>
+            <a class="tab <%# GetTabClass("CONFIRMED") %>" href="/seller/order-list.aspx?status=CONFIRMED">Đã xác nhận</a>
+            <a class="tab <%# GetTabClass("PACKING") %>" href="/seller/order-list.aspx?status=PACKING">Đang đóng gói</a>
+            <a class="tab <%# GetTabClass("COMPLETED") %>" href="/seller/order-list.aspx?status=COMPLETED">Hoàn tất</a>
+            <a class="tab <%# GetTabClass("READY_TO_SHIP") %>" href="/seller/order-list.aspx?status=READY_TO_SHIP">Sẵn sàng giao</a>
+            <a class="tab <%# GetTabClass("SHIPPED") %>" href="/seller/order-list.aspx?status=SHIPPED">Đã bàn giao</a>
+            <a class="tab <%# GetTabClass("CANCELLED") %>" href="/seller/order-list.aspx?status=CANCELLED">Đã hủy</a>
+            <a class="tab <%# GetTabClass("DELIVERING") %>" href="/seller/order-list.aspx?status=DELIVERING">Đang giao</a>
+            <a class="tab <%# GetTabClass("DELIVERED") %>" href="/seller/order-list.aspx?status=DELIVERED">Đã giao</a>
         </div>
         <div class="order-filters card">
             <div class="order-filters-row">
@@ -22,9 +26,6 @@
                     <asp:TextBox ID="OrderCodeTextBox" runat="server" Placeholder="Mã đơn hàng"></asp:TextBox>
                     <i class="fa-solid fa-magnifying-glass"></i>
                 </div>
-                <select>
-                    <option>Mã phiếu đơn hàng</option>
-                </select>
                 <asp:LinkButton ID="ExportButton" runat="server" CssClass="btn-outline" OnClick="ExportButton_Click">Xuất</asp:LinkButton>
                 <asp:LinkButton ID="ExportHistoryButton" runat="server" CssClass="btn-outline" OnClick="ExportHistoryButton_Click">Lịch sử Xuất Báo cáo</asp:LinkButton>
             </div>

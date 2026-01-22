@@ -4,6 +4,7 @@ using System.Globalization;
 using System.Linq;
 using System.Text;
 using System.Web;
+using System.Web.UI.WebControls;
 
 public partial class SellerProductReviews : System.Web.UI.Page
 {
@@ -46,6 +47,7 @@ public partial class SellerProductReviews : System.Web.UI.Page
             if (shopIds.Count == 0)
             {
                 BindEmpty();
+                BindSummaryEmpty();
                 return;
             }
 
@@ -57,11 +59,12 @@ public partial class SellerProductReviews : System.Web.UI.Page
             if (productIds.Count == 0)
             {
                 BindEmpty();
+                BindSummaryEmpty();
                 return;
             }
 
             var reviewsQuery = db.CfProductReviews
-                .Where(r => r.Status && productIds.Contains(r.ProductId));
+                .Where(r => r.Status && r.IsVerified && productIds.Contains(r.ProductId));
 
             if (_ratingFilter > 0)
             {
@@ -119,6 +122,12 @@ public partial class SellerProductReviews : System.Web.UI.Page
                 .ToList()
                 .ToDictionary(p => p.Id, p => p);
 
+            var productSlugs = db.CfSeoSlugs
+                .Where(s => s.EntityType == "Product" && productIds.Contains(s.EntityId))
+                .ToList()
+                .GroupBy(s => s.EntityId)
+                .ToDictionary(g => g.Key, g => g.First().SeoSlug);
+
             var customerIds = reviews.Select(r => r.CustomerId).Distinct().ToList();
             var customerLookup = db.CfCustomers
                 .Where(c => customerIds.Contains(c.Id))
@@ -164,12 +173,16 @@ public partial class SellerProductReviews : System.Web.UI.Page
                     : "-";
                 var orderCode = order != null ? order.OrderCode : "-";
                 var productMeta = "Đơn: " + orderCode;
+                var productSlug = productSlugs.ContainsKey(review.ProductId) ? productSlugs[review.ProductId] : string.Empty;
+                var productUrl = string.IsNullOrWhiteSpace(productSlug) ? "#" : "/san-pham/" + productSlug + "#product-reviews";
 
                 viewModels.Add(new ProductReviewViewModel
                 {
+                    ReviewId = review.Id,
                     ProductName = product != null ? product.ProductName : "-",
                     ProductMeta = productMeta,
                     ProductImageUrl = imageUrl,
+                    ProductUrl = productUrl,
                     BuyerName = buyerName,
                     BuyerAvatarUrl = "/images/fav.png",
                     CreatedAtLabel = review.CreatedAt.ToString("yyyy-MM-dd HH:mm", CultureInfo.InvariantCulture),
@@ -179,6 +192,7 @@ public partial class SellerProductReviews : System.Web.UI.Page
                     HelpfulCount = review.HelpfulCount,
                     ReplyContent = review.ReplyContent,
                     HasReply = !string.IsNullOrWhiteSpace(review.ReplyContent),
+                    ReplyActionLabel = string.IsNullOrWhiteSpace(review.ReplyContent) ? "Phản hồi" : "Cập nhật phản hồi",
                     ActionUrl = "/seller/product-review-detail.aspx?id=" + review.Id
                 });
             }
@@ -186,6 +200,7 @@ public partial class SellerProductReviews : System.Web.UI.Page
             ProductReviewRepeater.DataSource = viewModels;
             ProductReviewRepeater.DataBind();
 
+            BindSummary(productIds, shopIds);
             BindCounts(productIds);
             PaginationLiteral.Text = BuildPagination(totalPages);
             PaginationInfoLiteral.Text = BuildPaginationInfo(totalReviews);
@@ -193,12 +208,113 @@ public partial class SellerProductReviews : System.Web.UI.Page
         }
     }
 
+    private void BindSummary(List<int> productIds, List<int> shopIds)
+    {
+        using (var db = new BeautyStoryContext())
+        {
+            var reviewQuery = db.CfProductReviews
+                .Where(r => r.Status && r.IsVerified && productIds.Contains(r.ProductId));
+
+            var reviews = reviewQuery.ToList();
+            if (reviews.Count == 0)
+            {
+                BindSummaryEmpty();
+                return;
+            }
+
+            var totalReviews = reviews.Count;
+            var avgRating = reviews.Average(r => r.Rating);
+            var goodRate = reviews.Count(r => r.Rating >= 4) / (double)totalReviews * 100.0;
+
+            ReviewScoreLiteral.Text = avgRating.ToString("0.0", CultureInfo.InvariantCulture);
+            ReviewScoreStarsLiteral.Text = RenderStars((int)Math.Round(avgRating), string.Empty);
+            TotalReviewsLiteral.Text = totalReviews.ToString(CultureInfo.InvariantCulture);
+            GoodReviewRateLiteral.Text = goodRate.ToString("0.#", CultureInfo.InvariantCulture) + "%";
+
+            var totalOrders = db.CfShopOrders
+                .Where(o => o.Status && shopIds.Contains(o.ShopId))
+                .Select(o => o.OrderId)
+                .Distinct()
+                .Count();
+
+            var reviewRate = totalOrders > 0 ? (totalReviews * 100.0) / totalOrders : 0.0;
+            ReviewRateLiteral.Text = reviewRate.ToString("0.#", CultureInfo.InvariantCulture) + "%";
+
+            var today = DateTime.Today;
+            var start30 = today.AddDays(-30);
+            var start60 = today.AddDays(-60);
+
+            var currentReviews = reviews.Count(r => r.CreatedAt >= start30);
+            var previousReviews = reviews.Count(r => r.CreatedAt >= start60 && r.CreatedAt < start30);
+            SetTrend(TotalReviewsTrend, currentReviews, previousReviews);
+
+            var currentOrders = db.CfShopOrders
+                .Where(o => o.Status && shopIds.Contains(o.ShopId) && o.CreatedAt >= start30)
+                .Select(o => o.OrderId)
+                .Distinct()
+                .Count();
+            var previousOrders = db.CfShopOrders
+                .Where(o => o.Status && shopIds.Contains(o.ShopId) && o.CreatedAt >= start60 && o.CreatedAt < start30)
+                .Select(o => o.OrderId)
+                .Distinct()
+                .Count();
+
+            var currentRate = currentOrders > 0 ? (currentReviews * 100.0) / currentOrders : 0.0;
+            var previousRate = previousOrders > 0 ? (previousReviews * 100.0) / previousOrders : 0.0;
+            SetTrend(ReviewRateTrend, currentRate, previousRate);
+
+            var currentGood = reviews.Count(r => r.CreatedAt >= start30 && r.Rating >= 4);
+            var previousGood = reviews.Count(r => r.CreatedAt >= start60 && r.CreatedAt < start30 && r.Rating >= 4);
+            var currentGoodRate = currentReviews > 0 ? (currentGood * 100.0) / currentReviews : 0.0;
+            var previousGoodRate = previousReviews > 0 ? (previousGood * 100.0) / previousReviews : 0.0;
+            SetTrend(GoodReviewRateTrend, currentGoodRate, previousGoodRate);
+
+            var highlightedGood = reviewQuery.Count(r =>
+                r.Rating >= 4
+                && ((r.Content != null && r.Content != "") || (r.ImageUrls != null && r.ImageUrls != "")));
+            HighlightedGoodReviewLiteral.Text = highlightedGood.ToString(CultureInfo.InvariantCulture);
+
+            var recentStart = DateTime.Now.AddHours(-48);
+            var recentReviews = reviewQuery.Count(r => r.CreatedAt >= recentStart);
+            RecentReviewLiteral.Text = recentReviews.ToString(CultureInfo.InvariantCulture);
+        }
+    }
+
+    private void BindSummaryEmpty()
+    {
+        ReviewScoreLiteral.Text = "0.0";
+        ReviewScoreStarsLiteral.Text = string.Empty;
+        TotalReviewsLiteral.Text = "0";
+        ReviewRateLiteral.Text = "0%";
+        GoodReviewRateLiteral.Text = "0%";
+        HighlightedGoodReviewLiteral.Text = "0";
+        RecentReviewLiteral.Text = "0";
+
+        TotalReviewsTrend.InnerText = "so với 30 ngày trước: 0%";
+        ReviewRateTrend.InnerText = "so với 30 ngày trước: 0%";
+        GoodReviewRateTrend.InnerText = "so với 30 ngày trước: 0%";
+        TotalReviewsTrend.Attributes["class"] = "review-trend";
+        ReviewRateTrend.Attributes["class"] = "review-trend";
+        GoodReviewRateTrend.Attributes["class"] = "review-trend";
+    }
+
+    private static void SetTrend(System.Web.UI.HtmlControls.HtmlGenericControl target, double current, double previous)
+    {
+        var diff = current - previous;
+        var percent = previous > 0 ? (diff / previous) * 100.0 : (current > 0 ? 100.0 : 0.0);
+        var arrow = diff >= 0 ? "↑" : "↓";
+        var className = diff >= 0 ? "review-trend up" : "review-trend down";
+
+        target.Attributes["class"] = className;
+        target.InnerText = string.Format("so với 30 ngày trước: {0} {1}%", arrow, Math.Abs(percent).ToString("0.#", CultureInfo.InvariantCulture));
+    }
+
     private void BindCounts(List<int> productIds)
     {
         using (var db = new BeautyStoryContext())
         {
             var baseQuery = db.CfProductReviews
-                .Where(r => r.Status && productIds.Contains(r.ProductId));
+                .Where(r => r.Status && r.IsVerified && productIds.Contains(r.ProductId));
 
             var counts = baseQuery
                 .GroupBy(r => r.Rating)
@@ -338,9 +454,11 @@ public partial class SellerProductReviews : System.Web.UI.Page
 
     public class ProductReviewViewModel
     {
+        public int ReviewId { get; set; }
         public string ProductName { get; set; }
         public string ProductMeta { get; set; }
         public string ProductImageUrl { get; set; }
+        public string ProductUrl { get; set; }
         public string BuyerName { get; set; }
         public string BuyerAvatarUrl { get; set; }
         public string CreatedAtLabel { get; set; }
@@ -350,6 +468,7 @@ public partial class SellerProductReviews : System.Web.UI.Page
         public int HelpfulCount { get; set; }
         public string ReplyContent { get; set; }
         public bool HasReply { get; set; }
+        public string ReplyActionLabel { get; set; }
         public string ActionUrl { get; set; }
     }
 
@@ -362,6 +481,52 @@ public partial class SellerProductReviews : System.Web.UI.Page
     protected void ApplyFiltersButton_Click(object sender, EventArgs e)
     {
         Response.Redirect(BuildBaseUrl(resetPage: true));
+    }
+
+    protected void SubmitProductReplyButton_Click(object sender, EventArgs e)
+    {
+        int reviewId;
+        if (!int.TryParse(ProductReplyIdField.Value, out reviewId) || reviewId <= 0)
+        {
+            return;
+        }
+
+        var sellerId = SellerAuth.GetSellerId();
+        if (!sellerId.HasValue)
+        {
+            Response.Redirect("/seller/login.aspx");
+            return;
+        }
+
+        var replyText = (ProductReplyTextBox.Text ?? string.Empty).Trim();
+
+        using (var db = new BeautyStoryContext())
+        {
+            var shopIds = db.CfShops
+                .Where(s => s.SellerId == sellerId.Value)
+                .Select(s => s.Id)
+                .ToList();
+
+            var productIds = db.CfProducts
+                .Where(p => p.Status && p.ShopId.HasValue && shopIds.Contains(p.ShopId.Value))
+                .Select(p => p.Id)
+                .ToList();
+
+            var review = db.CfProductReviews
+                .FirstOrDefault(r => r.Id == reviewId && r.Status && productIds.Contains(r.ProductId));
+            if (review == null)
+            {
+                return;
+            }
+
+            review.ReplyContent = replyText;
+            review.UpdatedAt = DateTime.Now;
+            review.UpdatedBy = "seller:" + sellerId.Value.ToString(CultureInfo.InvariantCulture);
+            db.SaveChanges();
+        }
+
+        BindReviews();
+        DataBind();
     }
 
     public string GetTabClass(string key)

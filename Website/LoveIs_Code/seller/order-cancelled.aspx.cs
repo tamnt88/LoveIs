@@ -35,6 +35,11 @@ public partial class SellerCancelledOrders : System.Web.UI.Page
 
         using (var db = new BeautyStoryContext())
         {
+            var cancelStatusId = db.CfOrderStatuses
+                .Where(s => s.Status && s.Code == "CANCELLED")
+                .Select(s => (int?)s.Id)
+                .FirstOrDefault();
+
             var shopIds = db.CfShops
                 .Where(s => s.SellerId == sellerId.Value)
                 .Select(s => s.Id)
@@ -52,8 +57,15 @@ public partial class SellerCancelledOrders : System.Web.UI.Page
                 return;
             }
 
+            var cancelledOrderIds = db.CfOrders
+                .Where(o => o.Status && (
+                    (cancelStatusId.HasValue && o.OrderStatusId == cancelStatusId.Value)
+                    || o.OrderStatus == "CANCELLED"))
+                .Select(o => o.Id)
+                .ToList();
+
             var cancelledOrders = db.CfShopOrders
-                .Where(o => o.Status && shopIds.Contains(o.ShopId) && o.OrderStatus == "CANCELLED")
+                .Where(o => o.Status && shopIds.Contains(o.ShopId) && cancelledOrderIds.Contains(o.OrderId))
                 .OrderByDescending(o => o.CreatedAt)
                 .ToList();
 
@@ -78,21 +90,20 @@ public partial class SellerCancelledOrders : System.Web.UI.Page
                 .Take(PageSize)
                 .ToList();
 
-            var orderIds = pagedOrders.Select(o => o.OrderId).Distinct().ToList();
+            var pagedOrderIds = pagedOrders.Select(o => o.OrderId).Distinct().ToList();
             var orders = db.CfOrders
-                .Where(o => orderIds.Contains(o.Id))
+                .Where(o => pagedOrderIds.Contains(o.Id))
                 .ToList()
                 .ToDictionary(o => o.Id, o => o);
 
             var orderItems = db.CfOrderItems
-                .Where(i => orderIds.Contains(i.OrderId))
+                .Where(i => pagedOrderIds.Contains(i.OrderId))
                 .ToList();
 
-            var shopOrderIds = pagedOrders.Select(o => o.Id).ToList();
-            var historyLookup = db.CfShopOrderHistories
-                .Where(h => shopOrderIds.Contains(h.ShopOrderId))
+            var historyLookup = db.CfOrderHistories
+                .Where(h => h.Status && pagedOrderIds.Contains(h.OrderId))
                 .ToList()
-                .GroupBy(h => h.ShopOrderId)
+                .GroupBy(h => h.OrderId)
                 .ToDictionary(g => g.Key, g => g.OrderByDescending(x => x.CreatedAt).FirstOrDefault());
 
             CancelTotalLiteral.Text = totalOrders.ToString();
@@ -106,7 +117,7 @@ public partial class SellerCancelledOrders : System.Web.UI.Page
                 CfOrder order;
                 orders.TryGetValue(shopOrder.OrderId, out order);
                 var item = orderItems.FirstOrDefault(i => i.OrderId == shopOrder.OrderId);
-                var history = historyLookup.ContainsKey(shopOrder.Id) ? historyLookup[shopOrder.Id] : null;
+                var history = historyLookup.ContainsKey(shopOrder.OrderId) ? historyLookup[shopOrder.OrderId] : null;
                 var reason = history != null && !string.IsNullOrWhiteSpace(history.Note) ? history.Note : "-";
                 var cancelledBy = ResolveCancelledBy(history != null ? history.CreatedBy : string.Empty);
 
@@ -155,6 +166,11 @@ public partial class SellerCancelledOrders : System.Web.UI.Page
 
         using (var db = new BeautyStoryContext())
         {
+            var cancelStatusId = db.CfOrderStatuses
+                .Where(s => s.Status && s.Code == "CANCELLED")
+                .Select(s => (int?)s.Id)
+                .FirstOrDefault();
+
             var shopIds = db.CfShops
                 .Where(s => s.SellerId == sellerId.Value)
                 .Select(s => s.Id)
@@ -167,8 +183,15 @@ public partial class SellerCancelledOrders : System.Web.UI.Page
 
             _searchText = (SearchTextBox.Text ?? string.Empty).Trim();
 
+            var cancelledOrderIds = db.CfOrders
+                .Where(o => o.Status && (
+                    (cancelStatusId.HasValue && o.OrderStatusId == cancelStatusId.Value)
+                    || o.OrderStatus == "CANCELLED"))
+                .Select(o => o.Id)
+                .ToList();
+
             var cancelledOrders = db.CfShopOrders
-                .Where(o => o.Status && shopIds.Contains(o.ShopId) && o.OrderStatus == "CANCELLED")
+                .Where(o => o.Status && shopIds.Contains(o.ShopId) && cancelledOrderIds.Contains(o.OrderId))
                 .OrderByDescending(o => o.CreatedAt)
                 .ToList();
 
@@ -181,21 +204,20 @@ public partial class SellerCancelledOrders : System.Web.UI.Page
                 cancelledOrders = cancelledOrders.Where(o => matchedOrderIds.Contains(o.OrderId)).ToList();
             }
 
-            var orderIds = cancelledOrders.Select(o => o.OrderId).Distinct().ToList();
+            var filteredOrderIds = cancelledOrders.Select(o => o.OrderId).Distinct().ToList();
             var orders = db.CfOrders
-                .Where(o => orderIds.Contains(o.Id))
+                .Where(o => filteredOrderIds.Contains(o.Id))
                 .ToList()
                 .ToDictionary(o => o.Id, o => o);
 
             var orderItems = db.CfOrderItems
-                .Where(i => orderIds.Contains(i.OrderId))
+                .Where(i => filteredOrderIds.Contains(i.OrderId))
                 .ToList();
 
-            var cancelledShopOrderIds = cancelledOrders.Select(o => o.Id).ToList();
-            var historyLookup = db.CfShopOrderHistories
-                .Where(h => cancelledShopOrderIds.Contains(h.ShopOrderId))
+            var historyLookup = db.CfOrderHistories
+                .Where(h => h.Status && filteredOrderIds.Contains(h.OrderId))
                 .ToList()
-                .GroupBy(h => h.ShopOrderId)
+                .GroupBy(h => h.OrderId)
                 .ToDictionary(g => g.Key, g => g.OrderByDescending(x => x.CreatedAt).FirstOrDefault());
 
             var rows = new List<ExportRow>();
@@ -210,7 +232,7 @@ public partial class SellerCancelledOrders : System.Web.UI.Page
                     items.Add(new CfOrderItem { ProductName = "-", Quantity = 0, LineTotal = shopOrder.Total });
                 }
 
-                var history = historyLookup.ContainsKey(shopOrder.Id) ? historyLookup[shopOrder.Id] : null;
+                var history = historyLookup.ContainsKey(shopOrder.OrderId) ? historyLookup[shopOrder.OrderId] : null;
                 var reason = history != null && !string.IsNullOrWhiteSpace(history.Note) ? history.Note : "-";
                 var cancelledBy = ResolveCancelledBy(history != null ? history.CreatedBy : string.Empty);
 

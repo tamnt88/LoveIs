@@ -14,7 +14,7 @@
                 <div class="card shop-score-card">
                     <div class="shop-score-left">
                         <div class="shop-score-line">
-                            <div class="shop-score-value">4.7</div>
+                            <div class="shop-score-value"><asp:Literal ID="ShopScoreLiteral" runat="server" /></div>
                             <div class="shop-score-total">/5</div>
                         </div>
                         <div class="review-stars">
@@ -24,33 +24,33 @@
                             <i class="fa-solid fa-star"></i>
                             <i class="fa-solid fa-star-half-stroke"></i>
                         </div>
-                        <div class="shop-score-count">12 đánh giá</div>
+                        <div class="shop-score-count"><asp:Literal ID="ShopScoreCountLiteral" runat="server" /></div>
                     </div>
                     <div class="shop-score-bars">
                         <div class="shop-score-row">
                             <span>5 ★</span>
-                            <div class="shop-score-track"><span style="width: 72%"></span></div>
-                            <span>9</span>
+                            <div class="shop-score-track"><span id="Star5Bar" runat="server"></span></div>
+                            <span><asp:Literal ID="Star5CountLiteral" runat="server" /></span>
                         </div>
                         <div class="shop-score-row">
                             <span>4 ★</span>
-                            <div class="shop-score-track"><span style="width: 30%"></span></div>
-                            <span>2</span>
+                            <div class="shop-score-track"><span id="Star4Bar" runat="server"></span></div>
+                            <span><asp:Literal ID="Star4CountLiteral" runat="server" /></span>
                         </div>
                         <div class="shop-score-row">
                             <span>3 ★</span>
-                            <div class="shop-score-track"><span style="width: 12%"></span></div>
-                            <span>1</span>
+                            <div class="shop-score-track"><span id="Star3Bar" runat="server"></span></div>
+                            <span><asp:Literal ID="Star3CountLiteral" runat="server" /></span>
                         </div>
                         <div class="shop-score-row">
                             <span>2 ★</span>
-                            <div class="shop-score-track"><span style="width: 4%"></span></div>
-                            <span>0</span>
+                            <div class="shop-score-track"><span id="Star2Bar" runat="server"></span></div>
+                            <span><asp:Literal ID="Star2CountLiteral" runat="server" /></span>
                         </div>
                         <div class="shop-score-row">
                             <span>1 ★</span>
-                            <div class="shop-score-track"><span style="width: 2%"></span></div>
-                            <span>0</span>
+                            <div class="shop-score-track"><span id="Star1Bar" runat="server"></span></div>
+                            <span><asp:Literal ID="Star1CountLiteral" runat="server" /></span>
                         </div>
                     </div>
                 </div>
@@ -61,7 +61,7 @@
                         <div>
                             <div class="shop-metric-label">Chất lượng sản phẩm</div>
                             <div class="shop-metric-line">
-                                <div class="shop-metric-value">4.8</div>
+                                <div class="shop-metric-value"><asp:Literal ID="QualityScoreLiteral" runat="server" /></div>
                                 <div class="review-stars small">
                                     <i class="fa-solid fa-star"></i>
                                     <i class="fa-solid fa-star"></i>
@@ -77,7 +77,7 @@
                         <div>
                             <div class="shop-metric-label">Giao hàng</div>
                             <div class="shop-metric-line">
-                                <div class="shop-metric-value">4.6</div>
+                                <div class="shop-metric-value"><asp:Literal ID="ShippingScoreLiteral" runat="server" /></div>
                                 <div class="review-stars small">
                                     <i class="fa-solid fa-star"></i>
                                     <i class="fa-solid fa-star"></i>
@@ -96,7 +96,7 @@
                         <div>
                             <div class="shop-metric-label">Đúng với mô tả</div>
                             <div class="shop-metric-line">
-                                <div class="shop-metric-value">4.8</div>
+                                <div class="shop-metric-value"><asp:Literal ID="DescriptionScoreLiteral" runat="server" /></div>
                                 <div class="review-stars small">
                                     <i class="fa-solid fa-star"></i>
                                     <i class="fa-solid fa-star"></i>
@@ -112,7 +112,7 @@
                         <div>
                             <div class="shop-metric-label">Dịch vụ</div>
                             <div class="shop-metric-line">
-                                <div class="shop-metric-value">4.8</div>
+                                <div class="shop-metric-value"><asp:Literal ID="ServiceScoreLiteral" runat="server" /></div>
                                 <div class="review-stars small">
                                     <i class="fa-solid fa-star"></i>
                                     <i class="fa-solid fa-star"></i>
@@ -189,6 +189,12 @@
                             <div class="review-helpful">
                                 <i class="fa-regular fa-thumbs-up"></i>
                                 Hữu ích (<%# Eval("HelpfulCount") %>)
+                                <button type="button"
+                                    class="btn-outline small review-reply-trigger"
+                                    data-review-id="<%# Eval("ReviewId") %>"
+                                    data-reply-content="<%# System.Web.HttpUtility.HtmlAttributeEncode(Eval("ReplyContent") as string ?? string.Empty) %>">
+                                    <%# Eval("ReplyActionLabel") %>
+                                </button>
                             </div>
                             <asp:PlaceHolder ID="ReplyHolder" runat="server" Visible='<%# Eval("HasReply") %>'>
                                 <div class="review-reply">
@@ -206,36 +212,66 @@
             </div>
         </div>
 
-        <aside class="reviews-aside">
-            <h3>Thông tin đánh giá shop</h3>
-            <div class="shop-info-card">
-                <div class="shop-info-head">
-                    <span class="shop-info-icon"><i class="fa-solid fa-chart-line"></i></span>
-                    <div>
-                        <div class="shop-info-title">Tăng đánh giá shop</div>
-                        <div class="shop-info-desc">Shop có đánh giá tốt sẽ tăng độ tin cậy và thu hút nhiều khách hàng hơn!</div>
-                    </div>
-                </div>
-                <button class="review-tool-btn" type="button">Xem cách cải thiện</button>
-            </div>
-
-            <div class="shop-stat-card">
-                <div class="shop-stat-title"><i class="fa-solid fa-chart-column"></i> Thống kê 30 ngày</div>
-                <div class="shop-stat-row"><span>Đánh giá mới:</span><strong>↑ 12%</strong></div>
-                <div class="shop-stat-row"><span>Điểm trung bình:</span><strong>↑ 0.2</strong></div>
-                <div class="shop-stat-row"><span>Tỷ lệ 5 sao:</span><strong>75%</strong></div>
-            </div>
-
-            <div class="shop-tip-card">
-                <div class="review-tip-title"><i class="fa-regular fa-lightbulb"></i> Mẹo quản lý đánh giá</div>
-                <ul>
-                    <li>Trả lời mọi đánh giá để tăng uy tín</li>
-                    <li>Xử lý đánh giá tiêu cực chuyên nghiệp</li>
-                    <li>Cảm ơn khách đánh giá tích cực</li>
-                    <li>Học hỏi từ phản hồi để cải thiện</li>
-                    <li>Theo dõi xu hướng đánh giá định kỳ</li>
-                </ul>
-            </div>
-        </aside>
     </div>
+    <div class="review-reply-modal" id="ShopReplyModal" aria-hidden="true">
+        <div class="review-reply-dialog" role="dialog" aria-modal="true">
+            <div class="review-reply-head">
+                <div>Phản hồi đánh giá</div>
+                <button type="button" class="review-reply-close" data-close="ShopReplyModal">&times;</button>
+            </div>
+            <div class="review-reply-body">
+                <asp:HiddenField ID="ShopReplyIdField" runat="server" />
+                <asp:TextBox ID="ShopReplyTextBox" runat="server" CssClass="review-reply-input" TextMode="MultiLine" Rows="5" placeholder="Nhập phản hồi cho khách hàng..." />
+            </div>
+            <div class="review-reply-actions">
+                <asp:LinkButton ID="SubmitShopReplyButton" runat="server" CssClass="btn-primary small" OnClick="SubmitShopReplyButton_Click">Gửi phản hồi</asp:LinkButton>
+                <button type="button" class="btn-outline small" data-close="ShopReplyModal">Hủy</button>
+            </div>
+        </div>
+    </div>
+    <script>
+        (function () {
+            function openModal(modalId, reviewId, content) {
+                var modal = document.getElementById(modalId);
+                if (!modal) return;
+                var idField = document.getElementById("<%= ShopReplyIdField.ClientID %>");
+                var textBox = document.getElementById("<%= ShopReplyTextBox.ClientID %>");
+                if (idField) idField.value = reviewId || "";
+                if (textBox) textBox.value = content || "";
+                modal.classList.add("open");
+                modal.setAttribute("aria-hidden", "false");
+            }
+
+            function closeModal(modal) {
+                if (!modal) return;
+                modal.classList.remove("open");
+                modal.setAttribute("aria-hidden", "true");
+            }
+
+            document.querySelectorAll(".review-reply-trigger").forEach(function (btn) {
+                btn.addEventListener("click", function () {
+                    openModal(
+                        "ShopReplyModal",
+                        btn.getAttribute("data-review-id"),
+                        btn.getAttribute("data-reply-content")
+                    );
+                });
+            });
+
+            document.querySelectorAll("[data-close='ShopReplyModal']").forEach(function (btn) {
+                btn.addEventListener("click", function () {
+                    closeModal(document.getElementById("ShopReplyModal"));
+                });
+            });
+
+            var overlay = document.getElementById("ShopReplyModal");
+            if (overlay) {
+                overlay.addEventListener("click", function (event) {
+                    if (event.target === overlay) {
+                        closeModal(overlay);
+                    }
+                });
+            }
+        })();
+    </script>
 </asp:Content>

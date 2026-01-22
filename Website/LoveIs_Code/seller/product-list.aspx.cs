@@ -61,6 +61,12 @@ public partial class SellerProducts : System.Web.UI.Page
                 .ToList()
                 .ToDictionary(c => c.Id, c => c.CategoryName);
 
+            var productSlugs = db.CfSeoSlugs
+                .Where(s => s.Status && s.EntityType == "Product" && productIds.Contains(s.EntityId))
+                .ToList()
+                .GroupBy(s => s.EntityId)
+                .ToDictionary(g => g.Key, g => g.First().SeoSlug);
+
             var variants = db.CfProductVariants
                 .Where(v => productIds.Contains(v.ProductId) && v.Status)
                 .ToList();
@@ -134,6 +140,7 @@ public partial class SellerProducts : System.Web.UI.Page
                     StatusLabel = ResolveStatusLabel(p, stockQty),
                     StatusClass = ResolveStatusClass(p, stockQty),
                     ProductId = p.Id,
+                    ProductUrl = "/san-pham/" + (productSlugs.ContainsKey(p.Id) ? productSlugs[p.Id] : ("san-pham-" + p.Id)),
                     ViewUrl = "/seller/product-add.aspx?id=" + p.Id + "&mode=view",
                     EditUrl = "/seller/product-add.aspx?id=" + p.Id + "&mode=edit"
                 };
@@ -802,6 +809,7 @@ public partial class SellerProducts : System.Web.UI.Page
     {
         public int ProductId { get; set; }
         public string ProductName { get; set; }
+        public string ProductUrl { get; set; }
         public string Sku { get; set; }
         public string PriceLabel { get; set; }
         public string CategoryName { get; set; }

@@ -16,6 +16,9 @@ public partial class SellerOrders : System.Web.UI.Page
     private int? _shippingMethodId = null;
     private bool _showExportHistory = false;
     private Dictionary<string, string> _statusNameLookup = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+    private Dictionary<int, string> _statusIdNameLookup = new Dictionary<int, string>();
+    private Dictionary<int, string> _statusIdCodeLookup = new Dictionary<int, string>();
+    private Dictionary<string, int> _statusCodeIdLookup = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
 
     protected void Page_Load(object sender, EventArgs e)
     {
@@ -67,13 +70,25 @@ public partial class SellerOrders : System.Web.UI.Page
                 return;
             }
 
-            var statusLookup = db.CfOrderStatuses
+            var statusRows = db.CfOrderStatuses
                 .Where(s => s.Status)
                 .OrderBy(s => s.SortOrder)
-                .ToList()
-                .ToDictionary(s => s.Code, s => s.Name, StringComparer.OrdinalIgnoreCase);
+                .ToList();
 
-            _statusNameLookup = statusLookup;
+            _statusNameLookup = statusRows
+                .ToDictionary(s => s.Code, s => s.Name, StringComparer.OrdinalIgnoreCase);
+            _statusIdNameLookup = statusRows
+                .ToDictionary(s => s.Id, s => s.Name);
+            _statusIdCodeLookup = statusRows
+                .ToDictionary(s => s.Id, s => s.Code);
+            _statusCodeIdLookup = statusRows
+                .ToDictionary(s => s.Code, s => s.Id, StringComparer.OrdinalIgnoreCase);
+
+            var shippingCodeLookup = db.CfShippingMethods
+                .Where(s => s.Status)
+                .ToList()
+                .GroupBy(s => s.Name ?? string.Empty, StringComparer.OrdinalIgnoreCase)
+                .ToDictionary(g => g.Key, g => g.First().Code ?? string.Empty, StringComparer.OrdinalIgnoreCase);
 
             var shippingName = ResolveShippingName(db, _shippingMethodId);
             var shopOrdersQuery = db.CfShopOrders
@@ -97,7 +112,13 @@ public partial class SellerOrders : System.Web.UI.Page
                 .OrderByDescending(o => o.CreatedAt)
                 .ToList();
 
-            var filteredOrders = ApplyStatusFilter(shopOrders, _statusKey);
+            var allOrderIds = shopOrders.Select(o => o.OrderId).Distinct().ToList();
+            var orderLookupAll = db.CfOrders
+                .Where(o => allOrderIds.Contains(o.Id))
+                .ToList()
+                .ToDictionary(o => o.Id, o => o);
+
+            var filteredOrders = ApplyStatusFilter(shopOrders, orderLookupAll, _statusKey);
             var totalOrders = filteredOrders.Count;
             var totalPages = (int)Math.Ceiling(totalOrders / (double)PageSize);
             if (_currentPage > totalPages && totalPages > 0)
@@ -112,13 +133,17 @@ public partial class SellerOrders : System.Web.UI.Page
 
             var shopOrderIds = pagedOrders.Select(o => o.Id).Distinct().ToList();
             var orderIds = pagedOrders.Select(o => o.OrderId).Distinct().ToList();
-            var orders = db.CfOrders
-                .Where(o => orderIds.Contains(o.Id))
-                .ToList()
-                .ToDictionary(o => o.Id, o => o);
+            var orders = orderLookupAll
+                .Where(kvp => orderIds.Contains(kvp.Key))
+                .ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
+
+            var shopProductIds = db.CfProducts
+                .Where(p => p.ShopId.HasValue && shopIds.Contains(p.ShopId.Value))
+                .Select(p => p.Id)
+                .ToList();
 
             var orderItems = db.CfOrderItems
-                .Where(i => orderIds.Contains(i.OrderId))
+                .Where(i => orderIds.Contains(i.OrderId) && shopProductIds.Contains(i.ProductId))
                 .ToList();
 
             var productIds = orderItems.Select(i => i.ProductId).Distinct().ToList();
@@ -165,9 +190,15 @@ public partial class SellerOrders : System.Web.UI.Page
                     "<div class=\"price-strong\">{0}</div><div class=\"price-sub\">{1}</div>",
                     FormatCurrency(shopOrder.Total),
                     string.IsNullOrWhiteSpace(shopOrder.PaymentStatus) ? "-" : HttpUtility.HtmlEncode(shopOrder.PaymentStatus));
-                var statusHtml = BuildStatusHtml(shopOrder.OrderStatus, shopOrder.CreatedAt);
-                var tracking = trackingLookup.ContainsKey(shopOrder.Id) ? trackingLookup[shopOrder.Id] : null;
-                var shippingHtml = BuildShippingHtml(shopOrder, tracking);
+                var orderStatusId = order != null ? order.OrderStatusId : null;
+                var statusCode = order != null && !string.IsNullOrWhiteSpace(order.OrderStatus)
+                    ? order.OrderStatus
+                    : shopOrder.OrderStatus;
+                var statusHtml = BuildStatusHtml(orderStatusId, statusCode, shopOrder.CreatedAt);
+                var shippingCode = !string.IsNullOrWhiteSpace(shopOrder.ShippingMethod) && shippingCodeLookup.ContainsKey(shopOrder.ShippingMethod)
+                    ? shippingCodeLookup[shopOrder.ShippingMethod]
+                    : "-";
+                var shippingHtml = BuildShippingHtml(shopOrder, shippingCode);
                 var actionHtml = string.Format("<a class=\"btn-primary small\" href=\"/seller/order-detail.aspx?id={0}\">Chi tiết</a>", shopOrder.Id);
 
                 foreach (var item in itemModels)
@@ -299,22 +330,35 @@ public partial class SellerOrders : System.Web.UI.Page
                 .OrderByDescending(o => o.CreatedAt)
                 .ToList();
 
-            var filteredOrders = ApplyStatusFilter(shopOrders, _statusKey);
-            var orderIdsFiltered = filteredOrders.Select(o => o.OrderId).Distinct().ToList();
-
-            var orders = db.CfOrders
-                .Where(o => orderIdsFiltered.Contains(o.Id))
+            var allOrderIds = shopOrders.Select(o => o.OrderId).Distinct().ToList();
+            var orderLookupAll = db.CfOrders
+                .Where(o => allOrderIds.Contains(o.Id))
                 .ToList()
                 .ToDictionary(o => o.Id, o => o);
+
+            var filteredOrders = ApplyStatusFilter(shopOrders, orderLookupAll, _statusKey);
+            var orderIdsFiltered = filteredOrders.Select(o => o.OrderId).Distinct().ToList();
+
+            var orders = orderLookupAll
+                .Where(kvp => orderIdsFiltered.Contains(kvp.Key))
+                .ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
 
             var orderItems = db.CfOrderItems
                 .Where(i => orderIdsFiltered.Contains(i.OrderId))
                 .ToList();
 
-            var statusLookup = db.CfOrderStatuses
+            var statusRows = db.CfOrderStatuses
                 .Where(s => s.Status)
-                .ToList()
+                .ToList();
+
+            _statusNameLookup = statusRows
                 .ToDictionary(s => s.Code, s => s.Name, StringComparer.OrdinalIgnoreCase);
+            _statusIdNameLookup = statusRows
+                .ToDictionary(s => s.Id, s => s.Name);
+            _statusIdCodeLookup = statusRows
+                .ToDictionary(s => s.Id, s => s.Code);
+            _statusCodeIdLookup = statusRows
+                .ToDictionary(s => s.Code, s => s.Id, StringComparer.OrdinalIgnoreCase);
 
             var rows = new List<ExportRow>();
             foreach (var shopOrder in filteredOrders)
@@ -333,11 +377,11 @@ public partial class SellerOrders : System.Web.UI.Page
                     .Distinct()
                     .ToList();
 
-                var statusLabel = ResolveStatusName(shopOrder.OrderStatus);
-                if (statusLookup.ContainsKey(shopOrder.OrderStatus ?? string.Empty))
-                {
-                    statusLabel = statusLookup[shopOrder.OrderStatus];
-                }
+                var orderStatusId = orders.ContainsKey(shopOrder.OrderId) ? orders[shopOrder.OrderId].OrderStatusId : null;
+                var statusCode = orders.ContainsKey(shopOrder.OrderId) && !string.IsNullOrWhiteSpace(orders[shopOrder.OrderId].OrderStatus)
+                    ? orders[shopOrder.OrderId].OrderStatus
+                    : shopOrder.OrderStatus;
+                var statusLabel = ResolveStatusName(orderStatusId, statusCode);
 
                 rows.Add(new ExportRow
                 {
@@ -364,29 +408,45 @@ public partial class SellerOrders : System.Web.UI.Page
 
         if (string.Equals(statusKey, "NEW", StringComparison.OrdinalIgnoreCase))
         {
-            return "Chờ xác nhận";
+            return "Đơn mới";
         }
         if (string.Equals(statusKey, "CONFIRMED", StringComparison.OrdinalIgnoreCase))
         {
-            return "Chờ lấy hàng";
+            return "Đã xác nhận";
         }
-        if (string.Equals(statusKey, "SHIPPING", StringComparison.OrdinalIgnoreCase))
+        if (string.Equals(statusKey, "PACKING", StringComparison.OrdinalIgnoreCase))
         {
-            return "Đang giao";
+            return "Đang đóng gói";
         }
         if (string.Equals(statusKey, "COMPLETED", StringComparison.OrdinalIgnoreCase))
         {
-            return "Đã giao";
+            return "Hoàn tất";
+        }
+        if (string.Equals(statusKey, "READY_TO_SHIP", StringComparison.OrdinalIgnoreCase))
+        {
+            return "Sẵn sàng giao";
+        }
+        if (string.Equals(statusKey, "SHIPPED", StringComparison.OrdinalIgnoreCase))
+        {
+            return "Đã bàn giao";
         }
         if (string.Equals(statusKey, "CANCELLED", StringComparison.OrdinalIgnoreCase))
         {
-            return "Trả hàng/Hoàn tiền/Hủy";
+            return "Đã hủy";
+        }
+        if (string.Equals(statusKey, "DELIVERING", StringComparison.OrdinalIgnoreCase))
+        {
+            return "Đang giao";
+        }
+        if (string.Equals(statusKey, "DELIVERED", StringComparison.OrdinalIgnoreCase))
+        {
+            return "Đã giao";
         }
 
         return statusKey;
     }
 
-    private static List<CfShopOrder> ApplyStatusFilter(List<CfShopOrder> orders, string statusKey)
+    private List<CfShopOrder> ApplyStatusFilter(List<CfShopOrder> orders, Dictionary<int, CfOrder> orderLookup, string statusKey)
     {
         if (string.IsNullOrWhiteSpace(statusKey) || string.Equals(statusKey, "all", StringComparison.OrdinalIgnoreCase))
         {
@@ -394,12 +454,37 @@ public partial class SellerOrders : System.Web.UI.Page
         }
 
         return orders
-            .Where(o => IsStatusMatch(o != null ? o.OrderStatus : null, statusKey))
+            .Where(o => IsStatusMatch(o, orderLookup, statusKey))
             .ToList();
     }
 
-    private static bool IsStatusMatch(string rawStatus, string statusKey)
+    private bool IsStatusMatch(CfShopOrder order, Dictionary<int, CfOrder> orderLookup, string statusKey)
     {
+        if (order == null)
+        {
+            return false;
+        }
+
+        int statusId;
+        if (_statusCodeIdLookup.TryGetValue(statusKey, out statusId))
+        {
+            CfOrder detail;
+            if (orderLookup != null && orderLookup.TryGetValue(order.OrderId, out detail) && detail.OrderStatusId.HasValue)
+            {
+                return detail.OrderStatusId.Value == statusId;
+            }
+            return false;
+        }
+
+        var rawStatus = order.OrderStatus;
+        if (orderLookup != null && orderLookup.ContainsKey(order.OrderId))
+        {
+            var orderDetail = orderLookup[order.OrderId];
+            if (!string.IsNullOrWhiteSpace(orderDetail.OrderStatus))
+            {
+                rawStatus = orderDetail.OrderStatus;
+            }
+        }
         if (string.IsNullOrWhiteSpace(rawStatus))
         {
             return false;
@@ -409,10 +494,10 @@ public partial class SellerOrders : System.Web.UI.Page
     }
 
 
-    private string BuildStatusHtml(string orderStatus, DateTime createdAt)
+    private string BuildStatusHtml(int? orderStatusId, string orderStatusCode, DateTime createdAt)
     {
-        var label = ResolveStatusName(orderStatus);
-        var className = GetStatusClass(orderStatus);
+        var label = ResolveStatusName(orderStatusId, orderStatusCode);
+        var className = GetStatusClass(orderStatusId, orderStatusCode);
         return string.Format(
             "<span class=\"status-pill {0}\">{1}</span><div class=\"status-time\">{2}</div>",
             className,
@@ -420,26 +505,24 @@ public partial class SellerOrders : System.Web.UI.Page
             createdAt.ToString("dd/MM/yyyy HH:mm", CultureInfo.InvariantCulture));
     }
 
-    private static string BuildShippingHtml(CfShopOrder shopOrder, CfShippingTracking tracking)
+    private static string BuildShippingHtml(CfShopOrder shopOrder, string shippingCode)
     {
         var shipName = !string.IsNullOrWhiteSpace(shopOrder.ShippingMethod) ? shopOrder.ShippingMethod : "-";
-        var carrier = tracking != null && !string.IsNullOrWhiteSpace(tracking.Carrier) ? tracking.Carrier : "-";
-        var code = tracking != null && !string.IsNullOrWhiteSpace(tracking.TrackingCode) ? tracking.TrackingCode : "-";
         return string.Format(
-            "<div class=\"ship-name\">{0}</div><div class=\"ship-meta\">{1}</div><div class=\"ship-code\">{2}</div>",
+            "<div class=\"ship-name\">{0}</div><div class=\"ship-code\">{1}</div>",
             HttpUtility.HtmlEncode(shipName),
-            HttpUtility.HtmlEncode(carrier),
-            HttpUtility.HtmlEncode(code));
+            HttpUtility.HtmlEncode(string.IsNullOrWhiteSpace(shippingCode) ? "-" : shippingCode));
     }
 
-    private static string GetStatusClass(string orderStatus)
+    private string GetStatusClass(int? orderStatusId, string orderStatusCode)
     {
-        if (string.IsNullOrWhiteSpace(orderStatus))
+        var statusCode = ResolveStatusCode(orderStatusId, orderStatusCode);
+        if (string.IsNullOrWhiteSpace(statusCode))
         {
             return "status-pending";
         }
 
-        var status = orderStatus.ToUpperInvariant();
+        var status = statusCode.ToUpperInvariant();
         if (status == "SHIPPING")
         {
             return "status-shipping";
@@ -566,8 +649,13 @@ public partial class SellerOrders : System.Web.UI.Page
         public string ActionHtml { get; set; }
     }
 
-    private string ResolveStatusName(string statusCode)
+    private string ResolveStatusName(int? statusId, string statusCode)
     {
+        if (statusId.HasValue && _statusIdNameLookup.ContainsKey(statusId.Value))
+        {
+            return _statusIdNameLookup[statusId.Value];
+        }
+
         if (string.IsNullOrWhiteSpace(statusCode))
         {
             return "Đang xử lý";
@@ -575,6 +663,16 @@ public partial class SellerOrders : System.Web.UI.Page
 
         string name;
         return _statusNameLookup.TryGetValue(statusCode, out name) ? name : statusCode;
+    }
+
+    private string ResolveStatusCode(int? statusId, string statusCode)
+    {
+        if (statusId.HasValue && _statusIdCodeLookup.ContainsKey(statusId.Value))
+        {
+            return _statusIdCodeLookup[statusId.Value];
+        }
+
+        return statusCode ?? string.Empty;
     }
 
     private void BindShippingMethods()
@@ -933,22 +1031,35 @@ public partial class SellerOrders : System.Web.UI.Page
                 .OrderByDescending(o => o.CreatedAt)
                 .ToList();
 
-            var filteredOrders = ApplyStatusFilter(shopOrders, _statusKey);
-            var orderIdsFiltered = filteredOrders.Select(o => o.OrderId).Distinct().ToList();
-
-            var orders = db.CfOrders
-                .Where(o => orderIdsFiltered.Contains(o.Id))
+            var allOrderIds = shopOrders.Select(o => o.OrderId).Distinct().ToList();
+            var orderLookupAll = db.CfOrders
+                .Where(o => allOrderIds.Contains(o.Id))
                 .ToList()
                 .ToDictionary(o => o.Id, o => o);
+
+            var filteredOrders = ApplyStatusFilter(shopOrders, orderLookupAll, _statusKey);
+            var orderIdsFiltered = filteredOrders.Select(o => o.OrderId).Distinct().ToList();
+
+            var orders = orderLookupAll
+                .Where(kvp => orderIdsFiltered.Contains(kvp.Key))
+                .ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
 
             var orderItems = db.CfOrderItems
                 .Where(i => orderIdsFiltered.Contains(i.OrderId))
                 .ToList();
 
-            var statusLookup = db.CfOrderStatuses
+            var statusRows = db.CfOrderStatuses
                 .Where(s => s.Status)
-                .ToList()
+                .ToList();
+
+            _statusNameLookup = statusRows
                 .ToDictionary(s => s.Code, s => s.Name, StringComparer.OrdinalIgnoreCase);
+            _statusIdNameLookup = statusRows
+                .ToDictionary(s => s.Id, s => s.Name);
+            _statusIdCodeLookup = statusRows
+                .ToDictionary(s => s.Id, s => s.Code);
+            _statusCodeIdLookup = statusRows
+                .ToDictionary(s => s.Code, s => s.Id, StringComparer.OrdinalIgnoreCase);
 
             var rows = new List<ExportRow>();
             foreach (var shopOrder in filteredOrders)
@@ -967,11 +1078,11 @@ public partial class SellerOrders : System.Web.UI.Page
                     .Distinct()
                     .ToList();
 
-                var statusLabel = ResolveStatusName(shopOrder.OrderStatus);
-                if (statusLookup.ContainsKey(shopOrder.OrderStatus ?? string.Empty))
-                {
-                    statusLabel = statusLookup[shopOrder.OrderStatus];
-                }
+                var orderStatusId = orders.ContainsKey(shopOrder.OrderId) ? orders[shopOrder.OrderId].OrderStatusId : null;
+                var statusCode = orders.ContainsKey(shopOrder.OrderId) && !string.IsNullOrWhiteSpace(orders[shopOrder.OrderId].OrderStatus)
+                    ? orders[shopOrder.OrderId].OrderStatus
+                    : shopOrder.OrderStatus;
+                var statusLabel = ResolveStatusName(orderStatusId, statusCode);
 
                 rows.Add(new ExportRow
                 {

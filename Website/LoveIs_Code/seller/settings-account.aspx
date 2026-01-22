@@ -125,6 +125,10 @@
                     passwordForm.classList.toggle('open');
                 });
             }
+            if (passwordForm && window.location.hash === '#password') {
+                passwordForm.classList.add('open');
+                passwordForm.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
         })();
     </script>
 </asp:Content>

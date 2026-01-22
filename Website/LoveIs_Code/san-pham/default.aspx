@@ -677,7 +677,7 @@
 
                 </div>
 
-                <div class="product-review-section mt-4">
+                <div class="product-review-section mt-4" id="product-reviews">
                     <div class="section-heading d-flex align-items-center justify-content-between">
                         <div>
                             <h4>Đánh giá</h4>

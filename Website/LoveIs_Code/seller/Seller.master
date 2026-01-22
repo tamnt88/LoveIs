@@ -20,18 +20,24 @@
                 <div class="left">
                     <asp:Image ID="LogoImage" CssClass="logo" runat="server" AlternateText="LOVEis" />
                     <span>Kênh người bán</span>
-                    <span class="opacity-75">|</span>
-                    <i class="fa-solid fa-house"></i>
-                    <span>Dashboard</span>
                 </div>
                 <div class="d-flex align-items-center gap-3">
                     <i class="fa-solid fa-grid-2"></i>
                     <div><i class="fa-regular fa-bell"></i><span class="badge-dot">24</span></div>
                     <i class="fa-solid fa-gift"></i>
-                    <div class="d-flex align-items-center gap-2">
-                        <i class="fa-regular fa-circle-user"></i>
-                        <asp:Literal ID="SellerNameLiteral" runat="server" />
-                        <i class="fa-solid fa-angle-down"></i>
+                    <div class="seller-user">
+                        <button type="button" class="seller-user-toggle" id="SellerUserToggle">
+                            <i class="fa-regular fa-circle-user"></i>
+                            <asp:Literal ID="SellerNameLiteral" runat="server" />
+                            <i class="fa-solid fa-angle-down"></i>
+                        </button>
+                        <div class="seller-user-dropdown" id="SellerUserDropdown">
+                            <a href="/seller/settings-account.aspx"><i class="fa-regular fa-user"></i> Thông Tin Tài Khoản</a>
+                            <a href="/seller/settings-shop.aspx"><i class="fa-solid fa-gear"></i> Thiết Lập Shop</a>
+                            <a href="/seller/settings-account.aspx#password"><i class="fa-solid fa-key"></i> Đổi Mật Khẩu</a>
+                            <div class="dropdown-divider"></div>
+                            <a href="/seller/logout.aspx" class="logout"><i class="fa-solid fa-right-from-bracket"></i> Đăng Xuất</a>
+                        </div>
                     </div>
                 </div>
             </header>
@@ -81,6 +87,23 @@
                 parent.classList.toggle("open");
             });
         });
+
+        (function () {
+            var toggle = document.getElementById("SellerUserToggle");
+            var dropdown = document.getElementById("SellerUserDropdown");
+            if (!toggle || !dropdown) return;
+
+            toggle.addEventListener("click", function (event) {
+                event.stopPropagation();
+                dropdown.classList.toggle("open");
+            });
+
+            document.addEventListener("click", function (event) {
+                if (!dropdown.classList.contains("open")) return;
+                if (toggle.contains(event.target) || dropdown.contains(event.target)) return;
+                dropdown.classList.remove("open");
+            });
+        })();
     </script>
 </body>
 </html>

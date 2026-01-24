@@ -33,7 +33,6 @@
                         </button>
                         <div class="seller-user-dropdown" id="SellerUserDropdown">
                             <a href="/seller/settings-account.aspx"><i class="fa-regular fa-user"></i> Thông tin cửa hàng</a>
-                            <a href="/seller/settings-shop.aspx"><i class="fa-solid fa-gear"></i> Thiết Lập Shop</a>
                             <a href="/seller/settings-account.aspx#password"><i class="fa-solid fa-key"></i> Đổi Mật Khẩu</a>
                             <div class="dropdown-divider"></div>
                             <a href="/seller/logout.aspx" class="logout"><i class="fa-solid fa-right-from-bracket"></i> Đăng Xuất</a>

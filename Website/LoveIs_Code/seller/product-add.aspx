@@ -1,4 +1,4 @@
-<%@ Page Language="C#" AutoEventWireup="true" CodeFile="product-add.aspx.cs" Inherits="SellerProductAdd" MasterPageFile="~/seller/Seller.master" ContentType="text/html; charset=utf-8" ResponseEncoding="utf-8" %>
+<%@ Page Language="C#" AutoEventWireup="true" CodeFile="product-add.aspx.cs" Inherits="SellerProductAdd" MasterPageFile="~/seller/Seller.master" ContentType="text/html; charset=utf-8" ResponseEncoding="utf-8" ValidateRequest="false" %>
 <asp:Content ID="TitleContent" ContentPlaceHolderID="TitleContent" runat="server">Thêm Sản Phẩm</asp:Content>
 <asp:Content ID="MainContent" ContentPlaceHolderID="MainContent" runat="server">
     <div class="seller-product-add">
@@ -243,6 +243,16 @@
                     });
                 }
 
+                var existing = preview.querySelectorAll('img');
+                if (existing.length > 0) {
+                    existing.forEach(function (img) {
+                        var src = img.getAttribute('src');
+                        if (!src) return;
+                        previewsData.push({ src: src, name: img.getAttribute('alt') || 'Hình sản phẩm' });
+                    });
+                    renderPreviews();
+                }
+
                 input.addEventListener('change', function () {
                     var files = Array.prototype.slice.call(input.files || []);
                     if (files.length === 0) return;
@@ -255,7 +265,6 @@
                         };
                         reader.readAsDataURL(file);
                     });
-                    input.value = '';
                 });
             }
 

@@ -12,6 +12,7 @@ public partial class SellerSettingsAccount : System.Web.UI.Page
         {
             BindSellerInfo();
             BindMessages();
+            BindKycSummary();
         }
     }
 
@@ -37,6 +38,8 @@ public partial class SellerSettingsAccount : System.Web.UI.Page
 
             shop.ShopName = (ShopNameInput.Text ?? string.Empty).Trim();
             shop.Description = (DescriptionInput.Text ?? string.Empty).Trim();
+            shop.BusinessType = BusinessTypeDropDown.SelectedValue;
+            shop.TaxCode = (TaxCodeInput.Text ?? string.Empty).Trim();
 
             var seller = db.CfSellers.FirstOrDefault(s => s.Id == sellerId.Value);
             if (seller != null)
@@ -174,10 +177,75 @@ public partial class SellerSettingsAccount : System.Web.UI.Page
             DescriptionInput.Text = shop.Description ?? string.Empty;
             LogoPreview.ImageUrl = string.IsNullOrWhiteSpace(shop.LogoUrl) ? "/images/fav.png" : shop.LogoUrl;
             BannerPreview.ImageUrl = string.IsNullOrWhiteSpace(shop.BannerUrl) ? "/images/fav.png" : shop.BannerUrl;
+            BusinessTypeDropDown.SelectedValue = string.IsNullOrWhiteSpace(shop.BusinessType) ? "individual" : shop.BusinessType;
+            TaxCodeInput.Text = shop.TaxCode ?? string.Empty;
 
             PhoneInput.Text = seller.Phone ?? string.Empty;
             EmailInput.Text = seller.Email ?? string.Empty;
         }
+    }
+
+    protected void SubmitKycButton_Click(object sender, EventArgs e)
+    {
+        KycMessageLiteral.Text = string.Empty;
+
+        var sellerId = SellerAuth.GetSellerId();
+        if (!sellerId.HasValue)
+        {
+            Response.Redirect("/seller/login.aspx");
+            return;
+        }
+
+        using (var db = new BeautyStoryContext())
+        {
+            var kyc = db.SellerKycs
+                .Where(k => k.SellerId == sellerId.Value)
+                .OrderByDescending(k => k.CreatedAt)
+                .FirstOrDefault();
+
+            var hasFrontUpload = KycFrontUpload != null && KycFrontUpload.HasFile;
+            var hasBackUpload = KycBackUpload != null && KycBackUpload.HasFile;
+            var hasFrontExisting = !string.IsNullOrWhiteSpace(KycFrontExistingInput.Value);
+            var hasBackExisting = !string.IsNullOrWhiteSpace(KycBackExistingInput.Value);
+
+            if (!hasFrontUpload && !hasFrontExisting || !hasBackUpload && !hasBackExisting)
+            {
+                KycMessageLiteral.Text = "<div class=\"alert alert-warning\">Vui lòng tải đủ ảnh CCCD mặt trước và mặt sau.</div>";
+                return;
+            }
+
+            if (kyc == null)
+            {
+                kyc = new SellerKyc
+                {
+                    SellerId = sellerId.Value,
+                    CreatedAt = DateTime.Now,
+                    CreatedBy = "Seller:" + sellerId.Value.ToString(CultureInfo.InvariantCulture)
+                };
+                db.SellerKycs.Add(kyc);
+            }
+
+            kyc.FullName = (KycFullNameInput.Text ?? string.Empty).Trim();
+            kyc.BirthDate = ParseDate(KycBirthDateInput.Text);
+            kyc.IdNumber = (KycIdNumberInput.Text ?? string.Empty).Replace(" ", string.Empty).Trim();
+            kyc.IdIssuedDate = ParseDate(KycIdIssuedDateInput.Text);
+            kyc.IdIssuedPlace = (KycIdIssuedPlaceInput.Text ?? string.Empty).Trim();
+            kyc.Status = "pending";
+            kyc.RejectedReason = string.Empty;
+            kyc.UpdatedAt = DateTime.Now;
+            kyc.UpdatedBy = "Seller:" + sellerId.Value.ToString(CultureInfo.InvariantCulture);
+
+            db.SaveChanges();
+
+            SaveKycFile(db, kyc, KycFrontUpload, "cccd_front", "cccd-front");
+            SaveKycFile(db, kyc, KycBackUpload, "cccd_back", "cccd-back");
+            SaveKycFile(db, kyc, KycSelfieUpload, "selfie_with_cccd", "selfie-cccd");
+
+            db.SaveChanges();
+        }
+
+        KycMessageLiteral.Text = "<div class=\"alert alert-success\">Đã gửi hồ sơ KYC. Vui lòng chờ duyệt.</div>";
+        BindKycSummary();
     }
 
     private void BindMessages()
@@ -205,6 +273,152 @@ public partial class SellerSettingsAccount : System.Web.UI.Page
     {
         var url = Request.Path + "?msg=" + HttpUtility.UrlEncode(type) + "&msgText=" + HttpUtility.UrlEncode(message);
         Response.Redirect(url, true);
+    }
+
+    private void BindKycSummary()
+    {
+        var sellerId = SellerAuth.GetSellerId();
+        if (!sellerId.HasValue)
+        {
+            return;
+        }
+
+        using (var db = new BeautyStoryContext())
+        {
+            var kyc = db.SellerKycs
+                .Where(k => k.SellerId == sellerId.Value)
+                .OrderByDescending(k => k.CreatedAt)
+                .FirstOrDefault();
+
+            if (kyc == null)
+            {
+                ApplyKycStatus("Chưa gửi hồ sơ", "Vui lòng gửi hồ sơ để được duyệt.", "empty", "fa-regular fa-circle-question");
+                return;
+            }
+
+            KycFullNameInput.Text = kyc.FullName ?? string.Empty;
+            KycBirthDateInput.Text = kyc.BirthDate.HasValue ? kyc.BirthDate.Value.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture) : string.Empty;
+            KycIdNumberInput.Text = string.IsNullOrWhiteSpace(kyc.IdNumber) ? string.Empty : FormatIdNumber(kyc.IdNumber);
+            KycIdIssuedDateInput.Text = kyc.IdIssuedDate.HasValue ? kyc.IdIssuedDate.Value.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture) : string.Empty;
+            KycIdIssuedPlaceInput.Text = kyc.IdIssuedPlace ?? string.Empty;
+
+            var fileLookup = db.SellerKycFiles
+                .Where(f => f.SellerKycId == kyc.Id && f.Status)
+                .GroupBy(f => f.FileType)
+                .ToDictionary(g => g.Key, g => g.OrderByDescending(x => x.Id).First().FileUrl);
+
+            var frontUrl = fileLookup.ContainsKey("cccd_front") ? fileLookup["cccd_front"] : string.Empty;
+            var backUrl = fileLookup.ContainsKey("cccd_back") ? fileLookup["cccd_back"] : string.Empty;
+            var selfieUrl = fileLookup.ContainsKey("selfie_with_cccd") ? fileLookup["selfie_with_cccd"] : string.Empty;
+
+            KycFrontPreview.ImageUrl = frontUrl;
+            KycBackPreview.ImageUrl = backUrl;
+            KycSelfiePreview.ImageUrl = selfieUrl;
+            KycFrontExistingInput.Value = frontUrl;
+            KycBackExistingInput.Value = backUrl;
+            KycSelfieExistingInput.Value = selfieUrl;
+
+            var statusName = ResolveKycStatusName(db, kyc.Status);
+            if (string.Equals(kyc.Status, "approved", StringComparison.OrdinalIgnoreCase))
+            {
+                ApplyKycStatus(statusName, "Hồ sơ đã được duyệt.", "approved", "fa-solid fa-circle-check");
+            }
+            else if (string.Equals(kyc.Status, "rejected", StringComparison.OrdinalIgnoreCase))
+            {
+                var reason = string.IsNullOrWhiteSpace(kyc.RejectedReason) ? "Hồ sơ cần bổ sung lại." : ("Từ chối: " + kyc.RejectedReason);
+                ApplyKycStatus(statusName, reason, "rejected", "fa-solid fa-triangle-exclamation");
+            }
+            else
+            {
+                ApplyKycStatus(statusName, "Hồ sơ đang được xét duyệt.", "pending", "fa-solid fa-clock");
+            }
+        }
+    }
+
+    private void ApplyKycStatus(string title, string description, string statusClass, string iconClass)
+    {
+        KycStatusTitleLiteral.Text = HttpUtility.HtmlEncode(title ?? string.Empty);
+        KycStatusDescLiteral.Text = HttpUtility.HtmlEncode(description ?? string.Empty);
+        KycStatusIconLiteral.Text = string.IsNullOrWhiteSpace(iconClass) ? string.Empty : ("<i class=\"" + iconClass + "\"></i>");
+        var baseClass = "security-icon kyc";
+        KycStatusIcon.Attributes["class"] = string.IsNullOrWhiteSpace(statusClass)
+            ? baseClass
+            : baseClass + " " + statusClass;
+    }
+
+    private static DateTime? ParseDate(string raw)
+    {
+        DateTime value;
+        return DateTime.TryParse(raw, out value) ? value : (DateTime?)null;
+    }
+
+    private string ResolveKycStatusName(BeautyStoryContext db, string statusCode)
+    {
+        if (string.IsNullOrWhiteSpace(statusCode))
+        {
+            return "Chưa gửi hồ sơ";
+        }
+
+        var status = db.SellerKycStatuses.FirstOrDefault(s => s.Status && s.Code == statusCode);
+        return status != null ? status.Name : statusCode;
+    }
+
+    private void SaveKycFile(BeautyStoryContext db, SellerKyc kyc, System.Web.UI.WebControls.FileUpload upload, string fileType, string prefix)
+    {
+        if (upload == null || !upload.HasFile || kyc == null)
+        {
+            return;
+        }
+
+        var fileUrl = SaveUpload(upload, string.Empty, prefix);
+        if (string.IsNullOrWhiteSpace(fileUrl))
+        {
+            return;
+        }
+
+        var existing = db.SellerKycFiles.FirstOrDefault(f => f.SellerKycId == kyc.Id && f.FileType == fileType);
+        if (existing == null)
+        {
+            existing = new SellerKycFile
+            {
+                SellerKycId = kyc.Id,
+                FileType = fileType,
+                Status = true,
+                CreatedAt = DateTime.Now,
+                CreatedBy = "Seller:" + kyc.SellerId.ToString(CultureInfo.InvariantCulture)
+            };
+            db.SellerKycFiles.Add(existing);
+        }
+
+        existing.FileUrl = fileUrl;
+        existing.FileName = Path.GetFileName(fileUrl);
+        existing.FileSize = upload.PostedFile != null ? (int?)upload.PostedFile.ContentLength : null;
+        existing.MimeType = upload.PostedFile != null ? upload.PostedFile.ContentType : null;
+        existing.UpdatedAt = DateTime.Now;
+        existing.UpdatedBy = "Seller:" + kyc.SellerId.ToString(CultureInfo.InvariantCulture);
+    }
+
+    private static string FormatIdNumber(string raw)
+    {
+        if (string.IsNullOrWhiteSpace(raw))
+        {
+            return string.Empty;
+        }
+
+        var digits = new string(raw.Where(char.IsDigit).ToArray());
+        if (digits.Length <= 3)
+        {
+            return digits;
+        }
+
+        var groups = new System.Collections.Generic.List<string>();
+        for (var i = 0; i < digits.Length; i += 3)
+        {
+            var length = Math.Min(3, digits.Length - i);
+            groups.Add(digits.Substring(i, length));
+        }
+
+        return string.Join(" ", groups);
     }
 
     private static bool IsAllowedImageExtension(string ext)

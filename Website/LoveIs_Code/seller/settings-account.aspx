@@ -63,12 +63,161 @@
             </div>
         </div>
 
+        <div class="card settings-card">
+            <div class="settings-card-title">
+                <i class="fa-regular fa-file-lines"></i>
+                Thông tin kinh doanh
+            </div>
+            <div class="settings-grid">
+                <div class="form-group">
+                    <label>Loại hình kinh doanh</label>
+                    <asp:DropDownList ID="BusinessTypeDropDown" runat="server" CssClass="form-control">
+                        <asp:ListItem Value="individual">Cá nhân</asp:ListItem>
+                        <asp:ListItem Value="company">Doanh nghiệp</asp:ListItem>
+                        <asp:ListItem Value="household">Hộ kinh doanh</asp:ListItem>
+                    </asp:DropDownList>
+                </div>
+                <div class="form-group">
+                    <label>Mã số thuế</label>
+                    <asp:TextBox ID="TaxCodeInput" runat="server" CssClass="form-control" Placeholder="Nhập mã số thuế (nếu có)" />
+                </div>
+            </div>
+        </div>
+
         <div class="card settings-card account-security-card">
             <div class="settings-card-title">
                 <i class="fa-solid fa-shield-halved"></i>
                 Bảo mật tài khoản
             </div>
             <asp:Literal ID="PasswordMessageLiteral" runat="server" />
+            <asp:Literal ID="KycMessageLiteral" runat="server" />
+            <div class="security-item kyc-status-item">
+                <div class="security-icon kyc" id="KycStatusIcon" runat="server">
+                    <asp:Literal ID="KycStatusIconLiteral" runat="server" />
+                </div>
+                <div class="security-info">
+                    <div class="security-title"><asp:Literal ID="KycStatusTitleLiteral" runat="server" /></div>
+                    <div class="security-subtitle"><asp:Literal ID="KycStatusDescLiteral" runat="server" /></div>
+                </div>
+                <button type="button" class="btn-address-outline" id="OpenKycFlow">Xác thực ngay</button>
+            </div>
+            <div class="kyc-flow" id="KycFlow">
+                <div class="kyc-progress">
+                    <div class="kyc-progress-steps">
+                        <div class="kyc-progress-step active" data-step="1">
+                            <span class="step-dot">1</span>
+                            <span class="step-label">Thông tin định danh</span>
+                        </div>
+                        <div class="kyc-progress-step" data-step="2">
+                            <span class="step-dot">2</span>
+                            <span class="step-label">Hình ảnh CCCD</span>
+                        </div>
+                        <div class="kyc-progress-step" data-step="3">
+                            <span class="step-dot">3</span>
+                            <span class="step-label">Ảnh bổ sung</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="kyc-step kyc-step-active" data-step="1">
+                    <div class="kyc-step-title">Thông tin định danh</div>
+                    <div class="settings-grid">
+                        <div class="form-group">
+                            <label>Họ và tên</label>
+                            <asp:TextBox ID="KycFullNameInput" runat="server" CssClass="form-control kyc-uppercase" />
+                            <div class="field-error" id="KycFullNameError"></div>
+                        </div>
+                        <div class="form-group">
+                            <label>Số CCCD</label>
+                            <asp:TextBox ID="KycIdNumberInput" runat="server" CssClass="form-control" inputmode="numeric" />
+                            <div class="field-error" id="KycIdNumberError"></div>
+                        </div>
+                        <div class="form-group">
+                            <label>Ngày sinh</label>
+                            <asp:TextBox ID="KycBirthDateInput" runat="server" CssClass="form-control" TextMode="Date" />
+                            <div class="field-error" id="KycBirthDateError"></div>
+                        </div>
+                        <div class="form-group">
+                            <label>Ngày cấp</label>
+                            <asp:TextBox ID="KycIdIssuedDateInput" runat="server" CssClass="form-control" TextMode="Date" />
+                            <div class="field-error" id="KycIdIssuedDateError"></div>
+                        </div>
+                        <div class="form-group form-group-full">
+                            <label>Nơi cấp</label>
+                            <asp:TextBox ID="KycIdIssuedPlaceInput" runat="server" CssClass="form-control" />
+                            <div class="field-error" id="KycIdIssuedPlaceError"></div>
+                        </div>
+                    </div>
+                    <div class="settings-actions">
+                        <button type="button" class="btn-address-primary" id="KycStep1Next" disabled>Tiếp tục</button>
+                    </div>
+                </div>
+                <div class="kyc-step" data-step="2">
+                    <div class="kyc-step-title">Hình ảnh CCCD</div>
+                    <div class="kyc-upload-stack">
+                        <div class="kyc-upload-card" data-kyc-upload="front">
+                            <div class="kyc-upload-frame">
+                                <asp:Image ID="KycFrontPreview" runat="server" CssClass="kyc-preview" />
+                                <button type="button" class="kyc-remove-btn" data-kyc-remove="front" title="Xóa ảnh">
+                                    <i class="fa-solid fa-trash"></i>
+                                </button>
+                                <div class="kyc-upload-empty">
+                                    <i class="fa-regular fa-id-card"></i>
+                                    <div class="kyc-upload-title">Tải lên mặt trước CCCD</div>
+                                    <div class="kyc-upload-sub">Hỗ trợ JPG, PNG. Tối đa 5MB</div>
+                                </div>
+                            </div>
+                            <button type="button" class="btn-address-outline kyc-change-btn" data-kyc-change="front">Chọn ảnh khác</button>
+                            <asp:FileUpload ID="KycFrontUpload" runat="server" CssClass="d-none" accept="image/*" />
+                            <asp:HiddenField ID="KycFrontExistingInput" runat="server" />
+                        </div>
+                        <div class="kyc-upload-card" data-kyc-upload="back">
+                            <div class="kyc-upload-frame">
+                                <asp:Image ID="KycBackPreview" runat="server" CssClass="kyc-preview" />
+                                <button type="button" class="kyc-remove-btn" data-kyc-remove="back" title="Xóa ảnh">
+                                    <i class="fa-solid fa-trash"></i>
+                                </button>
+                                <div class="kyc-upload-empty">
+                                    <i class="fa-regular fa-id-card"></i>
+                                    <div class="kyc-upload-title">Tải lên mặt sau CCCD</div>
+                                    <div class="kyc-upload-sub">Hỗ trợ JPG, PNG. Tối đa 5MB</div>
+                                </div>
+                            </div>
+                            <button type="button" class="btn-address-outline kyc-change-btn" data-kyc-change="back">Chọn ảnh khác</button>
+                            <asp:FileUpload ID="KycBackUpload" runat="server" CssClass="d-none" accept="image/*" />
+                            <asp:HiddenField ID="KycBackExistingInput" runat="server" />
+                        </div>
+                    </div>
+                    <div class="settings-actions">
+                        <button type="button" class="btn-address-outline" data-kyc-prev="1">Quay lại</button>
+                        <button type="button" class="btn-address-primary" id="KycStep2Next" disabled>Tiếp tục</button>
+                    </div>
+                </div>
+                <div class="kyc-step" data-step="3">
+                    <div class="kyc-step-title">
+                        Ảnh xác thực bổ sung
+                        <span class="kyc-optional-tag">Không bắt buộc</span>
+                    </div>
+                    <div class="kyc-upload-card large" data-kyc-upload="selfie">
+                        <div class="kyc-upload-frame">
+                            <asp:Image ID="KycSelfiePreview" runat="server" CssClass="kyc-preview" />
+                            <button type="button" class="kyc-remove-btn" data-kyc-remove="selfie" title="Xóa ảnh">
+                                <i class="fa-solid fa-trash"></i>
+                            </button>
+                            <div class="kyc-upload-empty">
+                                <i class="fa-solid fa-user-shield"></i>
+                                <div class="kyc-upload-title">Tải lên ảnh chân dung bạn đang cầm mặt trước CCCD.</div>
+                            </div>
+                        </div>
+                        <button type="button" class="btn-address-outline kyc-change-btn" data-kyc-change="selfie">Chọn ảnh khác</button>
+                        <asp:FileUpload ID="KycSelfieUpload" runat="server" CssClass="d-none" accept="image/*" />
+                        <asp:HiddenField ID="KycSelfieExistingInput" runat="server" />
+                    </div>
+                    <div class="settings-actions">
+                        <button type="button" class="btn-address-outline" data-kyc-prev="2">Quay lại</button>
+                        <asp:LinkButton ID="SubmitKycButton" runat="server" CssClass="btn-address-primary" OnClick="SubmitKycButton_Click">Gửi hồ sơ</asp:LinkButton>
+                    </div>
+                </div>
+            </div>
             <div class="security-item">
                 <div class="security-icon password">
                     <i class="fa-solid fa-key"></i>
@@ -148,6 +297,215 @@
                 passwordForm.classList.add('open');
                 passwordForm.scrollIntoView({ behavior: 'smooth', block: 'start' });
             }
+
+            var kycFlow = document.getElementById('KycFlow');
+            var kycToggle = document.getElementById('OpenKycFlow');
+            if (kycToggle && kycFlow) {
+                kycToggle.addEventListener('click', function () {
+                    kycFlow.classList.toggle('open');
+                    if (kycFlow.classList.contains('open')) {
+                        kycFlow.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    }
+                });
+            }
+
+            var stepNext1 = document.getElementById('KycStep1Next');
+            var stepNext2 = document.getElementById('KycStep2Next');
+            var steps = document.querySelectorAll('.kyc-step');
+            var stepDots = document.querySelectorAll('.kyc-progress-step');
+
+            function showStep(index) {
+                steps.forEach(function (step) {
+                    step.classList.toggle('kyc-step-active', step.getAttribute('data-step') === index.toString());
+                });
+                stepDots.forEach(function (dot) {
+                    var stepIndex = parseInt(dot.getAttribute('data-step'), 10);
+                    dot.classList.toggle('active', stepIndex === index);
+                    dot.classList.toggle('completed', stepIndex < index);
+                });
+            }
+
+            document.querySelectorAll('[data-kyc-prev]').forEach(function (btn) {
+                btn.addEventListener('click', function () {
+                    var target = parseInt(btn.getAttribute('data-kyc-prev'), 10);
+                    showStep(target);
+                });
+            });
+
+            if (stepNext1) {
+                stepNext1.addEventListener('click', function () {
+                    showStep(2);
+                });
+            }
+
+            if (stepNext2) {
+                stepNext2.addEventListener('click', function () {
+                    showStep(3);
+                });
+            }
+
+            var fullNameInput = document.getElementById('<%= KycFullNameInput.ClientID %>');
+            var idNumberInput = document.getElementById('<%= KycIdNumberInput.ClientID %>');
+            var birthDateInput = document.getElementById('<%= KycBirthDateInput.ClientID %>');
+            var issuedDateInput = document.getElementById('<%= KycIdIssuedDateInput.ClientID %>');
+            var issuedPlaceInput = document.getElementById('<%= KycIdIssuedPlaceInput.ClientID %>');
+            var errors = {
+                fullName: document.getElementById('KycFullNameError'),
+                idNumber: document.getElementById('KycIdNumberError'),
+                birthDate: document.getElementById('KycBirthDateError'),
+                issuedDate: document.getElementById('KycIdIssuedDateError'),
+                issuedPlace: document.getElementById('KycIdIssuedPlaceError')
+            };
+
+            function normalizeName(value) {
+                var text = (value || '').replace(/\s+/g, ' ').trim();
+                if (!text) return '';
+                return text.toUpperCase();
+            }
+
+            function formatIdNumber(value) {
+                var digits = (value || '').replace(/\D/g, '').slice(0, 12);
+                return digits.replace(/(\d{3})(?=\d)/g, '$1 ').trim();
+            }
+
+            function validateStep1(showErrors) {
+                var fullName = normalizeName(fullNameInput ? fullNameInput.value : '');
+                var idNumber = formatIdNumber(idNumberInput ? idNumberInput.value : '');
+                var birthDate = birthDateInput ? birthDateInput.value : '';
+                var issuedDate = issuedDateInput ? issuedDateInput.value : '';
+                var issuedPlace = issuedPlaceInput ? issuedPlaceInput.value.trim() : '';
+
+                if (fullNameInput) {
+                    fullNameInput.value = fullName;
+                }
+                if (idNumberInput) {
+                    idNumberInput.value = idNumber;
+                }
+
+                var rawDigits = idNumber.replace(/\s/g, '');
+
+                if (showErrors) {
+                    if (errors.fullName) {
+                        errors.fullName.textContent = fullName ? '' : 'Vui lòng nhập họ và tên.';
+                    }
+                    if (errors.idNumber) {
+                        errors.idNumber.textContent = rawDigits.length === 12 ? '' : 'Số CCCD gồm 12 số.';
+                    }
+                    if (errors.birthDate) {
+                        errors.birthDate.textContent = birthDate ? '' : 'Vui lòng chọn ngày sinh.';
+                    }
+                    if (errors.issuedDate) {
+                        errors.issuedDate.textContent = issuedDate ? '' : 'Vui lòng chọn ngày cấp.';
+                    }
+                    if (errors.issuedPlace) {
+                        errors.issuedPlace.textContent = issuedPlace ? '' : 'Vui lòng nhập nơi cấp.';
+                    }
+                }
+
+                var isValid = fullName && rawDigits.length === 12 && birthDate && issuedDate && issuedPlace;
+                if (stepNext1) {
+                    stepNext1.disabled = !isValid;
+                }
+                return isValid;
+            }
+
+            [fullNameInput, idNumberInput, birthDateInput, issuedDateInput, issuedPlaceInput].forEach(function (input) {
+                if (!input) return;
+                input.addEventListener('input', function () {
+                    if (stepNext1) {
+                        stepNext1.disabled = !validateStep1(false);
+                    }
+                });
+            });
+
+            if (stepNext1) {
+                stepNext1.disabled = !validateStep1(false);
+                stepNext1.addEventListener('click', function () {
+                    var ok = validateStep1(true);
+                    if (!ok) return;
+                    showStep(2);
+                });
+            }
+
+            function bindUpload(kind, inputId, existingId) {
+                var input = document.getElementById(inputId);
+                var existingInput = document.getElementById(existingId);
+                var card = document.querySelector('[data-kyc-upload="' + kind + '"]');
+                if (!card || !input) return;
+                var changeBtn = card.querySelector('[data-kyc-change="' + kind + '"]');
+                var removeBtn = card.querySelector('[data-kyc-remove="' + kind + '"]');
+                var preview = card.querySelector('.kyc-preview');
+
+                function updateState(hasImage) {
+                    card.classList.toggle('has-image', hasImage);
+                }
+
+                function updatePreview(file) {
+                    if (!preview) return;
+                    if (!file) return;
+                    var reader = new FileReader();
+                    reader.onload = function (evt) {
+                        preview.src = evt.target.result;
+                        updateState(true);
+                        updateStep2();
+                    };
+                    reader.readAsDataURL(file);
+                }
+
+                if (changeBtn) {
+                    changeBtn.addEventListener('click', function () {
+                        input.click();
+                    });
+                }
+
+                if (removeBtn) {
+                    removeBtn.addEventListener('click', function () {
+                        if (preview) {
+                            preview.src = '';
+                        }
+                        input.value = '';
+                        if (existingInput) {
+                            existingInput.value = '';
+                        }
+                        updateState(false);
+                        updateStep2();
+                    });
+                }
+
+                input.addEventListener('change', function () {
+                    var file = input.files && input.files[0];
+                    if (file) {
+                        updatePreview(file);
+                    }
+                });
+
+                var hasExisting = existingInput && existingInput.value;
+                if (hasExisting && preview && preview.getAttribute('src')) {
+                    updateState(true);
+                } else {
+                    updateState(false);
+                }
+            }
+
+            function updateStep2() {
+                if (!stepNext2) return;
+                var hasFront = false;
+                var hasBack = false;
+                var frontCard = document.querySelector('[data-kyc-upload="front"]');
+                var backCard = document.querySelector('[data-kyc-upload="back"]');
+                if (frontCard) {
+                    hasFront = frontCard.classList.contains('has-image');
+                }
+                if (backCard) {
+                    hasBack = backCard.classList.contains('has-image');
+                }
+                stepNext2.disabled = !(hasFront && hasBack);
+            }
+
+            bindUpload('front', '<%= KycFrontUpload.ClientID %>', '<%= KycFrontExistingInput.ClientID %>');
+            bindUpload('back', '<%= KycBackUpload.ClientID %>', '<%= KycBackExistingInput.ClientID %>');
+            bindUpload('selfie', '<%= KycSelfieUpload.ClientID %>', '<%= KycSelfieExistingInput.ClientID %>');
+            updateStep2();
         })();
     </script>
 </asp:Content>

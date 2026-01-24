@@ -13,20 +13,19 @@
             <div class="card finance-stat-card">
                 <span class="finance-stat-icon info-green"><i class="fa-solid fa-dollar-sign"></i></span>
                 <div class="finance-stat-label">Doanh Thu Tháng Này</div>
-                <div class="finance-stat-value">58.000.000 đ</div>
-                <div class="finance-stat-trend up">+15.2%</div>
+                <div class="finance-stat-value"><asp:Literal ID="MonthRevenueLiteral" runat="server" /></div>
             </div>
             <div class="card finance-stat-card">
                 <div class="finance-stat-label">Đã Thanh Toán</div>
-                <div class="finance-stat-value">52.000.000 đ</div>
+                <div class="finance-stat-value"><asp:Literal ID="PaidRevenueLiteral" runat="server" /></div>
             </div>
             <div class="card finance-stat-card">
                 <div class="finance-stat-label">Chờ Thanh Toán</div>
-                <div class="finance-stat-value">6.000.000 đ</div>
+                <div class="finance-stat-value"><asp:Literal ID="PendingRevenueLiteral" runat="server" /></div>
             </div>
             <div class="card finance-stat-card">
                 <div class="finance-stat-label">Lợi Nhuận Ước Tính</div>
-                <div class="finance-stat-value">18.500.000 đ</div>
+                <div class="finance-stat-value"><asp:Literal ID="EstimatedProfitLiteral" runat="server" /></div>
             </div>
         </div>
 

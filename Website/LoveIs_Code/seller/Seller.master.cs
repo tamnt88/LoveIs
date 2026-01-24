@@ -55,7 +55,7 @@ public partial class SellerMaster : System.Web.UI.MasterPage
                 .ToList();
 
             var items = menus
-                .Where(m => !m.ParentId.HasValue)
+                .Where(m => !m.ParentId.HasValue && !IsShopSettingsMenu(m))
                 .OrderBy(m => m.SortOrder)
                 .ThenBy(m => m.MenuName)
                 .Select(m => new SellerMenuItem
@@ -65,7 +65,7 @@ public partial class SellerMaster : System.Web.UI.MasterPage
                     Url = string.IsNullOrWhiteSpace(m.Url) ? string.Empty : m.Url,
                     Icon = m.Icon,
                     Children = menus
-                        .Where(c => c.ParentId == m.Id && !IsAccountSettingsMenu(c.Url))
+                        .Where(c => c.ParentId == m.Id && !IsAccountSettingsMenu(c.Url) && !IsShopSettingsMenu(c))
                         .OrderBy(c => c.SortOrder)
                         .ThenBy(c => c.MenuName)
                         .Select(c => new SellerMenuItem
@@ -150,4 +150,24 @@ public partial class SellerMaster : System.Web.UI.MasterPage
         var normalized = url.Trim().ToLowerInvariant();
         return normalized.StartsWith("/seller/settings-account.aspx", StringComparison.OrdinalIgnoreCase);
     }
+
+    private static bool IsShopSettingsMenu(CfMenu menu)
+    {
+        if (menu == null)
+        {
+            return false;
+        }
+
+        if (!string.IsNullOrWhiteSpace(menu.Url))
+        {
+            var normalized = menu.Url.Trim().ToLowerInvariant();
+            if (normalized.StartsWith("/seller/settings-shop.aspx", StringComparison.OrdinalIgnoreCase))
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
 }

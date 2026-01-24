@@ -32,26 +32,25 @@
             <div class="card finance-stat-card">
                 <span class="finance-stat-icon info-blue"><i class="fa-solid fa-dollar-sign"></i></span>
                 <div class="finance-stat-label">Tổng Doanh Thu</div>
-                <div class="finance-stat-value">339.000.000 đ</div>
-                <div class="finance-stat-trend up">+18%</div>
+                <div class="finance-stat-value"><asp:Literal ID="ReportRevenueLiteral" runat="server" /></div>
             </div>
             <div class="card finance-stat-card">
                 <span class="finance-stat-icon info-orange"><i class="fa-solid fa-basket-shopping"></i></span>
                 <div class="finance-stat-label">Giá Vốn Hàng Bán</div>
-                <div class="finance-stat-value">135.600.000 đ</div>
-                <div class="finance-stat-sub">40% doanh thu</div>
+                <div class="finance-stat-value"><asp:Literal ID="ReportCogsLiteral" runat="server" /></div>
+                <div class="finance-stat-sub">Theo dữ liệu hiện có</div>
             </div>
             <div class="card finance-stat-card">
                 <span class="finance-stat-icon info-red"><i class="fa-solid fa-percent"></i></span>
                 <div class="finance-stat-label">Chi Phí Hoạt Động</div>
-                <div class="finance-stat-value">67.800.000 đ</div>
-                <div class="finance-stat-sub">20% doanh thu</div>
+                <div class="finance-stat-value"><asp:Literal ID="ReportFeeLiteral" runat="server" /></div>
+                <div class="finance-stat-sub">Phí nền tảng + thanh toán</div>
             </div>
             <div class="finance-profit-card large">
                 <span class="finance-stat-icon info-green"><i class="fa-solid fa-arrow-trend-up"></i></span>
                 <div class="finance-stat-label">Lợi Nhuận Ròng</div>
-                <div class="finance-stat-value">203.400.000 đ</div>
-                <div class="finance-stat-sub">60% doanh thu</div>
+                <div class="finance-stat-value"><asp:Literal ID="ReportProfitLiteral" runat="server" /></div>
+                <div class="finance-stat-sub">Doanh thu - chi phí</div>
             </div>
         </div>
 

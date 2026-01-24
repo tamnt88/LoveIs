@@ -29,6 +29,10 @@ public partial class SellerProductAdd : System.Web.UI.Page
             {
                 LoadProduct(_productId.Value);
             }
+            if (string.Equals(Request.QueryString["saved"], "1", StringComparison.Ordinal))
+            {
+                FormMessageLiteral.Text = "<div class=\"alert alert-success mt-3\">Lưu sản phẩm thành công.</div>";
+            }
             ApplyMode();
         }
     }
@@ -95,6 +99,7 @@ public partial class SellerProductAdd : System.Web.UI.Page
         var width = ParseNullableDecimal(WidthInput.Text);
         var height = ParseNullableDecimal(HeightInput.Text);
 
+        var redirectId = _productId;
         using (var db = new BeautyStoryContext())
         {
             var now = DateTime.Now;
@@ -170,6 +175,7 @@ public partial class SellerProductAdd : System.Web.UI.Page
                 }
 
                 CreateProductVariants(db, product.Id, validVariantRows, string.Empty, price, salePrice, stock, publish, now);
+                redirectId = product.Id;
             }
             else
             {
@@ -198,6 +204,7 @@ public partial class SellerProductAdd : System.Web.UI.Page
                 db.SaveChanges();
 
                 CreateProductVariants(db, product.Id, validVariantRows, string.Empty, price, salePrice, stock, publish, now);
+                redirectId = product.Id;
             }
 
             if (imageUrls.Count > 0)
@@ -223,7 +230,7 @@ public partial class SellerProductAdd : System.Web.UI.Page
             db.SaveChanges();
         }
 
-        FormMessageLiteral.Text = "<div class=\"alert alert-success mt-3\">Lưu sản phẩm thành công.</div>";
+        Response.Redirect("/seller/product-add.aspx?id=" + (redirectId ?? 0) + "&mode=edit&saved=1");
     }
 
     private void BindDropdowns()

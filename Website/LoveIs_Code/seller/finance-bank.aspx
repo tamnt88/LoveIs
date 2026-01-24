@@ -7,10 +7,6 @@
                 <h2>Thiết Lập Tài Khoản Ngân Hàng</h2>
                 <p>Quản lý tài khoản ngân hàng để nhận thanh toán</p>
             </div>
-            <button class="btn-finance-primary" type="button">
-                <i class="fa-solid fa-plus"></i>
-                Thêm Tài Khoản
-            </button>
         </div>
 
         <div class="finance-alert">
@@ -21,51 +17,74 @@
             </div>
         </div>
 
-        <div class="finance-bank-card finance-bank-main">
-            <div class="finance-bank-left">
-                <div class="bank-logo">VCB</div>
-                <div>
-                    <div class="bank-name">Vietcombank</div>
-                    <div class="bank-meta">Số tài khoản</div>
-                    <div class="bank-number">0123456789</div>
-                    <div class="bank-meta">Chi nhánh</div>
-                    <div class="bank-number">Chi nhánh TP.HCM</div>
-                </div>
-                <span class="bank-pill">Mặc định</span>
-                <span class="bank-pill soft">Đã xác thực</span>
+        <div class="card settings-card">
+            <div class="settings-card-title">
+                <i class="fa-solid fa-plus"></i>
+                Thêm / chỉnh sửa tài khoản ngân hàng
             </div>
-            <div class="finance-bank-right">
-                <div>
-                    <div class="bank-meta">Chủ tài khoản</div>
-                    <div class="bank-number">NGUYEN VAN A</div>
+            <asp:Literal ID="BankMessageLiteral" runat="server" />
+            <asp:HiddenField ID="BankIdField" runat="server" />
+            <div class="settings-grid">
+                <div class="form-group">
+                    <label>Shop</label>
+                    <asp:DropDownList ID="BankShopDropDown" runat="server" CssClass="form-control" />
                 </div>
-                <button class="address-icon-btn" type="button"><i class="fa-regular fa-pen-to-square"></i></button>
+                <div class="form-group">
+                    <label>Ngân hàng</label>
+                    <asp:TextBox ID="BankNameInput" runat="server" CssClass="form-control" />
+                </div>
+                <div class="form-group">
+                    <label>Chủ tài khoản</label>
+                    <asp:TextBox ID="AccountNameInput" runat="server" CssClass="form-control" />
+                </div>
+                <div class="form-group">
+                    <label>Số tài khoản</label>
+                    <asp:TextBox ID="AccountNumberInput" runat="server" CssClass="form-control" />
+                </div>
+                <div class="form-group">
+                    <label>Chi nhánh</label>
+                    <asp:TextBox ID="BranchInput" runat="server" CssClass="form-control" />
+                </div>
+                <div class="form-group">
+                    <label>Mặc định</label>
+                    <asp:CheckBox ID="IsDefaultCheckBox" runat="server" />
+                </div>
+            </div>
+            <div class="settings-actions">
+                <asp:LinkButton ID="ResetBankButton" runat="server" CssClass="btn-address-outline" OnClick="ResetBankButton_Click">Làm mới</asp:LinkButton>
+                <asp:LinkButton ID="SaveBankButton" runat="server" CssClass="btn-address-primary" OnClick="SaveBankButton_Click">Lưu</asp:LinkButton>
             </div>
         </div>
 
-        <div class="finance-bank-card">
-            <div class="finance-bank-left">
-                <div class="bank-logo">TCB</div>
-                <div>
-                    <div class="bank-name">Techcombank</div>
-                    <div class="bank-meta">Số tài khoản</div>
-                    <div class="bank-number">9876543210</div>
-                    <div class="bank-meta">Chi nhánh</div>
-                    <div class="bank-number">Chi nhánh Đống Đa</div>
+        <asp:Repeater ID="BankRepeater" runat="server" OnItemCommand="BankRepeater_ItemCommand">
+            <ItemTemplate>
+                <div class='<%# (bool)Eval("IsDefault") ? "finance-bank-card finance-bank-main" : "finance-bank-card" %>'>
+                    <div class="finance-bank-left">
+                        <div class="bank-logo"><%# Eval("BankShort") %></div>
+                        <div>
+                            <div class="bank-name"><%# Eval("BankName") %></div>
+                            <div class="bank-meta">Số tài khoản</div>
+                            <div class="bank-number"><%# Eval("AccountNumber") %></div>
+                            <div class="bank-meta">Chi nhánh</div>
+                            <div class="bank-number"><%# Eval("Branch") %></div>
+                        </div>
+                        <asp:PlaceHolder ID="DefaultHolder" runat="server" Visible='<%# Eval("IsDefault") %>'>
+                            <span class="bank-pill">Mặc định</span>
+                        </asp:PlaceHolder>
+                    </div>
+                    <div class="finance-bank-right">
+                        <div>
+                            <div class="bank-meta">Chủ tài khoản</div>
+                            <div class="bank-number"><%# Eval("AccountName") %></div>
+                        </div>
+                        <div class="address-actions">
+                            <asp:LinkButton ID="SetDefaultButton" runat="server" CssClass="btn-address-outline" CommandName="SetDefault" CommandArgument='<%# Eval("Id") %>' Visible='<%# !(bool)Eval("IsDefault") %>'>Đặt Mặc Định</asp:LinkButton>
+                            <asp:LinkButton ID="EditButton" runat="server" CssClass="address-icon-btn" CommandName="EditBank" CommandArgument='<%# Eval("Id") %>'><i class="fa-regular fa-pen-to-square"></i></asp:LinkButton>
+                            <asp:LinkButton ID="DeleteButton" runat="server" CssClass="address-icon-btn danger" CommandName="DeleteBank" CommandArgument='<%# Eval("Id") %>'><i class="fa-regular fa-trash-can"></i></asp:LinkButton>
+                        </div>
+                    </div>
                 </div>
-                <span class="bank-pill soft">Đã xác thực</span>
-            </div>
-            <div class="finance-bank-right">
-                <div>
-                    <div class="bank-meta">Chủ tài khoản</div>
-                    <div class="bank-number">NGUYEN VAN A</div>
-                </div>
-                <div class="address-actions">
-                    <button class="btn-address-outline" type="button">Đặt Mặc Định</button>
-                    <button class="address-icon-btn" type="button"><i class="fa-regular fa-pen-to-square"></i></button>
-                    <button class="address-icon-btn danger" type="button"><i class="fa-regular fa-trash-can"></i></button>
-                </div>
-            </div>
-        </div>
+            </ItemTemplate>
+        </asp:Repeater>
     </div>
 </asp:Content>

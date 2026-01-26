@@ -396,7 +396,7 @@ public partial class ProductDefault : System.Web.UI.Page
             ShopUrl = CuaHangLink.NavigateUrl;
             var shopIdValue = product.ShopId.HasValue ? product.ShopId.Value : 0;
             ChatShopUrl = shopIdValue > 0
-                ? "/chat-shop/default.aspx?shopId=" + shopIdValue
+                ? "/chat-shop/default.aspx?shopId=" + shopIdValue + "&productId=" + product.Id
                 : "#";
             if (string.IsNullOrWhiteSpace(ShopLogoUrl))
             {

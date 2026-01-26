@@ -1,0 +1,243 @@
+:root {
+    --chat-maroon: #5a0f28;
+    --chat-muted: #6f5b65;
+    --chat-border: #efe6eb;
+    --chat-bg: #f6f3f5;
+}
+
+.shop-chat-page {
+    max-width: 1100px;
+}
+
+.shop-chat-card {
+    background: #fff;
+    border: 1px solid var(--chat-border);
+    border-radius: 16px;
+    overflow: hidden;
+    display: grid;
+    grid-template-rows: auto 1fr auto;
+    min-height: 720px;
+}
+
+.shop-chat-header {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--chat-border);
+    background: #fff;
+}
+
+.shop-chat-avatar {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    background: var(--chat-maroon);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+}
+
+.shop-chat-avatar-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.shop-chat-name {
+    font-weight: 700;
+    font-size: 16px;
+}
+
+.shop-chat-status {
+    font-size: 13px;
+    color: #1f9d55;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.shop-chat-status .dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #1f9d55;
+}
+
+.shop-chat-body {
+    padding: 20px;
+    background: #fff;
+    height: 520px;
+    overflow-y: auto;
+}
+
+.chat-product-sticky {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    background: #fff;
+    padding-bottom: 12px;
+    margin-bottom: 12px;
+    border-bottom: 1px solid var(--chat-border);
+}
+
+.shop-chat-message {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    margin-bottom: 18px;
+}
+
+.shop-chat-message .bubble {
+    background: #f4f2f4;
+    border-radius: 14px;
+    padding: 12px 14px;
+    max-width: 70%;
+    color: #1f0a12;
+}
+
+.shop-chat-message.me {
+    align-items: flex-end;
+}
+
+.shop-chat-message.me .bubble {
+    background: var(--chat-maroon);
+    color: #fff;
+}
+
+.chat-time {
+    font-size: 12px;
+    color: var(--chat-muted);
+    margin-top: 6px;
+}
+
+
+.shop-chat-input {
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    gap: 12px;
+    align-items: center;
+    padding: 14px 18px;
+    border-top: 1px solid var(--chat-border);
+    background: #fff;
+}
+
+.chat-attachment {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    border: 1px solid var(--chat-border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--chat-muted);
+}
+
+.chat-textbox {
+    border: 1px solid var(--chat-border);
+    border-radius: 12px;
+    padding: 12px 14px;
+    font-size: 14px;
+    resize: none;
+    min-height: 46px;
+}
+
+.chat-send {
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
+    border: 0;
+    background: var(--chat-maroon);
+    color: #fff;
+    font-size: 18px;
+}
+
+.chat-product-card {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    border: 1px solid var(--chat-border);
+    border-radius: 12px;
+    padding: 12px;
+    background: #fff;
+    color: #1f0a12;
+}
+
+.chat-product-thumb {
+    width: 64px;
+    height: 64px;
+    border-radius: 10px;
+    object-fit: cover;
+    background: #f3e6ee;
+}
+
+.chat-product-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.chat-product-name {
+    font-weight: 600;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    color: #1f0a12;
+}
+
+.chat-product-price {
+    color: var(--chat-muted);
+    font-size: 13px;
+}
+
+.chat-product-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.chat-buy-btn {
+    background: var(--chat-maroon);
+    color: #fff;
+    border: 0;
+    border-radius: 10px;
+    padding: 8px 12px;
+    font-size: 13px;
+    text-decoration: none;
+    text-align: center;
+    white-space: nowrap;
+}
+
+.chat-cart-btn {
+    border: 1px solid var(--chat-border);
+    border-radius: 10px;
+    padding: 6px 10px;
+    font-size: 13px;
+    text-decoration: none;
+    color: var(--chat-maroon);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    background: #fff;
+}
+
+@media (max-width: 768px) {
+    .shop-chat-card {
+        min-height: 640px;
+    }
+
+    .shop-chat-message .bubble {
+        max-width: 85%;
+    }
+
+    .chat-product-card {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .chat-product-actions {
+        width: 100%;
+        flex-direction: row;
+    }
+}

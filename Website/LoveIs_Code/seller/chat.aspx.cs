@@ -57,8 +57,10 @@ public partial class SellerChatDefault : System.Web.UI.Page
                     i.Id,
                     i.ShopId,
                     i.CustomerId,
+                    i.ProductId,
                     CreatedAt = i.CreatedAt,
-                    LastReplyAt = i.LastReplyAt
+                    LastReplyAt = i.LastReplyAt,
+                    LastMessageAt = i.LastMessageAt
                 })
                 .ToList();
 
@@ -81,32 +83,107 @@ public partial class SellerChatDefault : System.Web.UI.Page
                 .Where(c => customerIds.Contains(c.Id))
                 .ToDictionary(c => c.Id, c => string.IsNullOrWhiteSpace(c.DisplayName) ? c.Username : c.DisplayName);
 
-            InquiryRepeater.DataSource = inquiries.Select(i => new
+            var inquiryIds = inquiries.Select(i => i.Id).ToList();
+            var lastMessages = db.CfShopInquiryMessages.AsNoTracking()
+                .Where(m => inquiryIds.Contains(m.InquiryId))
+                .OrderByDescending(m => m.CreatedAt)
+                .ToList()
+                .GroupBy(m => m.InquiryId)
+                .ToDictionary(g => g.Key, g => g.First());
+
+            var unreadCounts = db.CfShopInquiryMessages.AsNoTracking()
+                .Where(m => inquiryIds.Contains(m.InquiryId) && m.SenderType == "customer" && m.ReadAt == null)
+                .GroupBy(m => m.InquiryId)
+                .ToDictionary(g => g.Key, g => g.Count());
+
+            var listView = inquiries.Select(i =>
             {
-                Url = "/seller/chat.aspx?inquiryId=" + i.Id,
-                Title = customerLookup.ContainsKey(i.CustomerId) ? customerLookup[i.CustomerId] : ("Khach hang #" + i.CustomerId),
-                SubTitle = (i.LastReplyAt ?? i.CreatedAt).ToString("dd/MM/yyyy HH:mm")
-            }).ToList();
+                var customerName = customerLookup.ContainsKey(i.CustomerId) ? customerLookup[i.CustomerId] : ("Khach hang #" + i.CustomerId);
+                var initial = string.IsNullOrWhiteSpace(customerName) ? "?" : customerName.Trim().Substring(0, 1).ToUpperInvariant();
+                var lastMessage = lastMessages.ContainsKey(i.Id) ? lastMessages[i.Id] : null;
+                var lastTime = lastMessage != null ? lastMessage.CreatedAt : (i.LastReplyAt ?? i.CreatedAt);
+                var snippet = lastMessage == null ? "Chua co tin nhan."
+                    : (string.Equals(lastMessage.MessageType, "product_card", StringComparison.OrdinalIgnoreCase) ? "Da gui the san pham." : lastMessage.Message);
+                if (!string.IsNullOrWhiteSpace(snippet) && snippet.Length > 80)
+                {
+                    snippet = snippet.Substring(0, 80) + "...";
+                }
+
+                var unread = unreadCounts.ContainsKey(i.Id) ? unreadCounts[i.Id] : 0;
+                return new
+                {
+                    InquiryId = i.Id,
+                    Url = "/seller/chat.aspx?inquiryId=" + i.Id,
+                    Title = HttpUtility.HtmlEncode(customerName),
+                    Initial = HttpUtility.HtmlEncode(initial),
+                    Snippet = HttpUtility.HtmlEncode(snippet),
+                    TimeText = lastTime.ToString("HH:mm"),
+                    UnreadCount = unread,
+                    ActiveClass = i.Id == inquiryId ? "active" : string.Empty,
+                    UnreadClass = unread > 0 ? "is-unread" : string.Empty,
+                    UnreadSort = unread > 0 ? 0 : 1,
+                    LastTime = lastTime
+                };
+            }).OrderBy(v => v.UnreadSort).ThenByDescending(v => v.LastTime).ToList();
+
+            InquiryRepeater.DataSource = listView;
             InquiryRepeater.DataBind();
 
-            BindMessages(db, inquiryId);
+            var current = inquiries.First(i => i.Id == inquiryId);
+            var currentCustomerName = customerLookup.ContainsKey(current.CustomerId)
+                ? customerLookup[current.CustomerId]
+                : ("Khach hang #" + current.CustomerId);
+            CustomerNameLiteral.Text = HttpUtility.HtmlEncode(currentCustomerName);
+            CustomerInitialLiteral.Text = HttpUtility.HtmlEncode(string.IsNullOrWhiteSpace(currentCustomerName) ? "?" : currentCustomerName.Trim().Substring(0, 1).ToUpperInvariant());
+
+            InquiryIdField.Value = inquiryId.ToString(System.Globalization.CultureInfo.InvariantCulture);
+            SenderIdField.Value = sellerId.Value.ToString(System.Globalization.CultureInfo.InvariantCulture);
+
+            BindMessages(db, inquiryId, current.ProductId);
         }
     }
 
-    private void BindMessages(BeautyStoryContext db, int inquiryId)
+    private void BindMessages(BeautyStoryContext db, int inquiryId, int? productId)
     {
+        var unread = db.CfShopInquiryMessages
+            .Where(m => m.InquiryId == inquiryId && m.SenderType == "customer" && m.ReadAt == null)
+            .ToList();
+
+        if (unread.Count > 0)
+        {
+            var now = DateTime.Now;
+            foreach (var msg in unread)
+            {
+                msg.ReadAt = now;
+            }
+            db.SaveChanges();
+        }
+
         var messages = db.CfShopInquiryMessages.AsNoTracking()
             .Where(m => m.InquiryId == inquiryId)
             .OrderBy(m => m.CreatedAt)
             .Select(m => new
             {
-                SenderLabel = m.SenderType == "shop" ? "Shop" : "Khach",
-                CreatedText = m.CreatedAt.ToString("dd/MM/yyyy HH:mm"),
-                Message = HttpUtility.HtmlEncode(m.Message)
+                SenderType = m.SenderType,
+                CreatedAt = m.CreatedAt,
+                Message = m.Message,
+                MessageType = m.MessageType
             })
             .ToList();
 
-        MessageRepeater.DataSource = messages;
+        var productCardHtml = productId.HasValue ? BuildProductCardHtml(db, productId.Value) : string.Empty;
+        ProductCardLiteral.Text = productCardHtml;
+        var view = messages.Select(m => new
+        {
+            SenderClass = string.Equals(m.SenderType, "shop", StringComparison.OrdinalIgnoreCase) ? "me" : string.Empty,
+            CreatedText = m.CreatedAt.ToString("HH:mm"),
+            MessageHtml = HttpUtility.HtmlEncode(m.Message),
+            MessageType = m.MessageType
+        }).ToList();
+
+        MessageRepeater.DataSource = view
+            .Where(m => !string.Equals(m.MessageType, "product_card", StringComparison.OrdinalIgnoreCase))
+            .ToList();
         MessageRepeater.DataBind();
     }
 
@@ -140,6 +217,7 @@ public partial class SellerChatDefault : System.Web.UI.Page
                 ShopId = inquiry.ShopId,
                 CustomerId = inquiry.CustomerId,
                 SenderType = "shop",
+                MessageType = "text",
                 Message = message,
                 CreatedAt = DateTime.Now
             });
@@ -150,6 +228,8 @@ public partial class SellerChatDefault : System.Web.UI.Page
             }
 
             inquiry.LastReplyAt = DateTime.Now;
+            inquiry.LastMessageAt = inquiry.LastReplyAt;
+            inquiry.LastMessageSender = "shop";
 
             db.SaveChanges();
         }
@@ -164,5 +244,55 @@ public partial class SellerChatDefault : System.Web.UI.Page
         ErrorPanel.Controls.Clear();
         ErrorPanel.Controls.Add(new System.Web.UI.LiteralControl(HttpUtility.HtmlEncode(message)));
         ChatPanel.Visible = false;
+    }
+
+    private static string BuildProductCardHtml(BeautyStoryContext db, int productId)
+    {
+        var product = db.CfProducts.FirstOrDefault(p => p.Id == productId);
+        if (product == null)
+        {
+            return "<div>Khong tim thay san pham.</div>";
+        }
+
+        var imageUrl = db.CfProductImages
+            .Where(i => i.ProductId == productId && i.Status)
+            .OrderByDescending(i => i.IsPrimary)
+            .ThenBy(i => i.SortOrder)
+            .Select(i => i.ImageUrl)
+            .FirstOrDefault() ?? "/images/fav.png";
+
+        var slug = db.CfSeoSlugs
+            .Where(s => s.Status && s.EntityType == "Product" && s.EntityId == productId)
+            .Select(s => s.SeoSlug)
+            .FirstOrDefault();
+
+        var url = string.IsNullOrWhiteSpace(slug) ? ("/san-pham/san-pham-" + productId) : ("/san-pham/" + slug);
+
+        var price = db.CfProductVariants
+            .Where(v => v.ProductId == productId && v.Status)
+            .OrderBy(v => v.Price)
+            .Select(v => new { v.Price, v.SalePrice })
+            .FirstOrDefault();
+
+        var priceText = price != null
+            ? string.Format("{0:N0} đ", (price.SalePrice.HasValue && price.SalePrice.Value > 0 && price.SalePrice.Value < price.Price) ? price.SalePrice.Value : price.Price)
+            : "Liên hệ";
+
+        return string.Format(
+            "<div class=\"chat-product-card\">" +
+            "<img class=\"chat-product-thumb\" src=\"{0}\" alt=\"{1}\" />" +
+            "<div class=\"chat-product-info\">" +
+            "<div class=\"chat-product-name\">{1}</div>" +
+            "<div class=\"chat-product-price\">{2}</div>" +
+            "</div>" +
+            "<div class=\"chat-product-actions\">" +
+            "<a class=\"chat-buy-btn\" href=\"{3}\">Xem sản phẩm</a>" +
+            "</div>" +
+            "</div>",
+            HttpUtility.HtmlEncode(imageUrl),
+            HttpUtility.HtmlEncode(product.ProductName ?? string.Empty),
+            HttpUtility.HtmlEncode(priceText),
+            HttpUtility.HtmlEncode(url)
+        );
     }
 }

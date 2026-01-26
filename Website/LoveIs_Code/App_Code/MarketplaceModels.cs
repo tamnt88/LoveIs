@@ -154,11 +154,20 @@ public class CfShopInquiry
 
     public int CustomerId { get; set; }
 
+    public int? ProductId { get; set; }
+
+    public int? VariantId { get; set; }
+
     public DateTime CreatedAt { get; set; }
 
     public DateTime? FirstReplyAt { get; set; }
 
     public DateTime? LastReplyAt { get; set; }
+
+    public DateTime? LastMessageAt { get; set; }
+
+    [StringLength(20)]
+    public string LastMessageSender { get; set; }
 
     public bool Status { get; set; }
 }
@@ -177,9 +186,40 @@ public class CfShopInquiryMessage
     [StringLength(20)]
     public string SenderType { get; set; }
 
+    [StringLength(20)]
+    public string MessageType { get; set; }
+
     public string Message { get; set; }
 
+    public DateTime? ReadAt { get; set; }
+
     public DateTime CreatedAt { get; set; }
+}
+
+[Table("cf_shop_inquiry_message_file")]
+public class CfShopInquiryMessageFile
+{
+    public int Id { get; set; }
+
+    public int MessageId { get; set; }
+
+    [StringLength(500)]
+    public string FileUrl { get; set; }
+
+    [StringLength(255)]
+    public string FileName { get; set; }
+
+    [StringLength(100)]
+    public string MimeType { get; set; }
+
+    public int? FileSize { get; set; }
+
+    public bool Status { get; set; }
+
+    public DateTime CreatedAt { get; set; }
+
+    [StringLength(100)]
+    public string CreatedBy { get; set; }
 }
 
 [Table("cf_shop_user")]

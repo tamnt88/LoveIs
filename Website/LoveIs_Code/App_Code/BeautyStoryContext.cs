@@ -53,6 +53,7 @@ public class BeautyStoryContext : DbContext
     public DbSet<CfShopFollow> CfShopFollows { get; set; }
     public DbSet<CfShopInquiry> CfShopInquiries { get; set; }
     public DbSet<CfShopInquiryMessage> CfShopInquiryMessages { get; set; }
+    public DbSet<CfShopInquiryMessageFile> CfShopInquiryMessageFiles { get; set; }
     public DbSet<CfShopOrder> CfShopOrders { get; set; }
     public DbSet<CfShopOrderHistory> CfShopOrderHistories { get; set; }
     public DbSet<CfShopAddress> CfShopAddresses { get; set; }

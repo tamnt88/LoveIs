@@ -122,9 +122,17 @@ public partial class ShopChatDefault : System.Web.UI.Page
                 SenderLabel = m.SenderType == "shop" ? "Shop" : "Ban",
                 CreatedAt = m.CreatedAt,
                 Message = m.Message,
-                MessageType = m.MessageType
+                MessageType = m.MessageType,
+                MessageId = m.Id
             })
             .ToList();
+
+        var messageIds = messages.Select(m => m.MessageId).ToList();
+        var fileLookup = db.CfShopInquiryMessageFiles.AsNoTracking()
+            .Where(f => messageIds.Contains(f.MessageId) && f.Status)
+            .ToList()
+            .GroupBy(f => f.MessageId)
+            .ToDictionary(g => g.Key, g => g.ToList());
 
         var productCardHtml = BuildProductCardHtml(db, productId);
         ProductCardLiteral.Text = productCardHtml;
@@ -135,8 +143,8 @@ public partial class ShopChatDefault : System.Web.UI.Page
         {
             SenderLabel = m.SenderLabel,
             CreatedText = m.CreatedAt.ToString("dd/MM/yyyy HH:mm"),
-            MessageHtml = string.Equals(m.MessageType, "product_card", StringComparison.OrdinalIgnoreCase)
-                ? productCardHtml
+            MessageHtml = string.Equals(m.MessageType, "image", StringComparison.OrdinalIgnoreCase)
+                ? BuildImageGridHtml(fileLookup.ContainsKey(m.MessageId) ? fileLookup[m.MessageId] : null)
                 : HttpUtility.HtmlEncode(m.Message),
             SenderClass = string.Equals(m.SenderLabel, "Ban", StringComparison.OrdinalIgnoreCase) ? "me" : ""
         }).ToList();
@@ -249,5 +257,23 @@ public partial class ShopChatDefault : System.Web.UI.Page
             HttpUtility.HtmlEncode(priceText),
             HttpUtility.HtmlEncode(buyNowUrl)
         );
+    }
+
+    private static string BuildImageGridHtml(System.Collections.Generic.List<CfShopInquiryMessageFile> files)
+    {
+        if (files == null || files.Count == 0)
+        {
+            return string.Empty;
+        }
+
+        var html = new System.Text.StringBuilder();
+        html.Append("<div class=\"chat-image-grid\">");
+        foreach (var file in files)
+        {
+            var url = HttpUtility.HtmlEncode(file.FileUrl ?? string.Empty);
+            html.AppendFormat("<img class=\"chat-image-thumb\" src=\"{0}\" alt=\"image\" data-full=\"{0}\" />", url);
+        }
+        html.Append("</div>");
+        return html.ToString();
     }
 }

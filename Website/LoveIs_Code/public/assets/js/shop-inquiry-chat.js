@@ -10,6 +10,8 @@ document.addEventListener("DOMContentLoaded", function () {
     var input = root.querySelector("[data-chat-input]");
     var sendBtn = root.querySelector("[data-chat-send]");
     var chatBody = root.querySelector("[data-chat-body]");
+    var attachBtn = root.querySelector("[data-chat-attach]");
+    var fileInput = root.querySelector("[data-chat-file]");
     var convoList = root.querySelector("[data-chat-list]");
     var filterTabs = root.querySelectorAll("[data-chat-filter]");
     var joined = false;
@@ -41,6 +43,23 @@ document.addEventListener("DOMContentLoaded", function () {
         return;
     }
 
+    function buildImageGrid(files) {
+        var grid = document.createElement("div");
+        grid.className = "chat-image-grid";
+        (files || []).forEach(function (file) {
+            if (!file || !file.Url) {
+                return;
+            }
+            var img = document.createElement("img");
+            img.src = file.Url;
+            img.alt = "image";
+            img.className = "chat-image-thumb";
+            img.setAttribute("data-full", file.Url);
+            grid.appendChild(img);
+        });
+        return grid;
+    }
+
     function buildMessageNode(message) {
         var wrapper = document.createElement("div");
         var isMine = (message.SenderType || "").toLowerCase() === senderType;
@@ -52,7 +71,11 @@ document.addEventListener("DOMContentLoaded", function () {
 
         var bubble = document.createElement("div");
         bubble.className = "bubble";
-        bubble.textContent = message.Message || "";
+        if ((message.MessageType || "").toLowerCase() === "image") {
+            bubble.appendChild(buildImageGrid(message.Files || []));
+        } else {
+            bubble.textContent = message.Message || "";
+        }
 
         var time = document.createElement("div");
         time.className = "chat-time";
@@ -176,6 +199,43 @@ document.addEventListener("DOMContentLoaded", function () {
         }
     });
 
+    if (attachBtn && fileInput) {
+        attachBtn.addEventListener("click", function () {
+            fileInput.click();
+        });
+
+        fileInput.addEventListener("change", function () {
+            if (!fileInput.files || fileInput.files.length === 0) {
+                return;
+            }
+
+            var formData = new FormData();
+            formData.append("inquiryId", inquiryId.toString());
+            formData.append("senderType", senderType);
+            for (var i = 0; i < fileInput.files.length; i++) {
+                formData.append("file" + i, fileInput.files[i]);
+            }
+
+            fetch("/chat-upload.aspx", {
+                method: "POST",
+                body: formData
+            }).then(function (response) {
+                if (!response.ok) {
+                    throw new Error("Upload failed");
+                }
+                return response.json();
+            }).then(function (data) {
+                if (!data || !data.ok) {
+                    alert((data && data.message) ? data.message : "Upload failed");
+                }
+                fileInput.value = "";
+            }).catch(function () {
+                alert("Upload failed");
+                fileInput.value = "";
+            });
+        });
+    }
+
     function applyFilter() {
         if (!convoList) {
             return;
@@ -200,6 +260,83 @@ document.addEventListener("DOMContentLoaded", function () {
             root.setAttribute("data-chat-filter", tab.getAttribute("data-chat-filter") || "all");
             applyFilter();
         });
+    });
+
+    function ensureLightbox() {
+        var overlay = document.querySelector(".chat-lightbox");
+        if (overlay) {
+            return overlay;
+        }
+        overlay = document.createElement("div");
+        overlay.className = "chat-lightbox";
+        overlay.innerHTML = "<div class=\"chat-lightbox-inner\">" +
+            "<button type=\"button\" class=\"chat-lightbox-nav prev\" aria-label=\"Previous\">&#10094;</button>" +
+            "<img alt=\"preview\" />" +
+            "<button type=\"button\" class=\"chat-lightbox-nav next\" aria-label=\"Next\">&#10095;</button>" +
+            "</div>";
+        overlay.addEventListener("click", function () {
+            overlay.classList.remove("open");
+        });
+        document.body.appendChild(overlay);
+        return overlay;
+    }
+
+    var activeImages = [];
+    var activeIndex = 0;
+
+    function showLightbox(index) {
+        if (!activeImages.length) {
+            return;
+        }
+        activeIndex = Math.max(0, Math.min(index, activeImages.length - 1));
+        var overlay = ensureLightbox();
+        var img = overlay.querySelector("img");
+        if (img) {
+            img.src = activeImages[activeIndex];
+        }
+        overlay.classList.add("open");
+    }
+
+    document.addEventListener("click", function (event) {
+        var target = event.target;
+        if (!target) {
+            return;
+        }
+
+        if (target.classList && target.classList.contains("chat-lightbox-nav")) {
+            event.stopPropagation();
+            if (target.classList.contains("prev")) {
+                showLightbox(activeIndex - 1);
+            } else {
+                showLightbox(activeIndex + 1);
+            }
+            return;
+        }
+
+        if (!target.classList || !target.classList.contains("chat-image-thumb")) {
+            return;
+        }
+
+        var src = target.getAttribute("data-full") || target.src;
+        if (!src) {
+            return;
+        }
+
+        var grid = target.closest(".chat-image-grid");
+        if (grid) {
+            activeImages = Array.prototype.map.call(grid.querySelectorAll(".chat-image-thumb"), function (img) {
+                return img.getAttribute("data-full") || img.src;
+            });
+            activeIndex = activeImages.indexOf(src);
+            if (activeIndex < 0) {
+                activeIndex = 0;
+            }
+        } else {
+            activeImages = [src];
+            activeIndex = 0;
+        }
+
+        showLightbox(activeIndex);
     });
 
     scrollToBottom();

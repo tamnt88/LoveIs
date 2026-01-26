@@ -70,12 +70,13 @@
                         </div>
 
                         <div class="seller-chat-input">
-                            <div class="chat-attachment">
+                            <div class="chat-attachment" data-chat-attach="true">
                                 <i class="fa-solid fa-paperclip"></i>
                             </div>
                             <asp:TextBox ID="MessageTextBox" runat="server" ClientIDMode="Static" TextMode="MultiLine" Rows="1" CssClass="chat-textbox" placeholder="Nhập tin nhắn..." data-chat-input="true" />
                             <button type="button" class="chat-send" data-chat-send="true">&#x27A4;</button>
                         </div>
+                        <input type="file" class="chat-file-input" data-chat-file="true" accept="image/*" multiple="multiple" />
                     </div>
                 </section>
             </div>

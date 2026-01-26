@@ -3736,6 +3736,33 @@ button:disabled {
     margin-bottom: 16px;
 }
 
+.bank-number-row {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 16px;
+    align-items: end;
+}
+
+.bank-number-input {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.bank-default-inline {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: 600;
+    color: #3a0517;
+    white-space: nowrap;
+}
+
+.bank-default-inline input[type="checkbox"] {
+    width: 16px;
+    height: 16px;
+}
+
 .settings-grid {
     display: grid;
     gap: 14px;
@@ -5391,13 +5418,13 @@ button:disabled {
 
 .finance-bank-card {
     border: 1px solid #e8e0e6;
-    border-radius: 16px;
-    padding: 16px;
-    background: #fff;
+    border-radius: 18px;
+    padding: 18px;
+    background: linear-gradient(135deg, #fff 0%, #faf6f8 100%);
     display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 12px;
+    flex-direction: column;
+    gap: 14px;
+    position: relative;
 }
 
 .finance-bank-main {
@@ -5418,9 +5445,39 @@ button:disabled {
     gap: 16px;
 }
 
+.finance-bank-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 16px;
+    margin-top: 16px;
+}
+
+.finance-bank-top {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.bank-title {
+    flex: 1;
+    min-width: 0;
+}
+
+.finance-bank-body {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 12px;
+}
+
+.finance-bank-actions {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+}
+
 .bank-logo {
-    width: 56px;
-    height: 56px;
+    width: 64px;
+    height: 64px;
     border-radius: 12px;
     background: #3a0517;
     color: #fff;
@@ -5456,6 +5513,85 @@ button:disabled {
 .bank-pill.soft {
     background: #dff7e8;
     color: #1f7a4e;
+}
+
+.bank-modal-dialog {
+    width: min(820px, 100%);
+}
+
+.bank-select-row .form-control {
+    width: 100%;
+}
+
+.bank-select {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.bank-select-logo {
+    width: 44px;
+    height: 44px;
+    border-radius: 10px;
+    border: 1px solid #e8e0e6;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: #fff;
+    flex-shrink: 0;
+    overflow: hidden;
+}
+
+.bank-select-logo img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+}
+
+.bank-number-input {
+    position: relative;
+}
+
+.bank-check-link {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    margin-top: 6px;
+    font-size: 12px;
+    font-weight: 600;
+    color: #3a0517;
+    text-decoration: none;
+}
+
+.bank-check-link:hover {
+    text-decoration: underline;
+}
+
+.bank-check-link.inline {
+    position: absolute;
+    right: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    margin-top: 0;
+    padding: 4px 8px;
+    background: #f7eff2;
+    border-radius: 999px;
+    text-decoration: none;
+}
+
+.bank-number-field {
+    padding-right: 86px;
+}
+.bank-owner {
+    letter-spacing: 0.5px;
+}
+
+.bank-delete {
+    opacity: 0.4;
+}
+
+.finance-bank-card:hover .bank-delete {
+    opacity: 1;
 }
 
 .seller-product-locked,

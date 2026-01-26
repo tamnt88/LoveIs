@@ -99,14 +99,29 @@
                     </div>
                     <div class="form-group">
                         <label>Phường/Xã</label>
-                        <asp:TextBox ID="WardInput" runat="server" CssClass="form-control" />
+                        <div class="select-search" data-select="WardDropDown">
+                            <button type="button" class="select-search-btn" id="WardSelectBtn">-- Chọn phường/xã --</button>
+                            <div class="select-search-menu" id="WardSelectMenu">
+                                <input type="text" class="select-search-input" placeholder="Tìm phường/xã" />
+                                <div class="select-search-options"></div>
+                            </div>
+                            <asp:DropDownList ID="WardDropDown" runat="server" CssClass="select-search-native" />
+                        </div>
                     </div>
                     <div class="form-group">
                         <label>Tỉnh/Thành phố</label>
-                        <asp:TextBox ID="ProvinceInput" runat="server" CssClass="form-control" />
+                        <div class="select-search" data-select="ProvinceDropDown">
+                            <button type="button" class="select-search-btn" id="ProvinceSelectBtn">-- Chọn tỉnh/thành phố --</button>
+                            <div class="select-search-menu" id="ProvinceSelectMenu">
+                                <input type="text" class="select-search-input" placeholder="Tìm tỉnh/thành phố" />
+                                <div class="select-search-options"></div>
+                            </div>
+                            <asp:DropDownList ID="ProvinceDropDown" runat="server" CssClass="select-search-native" AutoPostBack="true" OnSelectedIndexChanged="ProvinceDropDown_SelectedIndexChanged" />
+                        </div>
                     </div>
-                    <div class="form-group form-group-full">
-                        <asp:CheckBox ID="DefaultCheckBox" runat="server" Text="Đặt làm mặc định" />
+                    <div class="form-group form-group-full address-default-row">
+                        <asp:CheckBox ID="DefaultCheckBox" runat="server" />
+                        <label for="<%= DefaultCheckBox.ClientID %>">Đặt làm mặc định</label>
                     </div>
                 </div>
             </div>
@@ -116,4 +131,75 @@
             </div>
         </div>
     </asp:Panel>
+    <script>
+        (function () {
+            function initSearchSelect(selectClientId, buttonId, menuId, uniqueId, triggerPostback) {
+                var select = document.getElementById(selectClientId);
+                var button = document.getElementById(buttonId);
+                var menu = document.getElementById(menuId);
+                if (!select || !button || !menu) return;
+                var input = menu.querySelector('.select-search-input');
+                var optionsWrap = menu.querySelector('.select-search-options');
+
+                function buildOptions(keyword) {
+                    if (!optionsWrap) return;
+                    optionsWrap.innerHTML = '';
+                    var textKey = (keyword || '').toLowerCase();
+                    Array.prototype.slice.call(select.options).forEach(function (opt) {
+                        if (!opt.value) return;
+                        var text = opt.text || '';
+                        if (textKey && text.toLowerCase().indexOf(textKey) === -1) return;
+                        var item = document.createElement('button');
+                        item.type = 'button';
+                        item.className = 'select-search-option';
+                        item.textContent = text;
+                        item.addEventListener('click', function () {
+                            select.value = opt.value;
+                            button.textContent = text;
+                            menu.classList.remove('open');
+                            if (triggerPostback && window.__doPostBack) {
+                                window.__doPostBack(uniqueId, '');
+                            }
+                        });
+                        optionsWrap.appendChild(item);
+                    });
+                }
+
+                function syncButton() {
+                    var selected = select.options[select.selectedIndex];
+                    if (selected && selected.value) {
+                        button.textContent = selected.text;
+                    }
+                }
+
+                button.addEventListener('click', function () {
+                    menu.classList.toggle('open');
+                    if (menu.classList.contains('open')) {
+                        buildOptions('');
+                        if (input) {
+                            input.value = '';
+                            input.focus();
+                        }
+                    }
+                });
+
+                document.addEventListener('click', function (event) {
+                    if (!menu.classList.contains('open')) return;
+                    if (menu.contains(event.target) || button.contains(event.target)) return;
+                    menu.classList.remove('open');
+                });
+
+                if (input) {
+                    input.addEventListener('input', function () {
+                        buildOptions(input.value);
+                    });
+                }
+
+                syncButton();
+            }
+
+            initSearchSelect('<%= WardDropDown.ClientID %>', 'WardSelectBtn', 'WardSelectMenu', '', false);
+            initSearchSelect('<%= ProvinceDropDown.ClientID %>', 'ProvinceSelectBtn', 'ProvinceSelectMenu', '<%= ProvinceDropDown.UniqueID %>', true);
+        })();
+    </script>
 </asp:Content>

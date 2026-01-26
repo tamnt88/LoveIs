@@ -3929,6 +3929,79 @@ button:disabled {
     font-size: 14px;
 }
 
+.address-default-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.select-search {
+    position: relative;
+}
+
+.select-search-native {
+    display: none;
+}
+
+.select-search-btn {
+    width: 100%;
+    text-align: left;
+    border: 1px solid #e4dbe0;
+    border-radius: 10px;
+    padding: 10px 12px;
+    background: #fff;
+    font-size: 14px;
+    color: #3f2c35;
+}
+
+.select-search-menu {
+    position: absolute;
+    top: calc(100% + 6px);
+    left: 0;
+    right: 0;
+    background: #fff;
+    border: 1px solid #efe6eb;
+    border-radius: 12px;
+    box-shadow: 0 12px 24px rgba(31, 10, 18, 0.12);
+    padding: 10px;
+    display: none;
+    z-index: 20;
+}
+
+.select-search-menu.open {
+    display: block;
+}
+
+.select-search-input {
+    width: 100%;
+    border: 1px solid #e4dbe0;
+    border-radius: 8px;
+    padding: 8px 10px;
+    font-size: 13px;
+    margin-bottom: 8px;
+}
+
+.select-search-options {
+    max-height: 220px;
+    overflow: auto;
+    display: grid;
+    gap: 6px;
+}
+
+.select-search-option {
+    border: 0;
+    background: #f8f5f6;
+    border-radius: 8px;
+    padding: 8px 10px;
+    text-align: left;
+    font-size: 13px;
+    cursor: pointer;
+}
+
+.select-search-option:hover {
+    background: #f1e9ed;
+}
+
 .address-form-grid label {
     display: block;
     font-weight: 600;

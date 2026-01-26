@@ -10,6 +10,7 @@ public partial class SellerSettingsAddress : System.Web.UI.Page
     {
         if (!IsPostBack)
         {
+            BindProvinces();
             BindAddresses();
         }
     }
@@ -83,8 +84,10 @@ public partial class SellerSettingsAddress : System.Web.UI.Page
             address.ContactName = (ContactNameInput.Text ?? string.Empty).Trim();
             address.Phone = (PhoneInput.Text ?? string.Empty).Trim();
             address.AddressLine = (AddressLineInput.Text ?? string.Empty).Trim();
-            address.WardName = (WardInput.Text ?? string.Empty).Trim();
-            address.ProvinceName = (ProvinceInput.Text ?? string.Empty).Trim();
+            address.ProvinceId = ParseNullableInt(ProvinceDropDown.SelectedValue);
+            address.WardId = ParseNullableInt(WardDropDown.SelectedValue);
+            address.ProvinceName = ProvinceDropDown.SelectedItem != null ? ProvinceDropDown.SelectedItem.Text : string.Empty;
+            address.WardName = WardDropDown.SelectedItem != null ? WardDropDown.SelectedItem.Text : string.Empty;
 
             if (DefaultCheckBox.Checked)
             {
@@ -223,8 +226,24 @@ public partial class SellerSettingsAddress : System.Web.UI.Page
                 ContactNameInput.Text = address.ContactName;
                 PhoneInput.Text = address.Phone;
                 AddressLineInput.Text = address.AddressLine;
-                WardInput.Text = address.WardName;
-                ProvinceInput.Text = address.ProvinceName;
+                BindProvinces();
+                if (address.ProvinceId.HasValue)
+                {
+                    ProvinceDropDown.SelectedValue = address.ProvinceId.Value.ToString(CultureInfo.InvariantCulture);
+                }
+                else if (!string.IsNullOrWhiteSpace(address.ProvinceName))
+                {
+                    SetSelectedByText(ProvinceDropDown, address.ProvinceName);
+                }
+                BindWards(ParseNullableInt(ProvinceDropDown.SelectedValue));
+                if (address.WardId.HasValue)
+                {
+                    WardDropDown.SelectedValue = address.WardId.Value.ToString(CultureInfo.InvariantCulture);
+                }
+                else if (!string.IsNullOrWhiteSpace(address.WardName))
+                {
+                    SetSelectedByText(WardDropDown, address.WardName);
+                }
                 DefaultCheckBox.Checked = address.IsDefault;
             }
             else
@@ -235,8 +254,8 @@ public partial class SellerSettingsAddress : System.Web.UI.Page
                 ContactNameInput.Text = string.Empty;
                 PhoneInput.Text = string.Empty;
                 AddressLineInput.Text = string.Empty;
-                WardInput.Text = string.Empty;
-                ProvinceInput.Text = string.Empty;
+                BindProvinces();
+                BindWards(ParseNullableInt(ProvinceDropDown.SelectedValue));
                 DefaultCheckBox.Checked = false;
             }
         }
@@ -326,6 +345,16 @@ public partial class SellerSettingsAddress : System.Web.UI.Page
         return 0;
     }
 
+    private static int? ParseNullableInt(string raw)
+    {
+        int value;
+        if (int.TryParse(raw, out value) && value > 0)
+        {
+            return value;
+        }
+        return null;
+    }
+
     private static string BuildAreaLine(CfShopAddress address)
     {
         var parts = new List<string>();
@@ -338,6 +367,70 @@ public partial class SellerSettingsAddress : System.Web.UI.Page
             parts.Add(address.ProvinceName);
         }
         return parts.Count == 0 ? "-" : string.Join(", ", parts);
+    }
+
+    protected void ProvinceDropDown_SelectedIndexChanged(object sender, EventArgs e)
+    {
+        BindWards(ParseNullableInt(ProvinceDropDown.SelectedValue));
+        AddressModal.Visible = true;
+    }
+
+    private void BindProvinces()
+    {
+        using (var db = new BeautyStoryContext())
+        {
+            var provinces = db.CfProvinces
+                .OrderBy(p => p.ProvinceName)
+                .Select(p => new { p.Id, p.ProvinceName })
+                .ToList();
+
+            ProvinceDropDown.DataSource = provinces;
+            ProvinceDropDown.DataTextField = "ProvinceName";
+            ProvinceDropDown.DataValueField = "Id";
+            ProvinceDropDown.DataBind();
+            ProvinceDropDown.Items.Insert(0, new System.Web.UI.WebControls.ListItem("-- Chọn tỉnh/thành phố --", ""));
+        }
+    }
+
+    private void BindWards(int? provinceId)
+    {
+        using (var db = new BeautyStoryContext())
+        {
+            var wardsQuery = db.CfWards.AsQueryable();
+            if (provinceId.HasValue)
+            {
+                wardsQuery = wardsQuery.Where(w => w.ProvinceId == provinceId.Value);
+            }
+
+            var wards = wardsQuery
+                .OrderBy(w => w.WardName)
+                .Select(w => new { w.Id, w.WardName })
+                .ToList();
+
+            WardDropDown.DataSource = wards;
+            WardDropDown.DataTextField = "WardName";
+            WardDropDown.DataValueField = "Id";
+            WardDropDown.DataBind();
+            WardDropDown.Items.Insert(0, new System.Web.UI.WebControls.ListItem("-- Chọn phường/xã --", ""));
+        }
+    }
+
+    private static void SetSelectedByText(System.Web.UI.WebControls.DropDownList list, string text)
+    {
+        if (list == null || string.IsNullOrWhiteSpace(text))
+        {
+            return;
+        }
+
+        foreach (System.Web.UI.WebControls.ListItem item in list.Items)
+        {
+            if (string.Equals(item.Text, text, StringComparison.OrdinalIgnoreCase))
+            {
+                list.ClearSelection();
+                item.Selected = true;
+                return;
+            }
+        }
     }
 
     private class AddressViewModel

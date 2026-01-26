@@ -4,7 +4,8 @@ document.addEventListener("DOMContentLoaded", function () {
         return;
     }
 
-    var inquiryId = parseInt(root.getAttribute("data-inquiry-id") || "0", 10);
+    var chatId = parseInt(root.getAttribute("data-chat-id") || root.getAttribute("data-inquiry-id") || "0", 10);
+    var idKey = root.getAttribute("data-chat-id-key") || "inquiryId";
     var senderType = (root.getAttribute("data-sender-type") || "").toLowerCase();
     var senderId = parseInt(root.getAttribute("data-sender-id") || "0", 10);
     var input = root.querySelector("[data-chat-input]");
@@ -14,9 +15,11 @@ document.addEventListener("DOMContentLoaded", function () {
     var fileInput = root.querySelector("[data-chat-file]");
     var convoList = root.querySelector("[data-chat-list]");
     var filterTabs = root.querySelectorAll("[data-chat-filter]");
+    var uploadUrl = root.getAttribute("data-upload-url") || "/chat-upload.aspx";
+    var hubName = root.getAttribute("data-chat-hub") || "shopInquiryChatHub";
     var joined = false;
 
-    if (!inquiryId || !senderType || !senderId || !input || !sendBtn || !chatBody) {
+    if (!chatId || !senderType || !senderId || !input || !sendBtn || !chatBody) {
         return;
     }
 
@@ -37,7 +40,7 @@ document.addEventListener("DOMContentLoaded", function () {
         return;
     }
 
-    var hub = jQuery.connection.shopInquiryChatHub || jQuery.connection.shopInquiryChat;
+    var hub = jQuery.connection[hubName] || jQuery.connection[hubName.replace("Hub", "")];
     if (!hub) {
         console.warn("Khong tim thay hub chat.");
         return;
@@ -86,12 +89,17 @@ document.addEventListener("DOMContentLoaded", function () {
         return wrapper;
     }
 
+    function getThreadId(message) {
+        return message.InquiryId || message.ChatId || 0;
+    }
+
     function updateConversationItem(message) {
         if (!convoList) {
             return;
         }
 
-        var item = convoList.querySelector("[data-inquiry-id='" + message.InquiryId + "']");
+        var threadId = getThreadId(message);
+        var item = convoList.querySelector("[data-inquiry-id='" + threadId + "']");
         if (!item) {
             return;
         }
@@ -105,7 +113,7 @@ document.addEventListener("DOMContentLoaded", function () {
             time.textContent = message.CreatedAt || "";
         }
 
-        if (String(message.InquiryId) !== String(inquiryId) && (message.SenderType || "").toLowerCase() !== senderType) {
+        if (String(threadId) !== String(chatId) && (message.SenderType || "").toLowerCase() !== senderType) {
             var unread = parseInt(item.getAttribute("data-unread") || "0", 10) + 1;
             item.setAttribute("data-unread", unread.toString());
             item.classList.add("is-unread");
@@ -129,7 +137,8 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
     function appendMessage(message) {
-        if (String(message.InquiryId) !== String(inquiryId)) {
+        var threadId = getThreadId(message);
+        if (String(threadId) !== String(chatId)) {
             updateConversationItem(message);
             return;
         }
@@ -144,19 +153,26 @@ document.addEventListener("DOMContentLoaded", function () {
         updateConversationItem(message);
 
         if ((message.SenderType || "").toLowerCase() !== senderType && hub.server && hub.server.markRead) {
-            hub.server.markRead(inquiryId, senderType, senderId);
+            hub.server.markRead(chatId, senderType, senderId);
         }
     }
 
     hub.client.joinedInquiry = function () {
         joined = true;
         if (hub.server && hub.server.markRead) {
-            hub.server.markRead(inquiryId, senderType, senderId);
+            hub.server.markRead(chatId, senderType, senderId);
+        }
+    };
+
+    hub.client.joinedChat = function () {
+        joined = true;
+        if (hub.server && hub.server.markRead) {
+            hub.server.markRead(chatId, senderType, senderId);
         }
     };
 
     hub.client.newMessage = function (message) {
-        if (!message || !message.InquiryId) {
+        if (!message || (!message.InquiryId && !message.ChatId)) {
             return;
         }
         appendMessage(message);
@@ -167,7 +183,11 @@ document.addEventListener("DOMContentLoaded", function () {
     };
 
     jQuery.connection.hub.start().done(function () {
-        hub.server.joinInquiry(inquiryId.toString(), senderType, senderId);
+        if (hub.server.joinInquiry) {
+            hub.server.joinInquiry(chatId.toString(), senderType, senderId);
+        } else if (hub.server.joinChat) {
+            hub.server.joinChat(chatId.toString(), senderType, senderId);
+        }
         scrollToBottom();
     }).fail(function (error) {
         console.error("SignalR start failed", error);
@@ -182,7 +202,7 @@ document.addEventListener("DOMContentLoaded", function () {
             alert("Chat chua san sang. Vui long thu lai.");
             return;
         }
-        hub.server.sendMessage(inquiryId, text);
+        hub.server.sendMessage(chatId, text);
         input.value = "";
         autoResize();
     }
@@ -210,13 +230,13 @@ document.addEventListener("DOMContentLoaded", function () {
             }
 
             var formData = new FormData();
-            formData.append("inquiryId", inquiryId.toString());
+            formData.append(idKey, chatId.toString());
             formData.append("senderType", senderType);
             for (var i = 0; i < fileInput.files.length; i++) {
                 formData.append("file" + i, fileInput.files[i]);
             }
 
-            fetch("/chat-upload.aspx", {
+            fetch(uploadUrl, {
                 method: "POST",
                 body: formData
             }).then(function (response) {

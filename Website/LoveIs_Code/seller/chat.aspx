@@ -5,7 +5,7 @@
 </asp:Content>
 
 <asp:Content ID="MainContent" ContentPlaceHolderID="MainContent" runat="server">
-    <div class="seller-chat-page" data-shop-inquiry-chat="true" data-chat-filter="all">
+    <div class="seller-chat-page" data-shop-inquiry-chat="true" data-chat-filter="all" data-chat-id-key="inquiryId" data-chat-hub="shopInquiryChatHub" data-upload-url="/chat-upload.aspx">
         <div class="seller-chat-header">
             <h2>Chat với khách hàng</h2>
         </div>
@@ -100,7 +100,7 @@
             if (!root || !inquiryField || !senderTypeField || !senderIdField) {
                 return;
             }
-            root.setAttribute("data-inquiry-id", inquiryField.value || "0");
+            root.setAttribute("data-chat-id", inquiryField.value || "0");
             root.setAttribute("data-sender-type", senderTypeField.value || "shop");
             root.setAttribute("data-sender-id", senderIdField.value || "0");
         })();

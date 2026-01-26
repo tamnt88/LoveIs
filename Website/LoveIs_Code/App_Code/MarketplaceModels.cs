@@ -249,6 +249,71 @@ public class CfShopUser
     public int SortOrder { get; set; }
 }
 
+[Table("cf_support_chat")]
+public class CfSupportChat
+{
+    public int Id { get; set; }
+
+    public int SellerId { get; set; }
+
+    public int? AdminId { get; set; }
+
+    public DateTime CreatedAt { get; set; }
+
+    public DateTime? LastMessageAt { get; set; }
+
+    [StringLength(20)]
+    public string LastMessageSender { get; set; }
+
+    public bool Status { get; set; }
+}
+
+[Table("cf_support_chat_message")]
+public class CfSupportChatMessage
+{
+    public int Id { get; set; }
+
+    public int ChatId { get; set; }
+
+    [StringLength(20)]
+    public string SenderType { get; set; }
+
+    [StringLength(20)]
+    public string MessageType { get; set; }
+
+    public string Message { get; set; }
+
+    public DateTime? ReadAt { get; set; }
+
+    public DateTime CreatedAt { get; set; }
+}
+
+[Table("cf_support_chat_message_file")]
+public class CfSupportChatMessageFile
+{
+    public int Id { get; set; }
+
+    public int MessageId { get; set; }
+
+    [StringLength(500)]
+    public string FileUrl { get; set; }
+
+    [StringLength(255)]
+    public string FileName { get; set; }
+
+    [StringLength(100)]
+    public string MimeType { get; set; }
+
+    public int? FileSize { get; set; }
+
+    public bool Status { get; set; }
+
+    public DateTime CreatedAt { get; set; }
+
+    [StringLength(100)]
+    public string CreatedBy { get; set; }
+}
+
 [Table("cf_shop_order")]
 public class CfShopOrder
 {

@@ -8,7 +8,7 @@
 </asp:Content>
 
 <asp:Content ID="MainContent" ContentPlaceHolderID="MainContent" runat="server">
-    <main class="container py-4 shop-chat-page" data-shop-inquiry-chat="true" data-chat-filter="all">
+    <main class="container py-4 shop-chat-page" data-shop-inquiry-chat="true" data-chat-filter="all" data-chat-id-key="inquiryId" data-chat-hub="shopInquiryChatHub" data-upload-url="/chat-upload.aspx">
         <asp:Panel ID="ErrorPanel" runat="server" Visible="false" CssClass="alert alert-danger"></asp:Panel>
 
         <asp:Panel ID="ChatPanel" runat="server">
@@ -71,7 +71,7 @@
             if (!root || !inquiryField || !senderTypeField || !senderIdField) {
                 return;
             }
-            root.setAttribute("data-inquiry-id", inquiryField.value || "0");
+            root.setAttribute("data-chat-id", inquiryField.value || "0");
             root.setAttribute("data-sender-type", senderTypeField.value || "customer");
             root.setAttribute("data-sender-id", senderIdField.value || "0");
         })();

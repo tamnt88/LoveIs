@@ -3391,6 +3391,7 @@ button:disabled {
 
 .account-security-card {
     padding: 20px;
+    gap: 20px;
 }
 
 .security-item {
@@ -3467,17 +3468,104 @@ button:disabled {
     display: block;
 }
 
-.kyc-flow {
-    margin-top: 16px;
-    border: 1px solid #efe1e7;
-    border-radius: 14px;
-    padding: 16px;
-    background: #fbf8fa;
-    display: none;
+.kyc-status-banner {
+    margin-top: 12px;
+    border-radius: 12px;
+    padding: 12px 14px;
+    font-weight: 600;
+    font-size: 13px;
 }
 
-.kyc-flow.open {
-    display: block;
+.kyc-status-banner.pending {
+    background: #fff4d6;
+    color: #b45309;
+    border: 1px solid #f5d7a1;
+}
+
+.kyc-status-banner.approved {
+    background: #dff7e8;
+    color: #1f7a4e;
+    border: 1px solid #b7e8c8;
+}
+
+.kyc-rejected-actions {
+    margin-top: 12px;
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.kyc-rejected-actions.inline {
+    margin-top: 0;
+}
+
+.kyc-status-pill {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 8px 14px;
+    border-radius: 999px;
+    font-size: 13px;
+    font-weight: 600;
+    border: 1px solid transparent;
+}
+
+.kyc-status-pill.pending {
+    background: #fff4d6;
+    color: #b45309;
+    border-color: #f5d7a1;
+}
+
+.kyc-modal {
+    position: fixed;
+    inset: 0;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 18px;
+    z-index: 1000;
+}
+
+.kyc-modal.open {
+    display: flex;
+}
+
+.kyc-modal-overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(31, 10, 18, 0.5);
+}
+
+.kyc-modal-content {
+    position: relative;
+    background: #fff;
+    border-radius: 16px;
+    padding: 18px;
+    width: min(860px, 100%);
+    max-height: 85vh;
+    overflow: auto;
+    z-index: 1;
+    border: 1px solid #efe1e7;
+}
+
+.kyc-modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 14px;
+}
+
+.kyc-modal-title {
+    font-weight: 700;
+    font-size: 16px;
+}
+
+.kyc-modal-close {
+    border: 0;
+    background: #f4edf1;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
 }
 
 .kyc-progress-steps {
@@ -3580,6 +3668,12 @@ button:disabled {
     gap: 16px;
 }
 
+.kyc-upload-grid {
+    display: grid;
+    gap: 16px;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
 .kyc-upload-card {
     border: 1px dashed #d7c9cf;
     border-radius: 12px;
@@ -3589,8 +3683,12 @@ button:disabled {
     gap: 8px;
 }
 
-.kyc-upload-card.large .kyc-preview {
-    height: 260px;
+.kyc-upload-card.compact .kyc-preview {
+    height: 180px;
+}
+
+.kyc-upload-card.compact .kyc-upload-frame {
+    min-height: 180px;
 }
 
 .kyc-upload-frame {
@@ -3606,8 +3704,9 @@ button:disabled {
 
 .kyc-preview {
     width: 100%;
-    height: 220px;
-    object-fit: cover;
+    height: 200px;
+    object-fit: contain;
+    background: #fff;
     display: none;
 }
 
@@ -3655,6 +3754,81 @@ button:disabled {
 
 .kyc-change-btn {
     justify-self: flex-start;
+}
+
+.kyc-reason-text {
+    background: #fff4d6;
+    color: #b45309;
+    padding: 10px 12px;
+    border-radius: 10px;
+    border: 1px solid #f5d7a1;
+    margin-bottom: 12px;
+    font-weight: 600;
+}
+
+.kyc-reason-list {
+    display: grid;
+    gap: 8px;
+    font-size: 14px;
+    color: #4b3a41;
+}
+
+.kyc-reason-section {
+    padding: 10px 0;
+    border-bottom: 1px solid #efe6eb;
+}
+
+.kyc-reason-section:last-child {
+    border-bottom: 0;
+    padding-bottom: 0;
+}
+
+.kyc-reason-title {
+    font-weight: 700;
+    margin-bottom: 8px;
+}
+
+.kyc-review-images {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+}
+
+.kyc-review-card {
+    display: grid;
+    gap: 6px;
+}
+
+.kyc-review-label {
+    font-size: 12px;
+    color: #6f5b65;
+}
+
+.kyc-review-preview {
+    width: 100%;
+    max-height: 200px;
+    object-fit: contain;
+    border-radius: 10px;
+    border: 1px dashed #d7c9cf;
+    background: #faf7f9;
+}
+
+.kyc-review-empty {
+    font-size: 13px;
+    color: #9a8b92;
+    font-style: italic;
+}
+
+@media (max-width: 768px) {
+    .kyc-review-images {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 768px) {
+    .kyc-upload-grid {
+        grid-template-columns: 1fr;
+    }
 }
 
 .image-preview {

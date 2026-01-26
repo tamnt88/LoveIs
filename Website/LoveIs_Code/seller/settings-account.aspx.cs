@@ -12,8 +12,9 @@ public partial class SellerSettingsAccount : System.Web.UI.Page
         {
             BindSellerInfo();
             BindMessages();
-            BindKycSummary();
         }
+
+        BindKycSummary();
     }
 
     protected void SaveButton_Click(object sender, EventArgs e)
@@ -203,6 +204,13 @@ public partial class SellerSettingsAccount : System.Web.UI.Page
                 .OrderByDescending(k => k.CreatedAt)
                 .FirstOrDefault();
 
+            if (kyc != null && (string.Equals(kyc.Status, "pending", StringComparison.OrdinalIgnoreCase)
+                || string.Equals(kyc.Status, "approved", StringComparison.OrdinalIgnoreCase)))
+            {
+                BindKycSummary();
+                return;
+            }
+
             var hasFrontUpload = KycFrontUpload != null && KycFrontUpload.HasFile;
             var hasBackUpload = KycBackUpload != null && KycBackUpload.HasFile;
             var hasFrontExisting = !string.IsNullOrWhiteSpace(KycFrontExistingInput.Value);
@@ -244,7 +252,6 @@ public partial class SellerSettingsAccount : System.Web.UI.Page
             db.SaveChanges();
         }
 
-        KycMessageLiteral.Text = "<div class=\"alert alert-success\">Đã gửi hồ sơ KYC. Vui lòng chờ duyệt.</div>";
         BindKycSummary();
     }
 
@@ -293,6 +300,10 @@ public partial class SellerSettingsAccount : System.Web.UI.Page
             if (kyc == null)
             {
                 ApplyKycStatus("Chưa gửi hồ sơ", "Vui lòng gửi hồ sơ để được duyệt.", "empty", "fa-regular fa-circle-question");
+                OpenKycFlow.Visible = true;
+                KycApprovedBanner.Visible = false;
+                KycRejectedActionsInline.Visible = false;
+                KycPendingPill.Visible = false;
                 return;
             }
 
@@ -321,17 +332,49 @@ public partial class SellerSettingsAccount : System.Web.UI.Page
             var statusName = ResolveKycStatusName(db, kyc.Status);
             if (string.Equals(kyc.Status, "approved", StringComparison.OrdinalIgnoreCase))
             {
-                ApplyKycStatus(statusName, "Hồ sơ đã được duyệt.", "approved", "fa-solid fa-circle-check");
+                ApplyKycStatus(statusName, "Tài khoản đã được xác thực.", "approved", "fa-solid fa-circle-check");
+                OpenKycFlow.Visible = false;
+                KycApprovedBanner.Visible = true;
+                KycRejectedActionsInline.Visible = false;
+                KycPendingPill.Visible = false;
             }
             else if (string.Equals(kyc.Status, "rejected", StringComparison.OrdinalIgnoreCase))
             {
                 var reason = string.IsNullOrWhiteSpace(kyc.RejectedReason) ? "Hồ sơ cần bổ sung lại." : ("Từ chối: " + kyc.RejectedReason);
                 ApplyKycStatus(statusName, reason, "rejected", "fa-solid fa-triangle-exclamation");
+                OpenKycFlow.Visible = false;
+                KycApprovedBanner.Visible = false;
+                KycRejectedActionsInline.Visible = true;
+                KycPendingPill.Visible = false;
             }
             else
             {
-                ApplyKycStatus(statusName, "Hồ sơ đang được xét duyệt.", "pending", "fa-solid fa-clock");
+                ApplyKycStatus(statusName, "Hồ sơ của bạn đang được xét duyệt. Vui lòng quay lại sau 24h.", "pending", "fa-solid fa-clock");
+                OpenKycFlow.Visible = false;
+                KycApprovedBanner.Visible = false;
+                KycRejectedActionsInline.Visible = false;
+                KycPendingPill.Visible = true;
             }
+
+            if (kyc.Status == null)
+            {
+                OpenKycFlow.Visible = true;
+                KycApprovedBanner.Visible = false;
+                KycRejectedActionsInline.Visible = false;
+                KycPendingPill.Visible = false;
+            }
+
+            var rejectedReason = string.IsNullOrWhiteSpace(kyc.RejectedReason) ? "Chưa có lý do từ chối." : kyc.RejectedReason;
+            KycRejectedReasonLiteral.Text = HttpUtility.HtmlEncode(rejectedReason);
+            KycReviewNameLiteral.Text = HttpUtility.HtmlEncode(kyc.FullName ?? string.Empty);
+            KycReviewIdLiteral.Text = HttpUtility.HtmlEncode(FormatIdNumber(kyc.IdNumber));
+            KycReviewBirthLiteral.Text = kyc.BirthDate.HasValue ? kyc.BirthDate.Value.ToString("dd/MM/yyyy", CultureInfo.InvariantCulture) : string.Empty;
+            KycReviewIssuedLiteral.Text = kyc.IdIssuedDate.HasValue ? kyc.IdIssuedDate.Value.ToString("dd/MM/yyyy", CultureInfo.InvariantCulture) : string.Empty;
+            KycReviewPlaceLiteral.Text = HttpUtility.HtmlEncode(kyc.IdIssuedPlace ?? string.Empty);
+            KycReviewFrontPreview.ImageUrl = frontUrl;
+            KycReviewBackPreview.ImageUrl = backUrl;
+            KycReviewSelfiePreview.ImageUrl = selfieUrl;
+            KycReviewSelfieEmpty.Visible = string.IsNullOrWhiteSpace(selfieUrl);
         }
     }
 

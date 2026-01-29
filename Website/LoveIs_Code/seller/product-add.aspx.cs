@@ -29,6 +29,10 @@ public partial class SellerProductAdd : System.Web.UI.Page
             {
                 LoadProduct(_productId.Value);
             }
+            if (!_productId.HasValue && IsImportFlow())
+            {
+                ApplyImportDraft();
+            }
             if (string.Equals(Request.QueryString["saved"], "1", StringComparison.Ordinal))
             {
                 FormMessageLiteral.Text = "<div class=\"alert alert-success mt-3\">Lưu sản phẩm thành công.</div>";
@@ -62,6 +66,7 @@ public partial class SellerProductAdd : System.Web.UI.Page
 
         var name = (ProductNameInput.Text ?? string.Empty).Trim();
         var categoryId = ParseInt(CategoryIdInput.Value);
+        var skuBase = (SkuInput.Text ?? string.Empty).Trim();
         var price = ParseDecimal(PriceInput.Text);
         var stock = ParseInt(StockInput.Text);
         var variantRows = ParseVariantRows(VariantRowsInput.Value);
@@ -174,7 +179,7 @@ public partial class SellerProductAdd : System.Web.UI.Page
                     db.CfProductVariants.RemoveRange(existingVariants);
                 }
 
-                CreateProductVariants(db, product.Id, validVariantRows, string.Empty, price, salePrice, stock, publish, now);
+                CreateProductVariants(db, product.Id, validVariantRows, skuBase, price, salePrice, stock, publish, now);
                 redirectId = product.Id;
             }
             else
@@ -203,7 +208,7 @@ public partial class SellerProductAdd : System.Web.UI.Page
                 db.CfProducts.Add(product);
                 db.SaveChanges();
 
-                CreateProductVariants(db, product.Id, validVariantRows, string.Empty, price, salePrice, stock, publish, now);
+                CreateProductVariants(db, product.Id, validVariantRows, skuBase, price, salePrice, stock, publish, now);
                 redirectId = product.Id;
             }
 
@@ -230,7 +235,76 @@ public partial class SellerProductAdd : System.Web.UI.Page
             db.SaveChanges();
         }
 
+        if (HandleImportRedirect())
+        {
+            return;
+        }
+
         Response.Redirect("/seller/product-add.aspx?id=" + (redirectId ?? 0) + "&mode=edit&saved=1");
+    }
+
+    private bool IsImportFlow()
+    {
+        return string.Equals(Request.QueryString["import"], "1", StringComparison.Ordinal);
+    }
+
+    private void ApplyImportDraft()
+    {
+        var drafts = Session["ProductImportDrafts"] as List<ProductImportDraft>;
+        if (drafts == null || drafts.Count == 0)
+        {
+            return;
+        }
+
+        var index = Session["ProductImportDraftIndex"] as int? ?? 0;
+        if (index < 0 || index >= drafts.Count)
+        {
+            return;
+        }
+
+        var draft = drafts[index];
+        ProductNameInput.Text = draft.ProductName ?? string.Empty;
+        DescriptionInput.Text = draft.Description ?? string.Empty;
+        SkuInput.Text = draft.Sku ?? string.Empty;
+        PriceInput.Text = draft.Price.HasValue ? draft.Price.Value.ToString("0.##", CultureInfo.InvariantCulture) : string.Empty;
+        SalePriceInput.Text = draft.SalePrice.HasValue ? draft.SalePrice.Value.ToString("0.##", CultureInfo.InvariantCulture) : string.Empty;
+        StockInput.Text = draft.StockQty.HasValue ? draft.StockQty.Value.ToString(CultureInfo.InvariantCulture) : string.Empty;
+        WeightInput.Text = draft.WeightGrams.HasValue ? draft.WeightGrams.Value.ToString("0.##", CultureInfo.InvariantCulture) : string.Empty;
+        LengthInput.Text = draft.LengthCm.HasValue ? draft.LengthCm.Value.ToString("0.##", CultureInfo.InvariantCulture) : string.Empty;
+        WidthInput.Text = draft.WidthCm.HasValue ? draft.WidthCm.Value.ToString("0.##", CultureInfo.InvariantCulture) : string.Empty;
+        HeightInput.Text = draft.HeightCm.HasValue ? draft.HeightCm.Value.ToString("0.##", CultureInfo.InvariantCulture) : string.Empty;
+
+        var remaining = drafts.Count - index;
+        FormMessageLiteral.Text = "<div class=\"alert alert-info mt-3\">Đang nhập từ file. Còn lại " + remaining.ToString(CultureInfo.InvariantCulture) + " sản phẩm.</div>";
+    }
+
+    private bool HandleImportRedirect()
+    {
+        if (!IsImportFlow())
+        {
+            return false;
+        }
+
+        var drafts = Session["ProductImportDrafts"] as List<ProductImportDraft>;
+        if (drafts == null || drafts.Count == 0)
+        {
+            Session.Remove("ProductImportDrafts");
+            Session.Remove("ProductImportDraftIndex");
+            return false;
+        }
+
+        var index = Session["ProductImportDraftIndex"] as int? ?? 0;
+        index++;
+        if (index < drafts.Count)
+        {
+            Session["ProductImportDraftIndex"] = index;
+            Response.Redirect("/seller/product-add.aspx?import=1");
+            return true;
+        }
+
+        Session.Remove("ProductImportDrafts");
+        Session.Remove("ProductImportDraftIndex");
+        return false;
     }
 
     private void BindDropdowns()
@@ -393,6 +467,7 @@ public partial class SellerProductAdd : System.Web.UI.Page
                 .FirstOrDefault();
             if (variant != null)
             {
+                SkuInput.Text = variant.Sku ?? string.Empty;
                 PriceInput.Text = variant.Price.ToString(CultureInfo.InvariantCulture);
                 SalePriceInput.Text = variant.SalePrice.HasValue ? variant.SalePrice.Value.ToString(CultureInfo.InvariantCulture) : string.Empty;
                 StockInput.Text = variant.StockQty.ToString(CultureInfo.InvariantCulture);
@@ -425,6 +500,7 @@ public partial class SellerProductAdd : System.Web.UI.Page
         BrandDropdown.Enabled = false;
         OriginDropdown.Enabled = false;
         DescriptionInput.Enabled = false;
+        SkuInput.Enabled = false;
         PriceInput.Enabled = false;
         SalePriceInput.Enabled = false;
         StockInput.Enabled = false;

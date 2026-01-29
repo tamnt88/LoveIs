@@ -113,6 +113,8 @@ public class BeautyStoryContext : DbContext
     public DbSet<SellerKycFileType> SellerKycFileTypes { get; set; }
     public DbSet<ShopDocumentType> ShopDocumentTypes { get; set; }
     public DbSet<ShopDocumentFileType> ShopDocumentFileTypes { get; set; }
+    public DbSet<CfProductImportBatch> CfProductImportBatches { get; set; }
+    public DbSet<CfProductImportItem> CfProductImportItems { get; set; }
 
     protected override void OnModelCreating(DbModelBuilder modelBuilder)
     {

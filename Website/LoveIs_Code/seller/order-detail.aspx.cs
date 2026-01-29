@@ -301,8 +301,8 @@ public partial class SellerOrderDetail : System.Web.UI.Page
             }
 
             order.OrderStatusId = statusRow.Id;
-            order.OrderStatus = statusRow.Code;
-            shopOrder.OrderStatus = statusRow.Code;
+            order.OrderStatus = statusRow.Name;
+            shopOrder.OrderStatus = statusRow.Name;
 
             db.SaveChanges();
         }

@@ -14,7 +14,7 @@
                     <i class="fa-solid fa-download"></i>
                     Tải file mẫu
                 </a>
-                <button class="btn-outline btn-import" type="button" id="importFileTrigger">
+                <button class="btn-outline btn-import" type="button" id="importFileTrigger" runat="server">
                     <i class="fa-solid fa-file-arrow-up"></i>
                     Nhập file
                 </button>
@@ -114,13 +114,39 @@
             <div class="pagination-links"><asp:Literal ID="PaginationLiteral" runat="server" /></div>
         </div>
     </div>
+    <asp:HiddenField ID="PendingBatchIdInput" runat="server" />
+    <div class="modal-overlay" id="ImportResumeModal" style="display:none;">
+        <div class="modal-card">
+            <div class="modal-header">
+                <h4>File đang nhập</h4>
+                <button type="button" class="modal-close" id="ImportResumeClose">&times;</button>
+            </div>
+            <div class="modal-body">
+                Bạn muốn tiếp tục nhập file đang dở hay xóa?
+            </div>
+            <div class="modal-actions">
+                <button type="button" class="btn-outline" id="ImportDeleteBtn">Xóa</button>
+                <button type="button" class="btn-primary" id="ImportContinueBtn">Tiếp tục</button>
+            </div>
+        </div>
+    </div>
     <script>
         (function () {
-            var trigger = document.getElementById('importFileTrigger');
+            var trigger = document.getElementById('<%= importFileTrigger.ClientID %>');
             var input = document.getElementById('<%= ImportFileUpload.ClientID %>');
             var submit = document.getElementById('<%= ImportSubmitButton.ClientID %>');
+            var pendingInput = document.getElementById('<%= PendingBatchIdInput.ClientID %>');
+            var modal = document.getElementById('ImportResumeModal');
+            var modalClose = document.getElementById('ImportResumeClose');
+            var modalContinue = document.getElementById('ImportContinueBtn');
+            var modalDelete = document.getElementById('ImportDeleteBtn');
             if (!trigger || !input || !submit) return;
             trigger.addEventListener('click', function () {
+                var batchId = pendingInput && pendingInput.value ? pendingInput.value : '';
+                if (batchId && modal) {
+                    modal.style.display = 'flex';
+                    return;
+                }
                 input.click();
             });
             input.addEventListener('change', function () {
@@ -128,6 +154,25 @@
                     submit.click();
                 }
             });
+            if (modalClose) {
+                modalClose.addEventListener('click', function () {
+                    modal.style.display = 'none';
+                });
+            }
+            if (modalContinue) {
+                modalContinue.addEventListener('click', function () {
+                    var batchId = pendingInput && pendingInput.value ? pendingInput.value : '';
+                    if (!batchId) return;
+                    window.location.href = '/seller/product-import.aspx?batchId=' + batchId;
+                });
+            }
+            if (modalDelete) {
+                modalDelete.addEventListener('click', function () {
+                    var batchId = pendingInput && pendingInput.value ? pendingInput.value : '';
+                    if (!batchId) return;
+                    window.location.href = '/seller/product-list.aspx?deleteImport=' + batchId;
+                });
+            }
         })();
     </script>
 </asp:Content>

@@ -65,7 +65,7 @@ public partial class SellerMaster : System.Web.UI.MasterPage
                     Url = string.IsNullOrWhiteSpace(m.Url) ? string.Empty : m.Url,
                     Icon = m.Icon,
                     Children = menus
-                        .Where(c => c.ParentId == m.Id && !IsAccountSettingsMenu(c.Url) && !IsShopSettingsMenu(c))
+                        .Where(c => c.ParentId == m.Id && !IsAccountSettingsMenu(c.Url) && !IsShopSettingsMenu(c) && !IsFinanceReportMenu(c.Url))
                         .OrderBy(c => c.SortOrder)
                         .ThenBy(c => c.MenuName)
                         .Select(c => new SellerMenuItem
@@ -149,6 +149,17 @@ public partial class SellerMaster : System.Web.UI.MasterPage
 
         var normalized = url.Trim().ToLowerInvariant();
         return normalized.StartsWith("/seller/settings-account.aspx", StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static bool IsFinanceReportMenu(string url)
+    {
+        if (string.IsNullOrWhiteSpace(url))
+        {
+            return false;
+        }
+
+        var normalized = url.Trim().ToLowerInvariant();
+        return normalized.StartsWith("/seller/finance-report.aspx", StringComparison.OrdinalIgnoreCase);
     }
 
     private static bool IsShopSettingsMenu(CfMenu menu)

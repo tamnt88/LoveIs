@@ -8,13 +8,20 @@ using System.Data;
 using System.Data.OleDb;
 using System.Text;
 using System.Web;
+using System.Web.UI.HtmlControls;
 
 public partial class SellerProducts : System.Web.UI.Page
 {
     protected void Page_Load(object sender, EventArgs e)
     {
+        if (Request.QueryString["deleteImport"] != null)
+        {
+            DeleteImportBatch(Request.QueryString["deleteImport"]);
+        }
+
         if (!IsPostBack)
         {
+            ApplyImportState();
             BindProducts();
             DataBind();
         }
@@ -260,7 +267,7 @@ public partial class SellerProducts : System.Web.UI.Page
             return;
         }
 
-        List<ImportRow> rows;
+        List<ProductImportDraft> rows;
         List<string> errors;
         if (!TryParseImportRows(out rows, out errors))
         {
@@ -284,87 +291,151 @@ public partial class SellerProducts : System.Web.UI.Page
         using (var db = new BeautyStoryContext())
         {
             var now = DateTime.Now;
-            using (var tx = db.Database.BeginTransaction())
+            var batch = new CfProductImportBatch
             {
-                try
+                SellerId = sellerId.Value,
+                FileName = ImportFileUpload.FileName,
+                TotalItems = rows.Count,
+                CompletedItems = 0,
+                Status = "draft",
+                CreatedAt = now,
+                UpdatedAt = now
+            };
+            db.CfProductImportBatches.Add(batch);
+            db.SaveChanges();
+
+            var skuList = rows
+                .Select(r => (r.Sku ?? string.Empty).Trim())
+                .Where(s => !string.IsNullOrWhiteSpace(s))
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToList();
+
+            var existingSkuMap = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+            if (skuList.Count > 0)
+            {
+                var existing = (from v in db.CfProductVariants
+                                join p in db.CfProducts on v.ProductId equals p.Id
+                                join s in db.CfShops on p.ShopId equals s.Id
+                                where s.SellerId == sellerId.Value && skuList.Contains(v.Sku)
+                                select new { v.Sku, v.ProductId })
+                    .ToList();
+                foreach (var row in existing)
                 {
-                    foreach (var row in rows)
+                    if (!existingSkuMap.ContainsKey(row.Sku ?? string.Empty))
                     {
-                        var product = new CfProduct
-                        {
-                            ProductName = row.ProductName,
-                            CategoryId = row.CategoryId,
-                            BrandId = row.BrandId,
-                            OriginId = row.OriginId,
-                            ShopId = row.ShopId,
-                            Description = row.Description,
-                            VideoUrl = row.VideoUrl,
-                            Status = true,
-                            CreatedAt = now,
-                            CreatedBy = "Import",
-                            SortOrder = 0,
-                            PackageWeightGrams = row.WeightGrams,
-                            PackageLengthCm = row.LengthCm,
-                            PackageWidthCm = row.WidthCm,
-                            PackageHeightCm = row.HeightCm,
-                            RatingAvg = 0,
-                            RatingCount = 0
-                        };
-
-                        db.CfProducts.Add(product);
-                        db.SaveChanges();
-
-                        var variant = new CfProductVariant
-                        {
-                            ProductId = product.Id,
-                            VariantName = "Mặc định",
-                            Sku = row.Sku,
-                            Price = row.Price,
-                            SalePrice = row.SalePrice,
-                            StockQty = row.StockQty,
-                            Status = true,
-                            CreatedAt = now,
-                            CreatedBy = "Import",
-                            SortOrder = 0
-                        };
-                        db.CfProductVariants.Add(variant);
-
-                        if (row.ImageUrls.Count > 0)
-                        {
-                            var sortOrder = 0;
-                            foreach (var imageUrl in row.ImageUrls)
-                            {
-                                db.CfProductImages.Add(new CfProductImage
-                                {
-                                    ProductId = product.Id,
-                                    ImageUrl = imageUrl,
-                                    IsPrimary = sortOrder == 0,
-                                    Status = true,
-                                    CreatedAt = now,
-                                    CreatedBy = "Import",
-                                    SortOrder = sortOrder
-                                });
-                                sortOrder++;
-                            }
-                        }
-
-                        db.SaveChanges();
+                        existingSkuMap[row.Sku ?? string.Empty] = row.ProductId;
                     }
-
-                    tx.Commit();
-                }
-                catch (Exception ex)
-                {
-                    tx.Rollback();
-                    ImportMessageLiteral.Text = "<div class=\"alert alert-danger mt-3\">Import thất bại: " + HttpUtility.HtmlEncode(ex.Message) + "</div>";
-                    return;
                 }
             }
+
+            var duplicateInFile = rows
+                .GroupBy(r => (r.Sku ?? string.Empty).Trim(), StringComparer.OrdinalIgnoreCase)
+                .Where(g => !string.IsNullOrWhiteSpace(g.Key) && g.Count() > 1)
+                .Select(g => g.Key)
+                .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+            var index = 0;
+            foreach (var row in rows)
+            {
+                var sku = (row.Sku ?? string.Empty).Trim();
+                var duplicated = (!string.IsNullOrWhiteSpace(sku) && existingSkuMap.ContainsKey(sku)) || (!string.IsNullOrWhiteSpace(sku) && duplicateInFile.Contains(sku));
+                int? duplicatedProductId = null;
+                if (!string.IsNullOrWhiteSpace(sku) && existingSkuMap.ContainsKey(sku))
+                {
+                    duplicatedProductId = existingSkuMap[sku];
+                }
+
+                db.CfProductImportItems.Add(new CfProductImportItem
+                {
+                    BatchId = batch.Id,
+                    RowIndex = index,
+                    ProductName = row.ProductName,
+                    Description = row.Description,
+                    BaseSku = sku,
+                    BasePrice = row.Price,
+                    BaseSalePrice = row.SalePrice,
+                    BaseStock = row.StockQty,
+                    PackageWeightGrams = row.WeightGrams,
+                    PackageLengthCm = row.LengthCm,
+                    PackageWidthCm = row.WidthCm,
+                    PackageHeightCm = row.HeightCm,
+                    IsCompleted = false,
+                    IsDuplicatedSku = duplicated,
+                    DuplicatedProductId = duplicatedProductId,
+                    CreatedAt = now
+                });
+                index++;
+            }
+
+            db.SaveChanges();
+            Response.Redirect("/seller/product-import.aspx?batchId=" + batch.Id);
+        }
+    }
+
+    private void ApplyImportState()
+    {
+        var sellerId = SellerAuth.GetSellerId();
+        if (!sellerId.HasValue)
+        {
+            return;
         }
 
-        ImportMessageLiteral.Text = "<div class=\"alert alert-success mt-3\">Đã nhập " + rows.Count + " sản phẩm.</div>";
-        BindProducts();
-        DataBind();
+        using (var db = new BeautyStoryContext())
+        {
+            var batchId = db.CfProductImportBatches
+                .Where(b => b.SellerId == sellerId.Value && b.Status == "draft")
+                .OrderByDescending(b => b.Id)
+                .Select(b => (int?)b.Id)
+                .FirstOrDefault();
+
+            if (!batchId.HasValue)
+            {
+                PendingBatchIdInput.Value = string.Empty;
+                return;
+            }
+
+            PendingBatchIdInput.Value = batchId.Value.ToString(CultureInfo.InvariantCulture);
+            var button = importFileTrigger as HtmlButton;
+            if (button != null)
+            {
+                button.InnerHtml = "<i class=\"fa-solid fa-file-arrow-up\"></i> File đang nhập...";
+                button.Attributes["class"] = "btn-outline btn-import pending";
+            }
+        }
+    }
+
+    private void DeleteImportBatch(string rawId)
+    {
+        int batchId;
+        if (!int.TryParse(rawId, out batchId))
+        {
+            return;
+        }
+
+        var sellerId = SellerAuth.GetSellerId();
+        if (!sellerId.HasValue)
+        {
+            return;
+        }
+
+        using (var db = new BeautyStoryContext())
+        {
+            var batch = db.CfProductImportBatches.FirstOrDefault(b => b.Id == batchId && b.SellerId == sellerId.Value && b.Status == "draft");
+            if (batch == null)
+            {
+                return;
+            }
+
+            var items = db.CfProductImportItems.Where(i => i.BatchId == batch.Id).ToList();
+            foreach (var item in items)
+            {
+                db.CfProductImportItems.Remove(item);
+            }
+            db.CfProductImportBatches.Remove(batch);
+            db.SaveChanges();
+        }
+
+        Response.Redirect("/seller/product-list.aspx");
     }
 
     public string GetTabClass(string key)
@@ -825,9 +896,9 @@ public partial class SellerProducts : System.Web.UI.Page
         public string EditUrl { get; set; }
     }
 
-    private bool TryParseImportRows(out List<ImportRow> rows, out List<string> errors)
+    private bool TryParseImportRows(out List<ProductImportDraft> rows, out List<string> errors)
     {
-        rows = new List<ImportRow>();
+        rows = new List<ProductImportDraft>();
         errors = new List<string>();
 
         var lines = ReadExcelRows(ImportFileUpload.PostedFile.InputStream);
@@ -843,10 +914,10 @@ public partial class SellerProducts : System.Web.UI.Page
             .Where(h => !string.IsNullOrWhiteSpace(h.Header))
             .ToDictionary(h => h.Header, h => h.Index, StringComparer.OrdinalIgnoreCase);
 
-        var required = new[] { "ProductName", "CategoryName", "ShopName", "Price", "StockQty" };
+        var required = new[] { "Tên sản phẩm", "Giá", "Kho hàng" };
         foreach (var key in required)
         {
-            if (!headerMap.ContainsKey(key))
+            if (!headerMap.ContainsKey(key) && !headerMap.ContainsKey(key.Replace(" ", string.Empty)))
             {
                 errors.Add("Thiếu cột bắt buộc: " + key);
             }
@@ -857,180 +928,68 @@ public partial class SellerProducts : System.Web.UI.Page
             return false;
         }
 
-        var sellerId = SellerAuth.GetSellerId();
-        using (var db = new BeautyStoryContext())
+        for (var i = 1; i < lines.Count; i++)
         {
-            var categories = db.CfCategories
-                .Where(c => c.Status)
-                .ToList()
-                .GroupBy(c => c.CategoryName ?? string.Empty, StringComparer.OrdinalIgnoreCase)
-                .ToDictionary(g => g.Key, g => g.First().Id, StringComparer.OrdinalIgnoreCase);
-            var defaultCategoryId = categories.Values.FirstOrDefault();
-
-            var brands = db.CfBrands
-                .Where(b => b.Status)
-                .ToList()
-                .GroupBy(b => b.BrandName ?? string.Empty, StringComparer.OrdinalIgnoreCase)
-                .ToDictionary(g => g.Key, g => g.First().Id, StringComparer.OrdinalIgnoreCase);
-
-            var origins = db.CfOrigins
-                .Where(o => o.Status)
-                .ToList()
-                .GroupBy(o => o.OriginName ?? string.Empty, StringComparer.OrdinalIgnoreCase)
-                .ToDictionary(g => g.Key, g => g.First().Id, StringComparer.OrdinalIgnoreCase);
-
-            var shops = db.CfShops
-                .Where(s => sellerId.HasValue && s.SellerId == sellerId.Value)
-                .ToList()
-                .GroupBy(s => s.ShopName ?? string.Empty, StringComparer.OrdinalIgnoreCase)
-                .ToDictionary(g => g.Key, g => g.First().Id, StringComparer.OrdinalIgnoreCase);
-            var defaultShopId = shops.Values.FirstOrDefault();
-
-            for (var i = 1; i < lines.Count; i++)
+            var values = lines[i];
+            if (values.All(string.IsNullOrWhiteSpace))
             {
-                var values = lines[i];
-                if (values.All(string.IsNullOrWhiteSpace))
-                {
-                    continue;
-                }
-                var productName = GetField(values, headerMap, "ProductName");
-                var categoryName = GetField(values, headerMap, "CategoryName");
-                var shopName = GetField(values, headerMap, "ShopName");
-                var priceRaw = GetField(values, headerMap, "Price");
-                var stockRaw = GetField(values, headerMap, "StockQty");
-
-                var rowErrors = new List<string>();
-
-                if (string.IsNullOrWhiteSpace(productName))
-                {
-                    rowErrors.Add("thiếu ProductName");
-                }
-
-                int categoryId;
-                if (!string.IsNullOrWhiteSpace(categoryName) && categories.ContainsKey(categoryName))
-                {
-                    categoryId = categories[categoryName];
-                }
-                else
-                {
-                    var categoryIdRaw = GetField(values, headerMap, "CategoryId");
-                    int parsedCategoryId;
-                    if (int.TryParse(categoryIdRaw, out parsedCategoryId) && parsedCategoryId > 0)
-                    {
-                        categoryId = parsedCategoryId;
-                    }
-                    else if (defaultCategoryId > 0)
-                    {
-                        categoryId = defaultCategoryId;
-                    }
-                    else
-                    {
-                        rowErrors.Add("CategoryName/CategoryId không hợp lệ");
-                        categoryId = 0;
-                    }
-                }
-
-                int shopId;
-                if (!string.IsNullOrWhiteSpace(shopName) && shops.ContainsKey(shopName))
-                {
-                    shopId = shops[shopName];
-                }
-                else
-                {
-                    var shopIdRaw = GetField(values, headerMap, "ShopId");
-                    int parsedShopId;
-                    if (int.TryParse(shopIdRaw, out parsedShopId) && parsedShopId > 0)
-                    {
-                        shopId = parsedShopId;
-                    }
-                    else if (defaultShopId > 0)
-                    {
-                        shopId = defaultShopId;
-                    }
-                    else
-                    {
-                        rowErrors.Add("ShopName/ShopId không hợp lệ");
-                        shopId = 0;
-                    }
-                }
-
-                var price = ParseDecimal(priceRaw);
-                if (price <= 0)
-                {
-                    rowErrors.Add("Price không hợp lệ");
-                }
-
-                int stockQty;
-                if (!int.TryParse(stockRaw, out stockQty) || stockQty < 0)
-                {
-                    rowErrors.Add("StockQty không hợp lệ");
-                }
-
-                var brandName = GetField(values, headerMap, "BrandName");
-                int? brandId = null;
-                if (!string.IsNullOrWhiteSpace(brandName))
-                {
-                    if (brands.ContainsKey(brandName))
-                    {
-                        brandId = brands[brandName];
-                    }
-                    else
-                    {
-                        rowErrors.Add("BrandName không hợp lệ");
-                    }
-                }
-
-                var originName = GetField(values, headerMap, "OriginName");
-                int? originId = null;
-                if (!string.IsNullOrWhiteSpace(originName))
-                {
-                    if (origins.ContainsKey(originName))
-                    {
-                        originId = origins[originName];
-                    }
-                    else
-                    {
-                        rowErrors.Add("OriginName không hợp lệ");
-                    }
-                }
-
-                var salePrice = ParseNullableDecimal(GetField(values, headerMap, "SalePrice"));
-                var description = GetField(values, headerMap, "Description");
-                var sku = GetField(values, headerMap, "Sku");
-                var videoUrl = GetField(values, headerMap, "VideoUrl");
-                var imageUrls = ParseImageUrls(GetField(values, headerMap, "ImageUrls"));
-
-                var weight = ParseNullableDecimal(GetField(values, headerMap, "WeightGrams"));
-                var length = ParseNullableDecimal(GetField(values, headerMap, "LengthCm"));
-                var width = ParseNullableDecimal(GetField(values, headerMap, "WidthCm"));
-                var height = ParseNullableDecimal(GetField(values, headerMap, "HeightCm"));
-
-                if (rowErrors.Count > 0)
-                {
-                    errors.Add("Dòng " + (i + 1) + ": " + string.Join(", ", rowErrors));
-                    continue;
-                }
-
-                rows.Add(new ImportRow
-                {
-                    ProductName = productName,
-                    CategoryId = categoryId,
-                    ShopId = shopId,
-                    BrandId = brandId,
-                    OriginId = originId,
-                    Price = price,
-                    SalePrice = salePrice,
-                    StockQty = stockQty,
-                    Description = description,
-                    Sku = sku,
-                    VideoUrl = videoUrl,
-                    ImageUrls = imageUrls,
-                    WeightGrams = weight,
-                    LengthCm = length,
-                    WidthCm = width,
-                    HeightCm = height
-                });
+                continue;
             }
+
+            var productName = GetField(values, headerMap, "Tên sản phẩm", "ProductName");
+            var description = GetField(values, headerMap, "Mô tả sản phẩm", "Description");
+            var sku = GetField(values, headerMap, "SKU", "Sku");
+            var priceRaw = GetField(values, headerMap, "Giá", "Price");
+            var salePriceRaw = GetField(values, headerMap, "Giá sau khuyến mãi", "SalePrice");
+            var stockRaw = GetField(values, headerMap, "Kho hàng", "StockQty");
+            var weightRaw = GetField(values, headerMap, "Cân nặng (Sau khi đóng gói)", "WeightGrams");
+            var sizeRaw = GetField(values, headerMap, "Kích thước đóng gói (Dài x Rộng x Cao)", "PackageSize");
+
+            var rowErrors = new List<string>();
+
+            if (string.IsNullOrWhiteSpace(productName))
+            {
+                rowErrors.Add("thiếu Tên sản phẩm");
+            }
+
+            var price = ParseNullableDecimal(priceRaw);
+            if (!price.HasValue || price.Value <= 0)
+            {
+                rowErrors.Add("Giá không hợp lệ");
+            }
+
+            int stockQty;
+            if (!int.TryParse(stockRaw, out stockQty) || stockQty < 0)
+            {
+                rowErrors.Add("Kho hàng không hợp lệ");
+            }
+
+            var salePrice = ParseNullableDecimal(salePriceRaw);
+            var weight = ParseNullableDecimal(weightRaw);
+            decimal? length;
+            decimal? width;
+            decimal? height;
+            ParseDimensions(sizeRaw, out length, out width, out height);
+
+            if (rowErrors.Count > 0)
+            {
+                errors.Add("Dòng " + (i + 1) + ": " + string.Join(", ", rowErrors));
+                continue;
+            }
+
+            rows.Add(new ProductImportDraft
+            {
+                ProductName = productName,
+                Description = description,
+                Sku = sku,
+                Price = price,
+                SalePrice = salePrice,
+                StockQty = stockQty,
+                WeightGrams = weight,
+                LengthCm = length,
+                WidthCm = width,
+                HeightCm = height
+            });
         }
 
         if (errors.Count > 0)
@@ -1126,14 +1085,42 @@ public partial class SellerProducts : System.Web.UI.Page
         return rows;
     }
 
-    private static string GetField(List<string> values, Dictionary<string, int> headerMap, string key)
+    private static string GetField(List<string> values, Dictionary<string, int> headerMap, params string[] keys)
     {
-        int index;
-        if (!headerMap.TryGetValue(key, out index))
+        foreach (var key in keys)
         {
-            return string.Empty;
+            int index;
+            if (headerMap.TryGetValue(key, out index))
+            {
+                return index < values.Count ? (values[index] ?? string.Empty).Trim() : string.Empty;
+            }
         }
-        return index < values.Count ? (values[index] ?? string.Empty).Trim() : string.Empty;
+
+        return string.Empty;
+    }
+
+    private static void ParseDimensions(string raw, out decimal? length, out decimal? width, out decimal? height)
+    {
+        length = null;
+        width = null;
+        height = null;
+        if (string.IsNullOrWhiteSpace(raw))
+        {
+            return;
+        }
+
+        var normalized = raw.Replace("×", "x").Replace("*", "x");
+        var parts = normalized.Split(new[] { 'x', 'X' }, StringSplitOptions.RemoveEmptyEntries)
+            .Select(p => (p ?? string.Empty).Trim())
+            .ToList();
+        if (parts.Count < 3)
+        {
+            return;
+        }
+
+        length = ParseNullableDecimal(parts[0]);
+        width = ParseNullableDecimal(parts[1]);
+        height = ParseNullableDecimal(parts[2]);
     }
 
     private static decimal ParseDecimal(string raw)
@@ -1172,31 +1159,6 @@ public partial class SellerProducts : System.Web.UI.Page
             .Select(u => (u ?? string.Empty).Trim())
             .Where(u => !string.IsNullOrWhiteSpace(u))
             .ToList();
-    }
-
-    private class ImportRow
-    {
-        public ImportRow()
-        {
-            ImageUrls = new List<string>();
-        }
-
-        public string ProductName { get; set; }
-        public int CategoryId { get; set; }
-        public int ShopId { get; set; }
-        public int? BrandId { get; set; }
-        public int? OriginId { get; set; }
-        public decimal Price { get; set; }
-        public decimal? SalePrice { get; set; }
-        public int StockQty { get; set; }
-        public string Description { get; set; }
-        public string Sku { get; set; }
-        public string VideoUrl { get; set; }
-        public List<string> ImageUrls { get; set; }
-        public decimal? WeightGrams { get; set; }
-        public decimal? LengthCm { get; set; }
-        public decimal? WidthCm { get; set; }
-        public decimal? HeightCm { get; set; }
     }
 
     private class ExportRow

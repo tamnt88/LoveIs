@@ -172,6 +172,48 @@ public class CfShopInquiry
     public bool Status { get; set; }
 }
 
+[Table("cf_product_import_batch")]
+public class CfProductImportBatch
+{
+    public int Id { get; set; }
+    public int SellerId { get; set; }
+    public string FileName { get; set; }
+    public int TotalItems { get; set; }
+    public int CompletedItems { get; set; }
+    public string Status { get; set; }
+    public DateTime CreatedAt { get; set; }
+    public DateTime? UpdatedAt { get; set; }
+}
+
+[Table("cf_product_import_item")]
+public class CfProductImportItem
+{
+    public int Id { get; set; }
+    public int BatchId { get; set; }
+    public int RowIndex { get; set; }
+    public string ProductName { get; set; }
+    public string Description { get; set; }
+    public int? CategoryId { get; set; }
+    public int? BrandId { get; set; }
+    public int? OriginId { get; set; }
+    public string BaseSku { get; set; }
+    public decimal? BasePrice { get; set; }
+    public decimal? BaseSalePrice { get; set; }
+    public int? BaseStock { get; set; }
+    public string VariantData { get; set; }
+    public decimal? PackageWeightGrams { get; set; }
+    public decimal? PackageLengthCm { get; set; }
+    public decimal? PackageWidthCm { get; set; }
+    public decimal? PackageHeightCm { get; set; }
+    public string ImageUrls { get; set; }
+    public string VideoUrl { get; set; }
+    public bool IsCompleted { get; set; }
+    public bool IsDuplicatedSku { get; set; }
+    public int? DuplicatedProductId { get; set; }
+    public DateTime? LastSavedAt { get; set; }
+    public DateTime CreatedAt { get; set; }
+}
+
 [Table("cf_shop_inquiry_message")]
 public class CfShopInquiryMessage
 {

@@ -101,7 +101,11 @@
                         </div>
                     </div>
 
-                    <div class="variant-base-row" id="VariantBaseRow">
+                    <div class="variant-base-row four-col" id="VariantBaseRow">
+                        <div class="form-group">
+                            <label>SKU</label>
+                            <asp:TextBox ID="SkuInput" runat="server" CssClass="form-control" placeholder="Nhập SKU" />
+                        </div>
                         <div class="form-group">
                             <label>Giá <span class="text-danger">*</span></label>
                             <asp:TextBox ID="PriceInput" runat="server" CssClass="form-control" TextMode="Number" placeholder="0" />

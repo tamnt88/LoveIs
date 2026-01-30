@@ -214,6 +214,60 @@ public class CfProductImportItem
     public DateTime CreatedAt { get; set; }
 }
 
+[Table("cf_support_ticket_category")]
+public class CfSupportTicketCategory
+{
+    public int Id { get; set; }
+    public string Code { get; set; }
+    public string Name { get; set; }
+    public int SortOrder { get; set; }
+    public bool Status { get; set; }
+}
+
+[Table("cf_support_ticket_status")]
+public class CfSupportTicketStatus
+{
+    public int Id { get; set; }
+    public string Code { get; set; }
+    public string Name { get; set; }
+    public int SortOrder { get; set; }
+    public bool Status { get; set; }
+}
+
+[Table("cf_support_ticket_priority")]
+public class CfSupportTicketPriority
+{
+    public int Id { get; set; }
+    public string Code { get; set; }
+    public string Name { get; set; }
+    public int SortOrder { get; set; }
+    public bool Status { get; set; }
+}
+
+[Table("cf_support_ticket")]
+public class CfSupportTicket
+{
+    public int Id { get; set; }
+    public int SellerId { get; set; }
+    public string Title { get; set; }
+    public string Description { get; set; }
+    public int CategoryId { get; set; }
+    public int StatusId { get; set; }
+    public int PriorityId { get; set; }
+    public DateTime CreatedAt { get; set; }
+    public DateTime? UpdatedAt { get; set; }
+}
+
+[Table("cf_support_ticket_message")]
+public class CfSupportTicketMessage
+{
+    public int Id { get; set; }
+    public int TicketId { get; set; }
+    public string SenderType { get; set; }
+    public string Message { get; set; }
+    public DateTime CreatedAt { get; set; }
+}
+
 [Table("cf_shop_inquiry_message")]
 public class CfShopInquiryMessage
 {

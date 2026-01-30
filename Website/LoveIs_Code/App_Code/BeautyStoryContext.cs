@@ -115,6 +115,11 @@ public class BeautyStoryContext : DbContext
     public DbSet<ShopDocumentFileType> ShopDocumentFileTypes { get; set; }
     public DbSet<CfProductImportBatch> CfProductImportBatches { get; set; }
     public DbSet<CfProductImportItem> CfProductImportItems { get; set; }
+    public DbSet<CfSupportTicketCategory> CfSupportTicketCategories { get; set; }
+    public DbSet<CfSupportTicketStatus> CfSupportTicketStatuses { get; set; }
+    public DbSet<CfSupportTicketPriority> CfSupportTicketPriorities { get; set; }
+    public DbSet<CfSupportTicket> CfSupportTickets { get; set; }
+    public DbSet<CfSupportTicketMessage> CfSupportTicketMessages { get; set; }
 
     protected override void OnModelCreating(DbModelBuilder modelBuilder)
     {

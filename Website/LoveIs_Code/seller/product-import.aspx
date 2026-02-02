@@ -36,6 +36,9 @@
             <asp:HiddenField ID="NextItemIdInput" runat="server" />
             <asp:HiddenField ID="VariantRowsInput" runat="server" />
             <asp:HiddenField ID="CategoryIdInput" runat="server" />
+            <asp:HiddenField ID="ImageOrderInput" runat="server" />
+            <asp:HiddenField ID="ImageRemoveInput" runat="server" />
+            <asp:HiddenField ID="ImageSkipInput" runat="server" />
             <div class="product-section">
                 <h4>Thông tin cơ bản</h4>
                 <div class="form-group">
@@ -245,6 +248,9 @@
             var box = document.getElementById('imageUploadBox');
             var placeholder = document.getElementById('imageUploadPlaceholder');
             var previewsData = [];
+            var orderInput = document.getElementById('<%= ImageOrderInput.ClientID %>');
+            var removeInput = document.getElementById('<%= ImageRemoveInput.ClientID %>');
+            var skipInput = document.getElementById('<%= ImageSkipInput.ClientID %>');
 
             if (input && preview) {
                 if (box) {
@@ -259,14 +265,63 @@
                     });
                 }
 
+                function syncHidden() {
+                    if (orderInput) {
+                        var existing = previewsData.filter(function (p) { return p.isExisting; }).map(function (p) { return p.src; });
+                        orderInput.value = existing.join(';');
+                    }
+                }
+
+                function pushRemoved(src) {
+                    if (!removeInput || !src) return;
+                    var current = removeInput.value ? removeInput.value.split(';') : [];
+                    if (current.indexOf(src) === -1) {
+                        current.push(src);
+                        removeInput.value = current.join(';');
+                    }
+                }
+
+                function pushSkip(name) {
+                    if (!skipInput || !name) return;
+                    var current = skipInput.value ? skipInput.value.split(';') : [];
+                    if (current.indexOf(name) === -1) {
+                        current.push(name);
+                        skipInput.value = current.join(';');
+                    }
+                }
+
                 function renderPreviews() {
                     preview.innerHTML = '';
-                    previewsData.forEach(function (item) {
+                    previewsData.forEach(function (item, index) {
+                        var wrap = document.createElement('div');
+                        wrap.className = 'upload-preview-item';
+                        wrap.setAttribute('draggable', 'true');
+                        wrap.setAttribute('data-index', index.toString());
+
                         var img = document.createElement('img');
                         img.src = item.src;
-                        img.alt = item.name;
-                        preview.appendChild(img);
+                        img.alt = item.name || 'Hình sản phẩm';
+
+                        var removeBtn = document.createElement('button');
+                        removeBtn.type = 'button';
+                        removeBtn.className = 'upload-preview-remove';
+                        removeBtn.innerHTML = '&times;';
+                        removeBtn.addEventListener('click', function (event) {
+                            event.stopPropagation();
+                            var removed = previewsData.splice(index, 1)[0];
+                            if (removed && removed.isExisting) {
+                                pushRemoved(removed.src);
+                            } else if (removed && removed.name) {
+                                pushSkip(removed.name);
+                            }
+                            renderPreviews();
+                        });
+
+                        wrap.appendChild(img);
+                        wrap.appendChild(removeBtn);
+                        preview.appendChild(wrap);
                     });
+                    syncHidden();
                 }
 
                 var existing = preview.querySelectorAll('img');
@@ -274,7 +329,7 @@
                     existing.forEach(function (img) {
                         var src = img.getAttribute('src');
                         if (!src) return;
-                        previewsData.push({ src: src, name: img.getAttribute('alt') || 'HĂ¬nh sáº£n pháº©m' });
+                        previewsData.push({ src: src, name: img.getAttribute('alt') || 'Hình sản phẩm', isExisting: true });
                     });
                     renderPreviews();
                 }
@@ -286,11 +341,33 @@
                         if (previewsData.length >= 9) return;
                         var reader = new FileReader();
                         reader.onload = function (e) {
-                            previewsData.push({ src: e.target.result, name: file.name });
+                            previewsData.push({ src: e.target.result, name: file.name, isExisting: false });
                             renderPreviews();
                         };
                         reader.readAsDataURL(file);
                     });
+                });
+
+                preview.addEventListener('dragstart', function (event) {
+                    var target = event.target.closest('.upload-preview-item');
+                    if (!target) return;
+                    event.dataTransfer.setData('text/plain', target.getAttribute('data-index'));
+                });
+
+                preview.addEventListener('dragover', function (event) {
+                    event.preventDefault();
+                });
+
+                preview.addEventListener('drop', function (event) {
+                    event.preventDefault();
+                    var target = event.target.closest('.upload-preview-item');
+                    if (!target) return;
+                    var fromIndex = parseInt(event.dataTransfer.getData('text/plain'), 10);
+                    var toIndex = parseInt(target.getAttribute('data-index'), 10);
+                    if (isNaN(fromIndex) || isNaN(toIndex) || fromIndex === toIndex) return;
+                    var moved = previewsData.splice(fromIndex, 1)[0];
+                    previewsData.splice(toIndex, 0, moved);
+                    renderPreviews();
                 });
             }
 

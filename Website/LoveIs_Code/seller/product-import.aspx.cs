@@ -411,7 +411,28 @@ public partial class SellerProductImport : System.Web.UI.Page
             }
 
             var imageUrls = ParseImageUrls(item.ImageUrls);
-            imageUrls.AddRange(SaveUploads(ImageUpload, uploadRoot));
+            var removed = ParseImageUrls(ImageRemoveInput.Value);
+            if (removed.Count > 0)
+            {
+                imageUrls = imageUrls.Where(u => !removed.Contains(u)).ToList();
+            }
+
+            var ordered = ParseImageUrls(ImageOrderInput.Value);
+            if (ordered.Count > 0)
+            {
+                var orderedList = ordered.Where(imageUrls.Contains).ToList();
+                foreach (var url in imageUrls)
+                {
+                    if (!orderedList.Contains(url))
+                    {
+                        orderedList.Add(url);
+                    }
+                }
+                imageUrls = orderedList;
+            }
+
+            var skip = ParseImageUrls(ImageSkipInput.Value);
+            imageUrls.AddRange(SaveUploads(ImageUpload, uploadRoot, skip));
             item.ImageUrls = string.Join(";", imageUrls);
 
             var videoUrl = SaveUpload(VideoUpload, uploadRoot);
@@ -757,7 +778,7 @@ public partial class SellerProductImport : System.Web.UI.Page
         return "/upload/" + fileName;
     }
 
-    private List<string> SaveUploads(FileUpload upload, string uploadRoot)
+    private List<string> SaveUploads(FileUpload upload, string uploadRoot, List<string> skipNames = null)
     {
         var urls = new List<string>();
         if (upload == null)
@@ -765,12 +786,20 @@ public partial class SellerProductImport : System.Web.UI.Page
             return urls;
         }
 
+        var skipSet = skipNames != null
+            ? new HashSet<string>(skipNames, StringComparer.OrdinalIgnoreCase)
+            : new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
         if (upload.PostedFiles != null && upload.PostedFiles.Count > 0)
         {
             foreach (var postedFile in upload.PostedFiles)
             {
                 var file = postedFile as HttpPostedFile;
                 if (file == null || file.ContentLength <= 0)
+                {
+                    continue;
+                }
+                if (skipSet.Contains(file.FileName))
                 {
                     continue;
                 }

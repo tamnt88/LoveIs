@@ -25,12 +25,14 @@
 
         <div class="finance-balance-grid">
             <div class="finance-balance-hero">
-                <div class="finance-balance-label"><i class="fa-solid fa-dollar-sign"></i> Số Dư Hiện Tại</div>
-                <div class="finance-balance-value"><asp:Literal ID="WalletBalanceLiteral" runat="server" /></div>
-                <div class="finance-balance-note"><asp:Literal ID="WalletBalanceNoteLiteral" runat="server" /></div>
+                <div class="finance-balance-info">
+                    <div class="finance-balance-label"><i class="fa-solid fa-dollar-sign"></i> Số Dư Hiện Tại</div>
+                    <div class="finance-balance-value"><asp:Literal ID="WalletBalanceLiteral" runat="server" /></div>
+                    <div class="finance-balance-note"><asp:Literal ID="WalletBalanceNoteLiteral" runat="server" /></div>
+                </div>
                 <button type="button" class="btn-address-outline btn-balance-withdraw" id="BalanceWithdrawButton">
                     <i class="fa-solid fa-hand-holding-dollar"></i>
-                    Rút tiền về bank
+                    Rút tiền
                 </button>
             </div>
             <div class="card finance-mini-card">

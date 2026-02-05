@@ -6,6 +6,16 @@
 <%@ Register Src="~/public/controls/trang-chu/BannerHomeThreeNew.ascx" TagPrefix="uc1" TagName="BannerHomeThreeNew" %>
 <%@ Register Src="~/public/controls/trang-chu/NewProductHomePage.ascx" TagPrefix="uc1" TagName="NewProductHomePage" %>--%>
 <%@ Register Src="~/public/controls/trang-chu/new/banner.ascx" TagPrefix="uc1" TagName="banner" %>
+<%@ Register Src="~/public/controls/trang-chu/new/toptag.ascx" TagPrefix="uc1" TagName="toptag" %>
+<%@ Register Src="~/public/controls/trang-chu/new/topcollection.ascx" TagPrefix="uc1" TagName="topcollection" %>
+<%@ Register Src="~/public/controls/trang-chu/new/bannercollection.ascx" TagPrefix="uc1" TagName="bannercollection" %>
+<%@ Register Src="~/public/controls/trang-chu/new/livestream.ascx" TagPrefix="uc1" TagName="livestream" %>
+<%@ Register Src="~/public/controls/trang-chu/new/newproduct.ascx" TagPrefix="uc1" TagName="newproduct" %>
+
+
+
+
+
 
 
 
@@ -20,6 +30,11 @@
 
 <asp:Content ID="MainContent" ContentPlaceHolderID="MainContent" runat="server">
     <uc1:banner runat="server" ID="banner" />
+<uc1:toptag runat="server" ID="toptag" />
+<uc1:topcollection runat="server" ID="topcollection" />
+<uc1:bannercollection runat="server" ID="bannercollection" />
+<uc1:livestream runat="server" ID="livestream" />
+<uc1:newproduct runat="server" ID="newproduct" />
     <%--<uc1:BannerHomePage runat="server" ID="BannerHomePage" />
         <uc1:BannerHomeTwoNew runat="server" ID="BannerHomeTwoNew" />
 <uc1:BestSellingHomePageNew runat="server" ID="BestSellingHomePageNew" />

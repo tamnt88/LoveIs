@@ -98,11 +98,34 @@
         });
     }
 
+    function initTopCollection() {
+        var el = document.querySelector('.top-collection-swiper');
+        if (!el || typeof Swiper === 'undefined') {
+            return;
+        }
+        new Swiper(el, {
+            slidesPerView: 4.5,
+            spaceBetween: 20,
+            navigation: {
+                nextEl: '.top-collection-next',
+                prevEl: '.top-collection-prev'
+            },
+            breakpoints: {
+                0: { slidesPerView: 1.1, spaceBetween: 12 },
+                576: { slidesPerView: 2.1, spaceBetween: 14 },
+                768: { slidesPerView: 3.1, spaceBetween: 16 },
+                992: { slidesPerView: 4.1, spaceBetween: 18 },
+                1200: { slidesPerView: 4.5, spaceBetween: 20 }
+            }
+        });
+    }
+
     document.addEventListener('DOMContentLoaded', function () {
         initLayerSlider();
         initNewArrival();
         initCategorySwiper();
         initBannerTwo();
         initBestSelling();
+        initTopCollection();
     });
 })();

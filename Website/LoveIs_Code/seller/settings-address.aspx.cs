@@ -2,12 +2,15 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
+using System.Text.RegularExpressions;
 using System.Web;
 
 public partial class SellerSettingsAddress : System.Web.UI.Page
 {
     protected void Page_Load(object sender, EventArgs e)
     {
+        ToastMessageLiteral.Text = string.Empty;
+        ShowToastFromSession();
         if (!IsPostBack)
         {
             BindProvinces();
@@ -27,6 +30,7 @@ public partial class SellerSettingsAddress : System.Web.UI.Page
 
     protected void SaveAddressButton_Click(object sender, EventArgs e)
     {
+        AddressFormAlertLiteral.Text = string.Empty;
         var sellerId = SellerAuth.GetSellerId();
         if (!sellerId.HasValue)
         {
@@ -35,6 +39,7 @@ public partial class SellerSettingsAddress : System.Web.UI.Page
         }
 
         var addressId = ParseInt(AddressIdHidden.Value);
+        var isNew = addressId == 0;
         var shopId = ParseInt(ShopIdHidden.Value);
         if (shopId == 0)
         {
@@ -50,6 +55,70 @@ public partial class SellerSettingsAddress : System.Web.UI.Page
 
         if (shopId == 0)
         {
+            return;
+        }
+
+        var title = (TitleInput.Text ?? string.Empty).Trim();
+        var contactName = (ContactNameInput.Text ?? string.Empty).Trim();
+        var phone = (PhoneInput.Text ?? string.Empty).Trim();
+        var addressLine = (AddressLineInput.Text ?? string.Empty).Trim();
+        var provinceId = ParseNullableInt(ProvinceDropDown.SelectedValue);
+        var wardId = ParseNullableInt(WardDropDown.SelectedValue);
+
+        if (string.IsNullOrWhiteSpace(title))
+        {
+            ShowFormError("Vui lòng nhập tên địa chỉ.");
+            return;
+        }
+        if (title.Length > 80)
+        {
+            ShowFormError("Tên địa chỉ tối đa 80 ký tự.");
+            return;
+        }
+        if (string.IsNullOrWhiteSpace(contactName))
+        {
+            ShowFormError("Vui lòng nhập người liên hệ.");
+            return;
+        }
+        if (contactName.Length < 2 || contactName.Length > 60)
+        {
+            ShowFormError("Người liên hệ phải từ 2-60 ký tự.");
+            return;
+        }
+        if (Regex.IsMatch(contactName, @"^[\d\W_]+$"))
+        {
+            ShowFormError("Người liên hệ không hợp lệ.");
+            return;
+        }
+        if (string.IsNullOrWhiteSpace(phone))
+        {
+            ShowFormError("Vui lòng nhập số điện thoại.");
+            return;
+        }
+        var phoneNormalized = Regex.Replace(phone, @"\s+", string.Empty);
+        if (!Regex.IsMatch(phoneNormalized, @"^(0|\+84)[0-9]{8,10}$"))
+        {
+            ShowFormError("Số điện thoại không đúng định dạng.");
+            return;
+        }
+        if (string.IsNullOrWhiteSpace(addressLine))
+        {
+            ShowFormError("Vui lòng nhập địa chỉ chi tiết.");
+            return;
+        }
+        if (addressLine.Length < 10)
+        {
+            ShowFormError("Địa chỉ chi tiết quá ngắn.");
+            return;
+        }
+        if (!provinceId.HasValue)
+        {
+            ShowFormError("Vui lòng chọn tỉnh/thành phố.");
+            return;
+        }
+        if (!wardId.HasValue)
+        {
+            ShowFormError("Vui lòng chọn phường/xã.");
             return;
         }
 
@@ -79,13 +148,13 @@ public partial class SellerSettingsAddress : System.Web.UI.Page
                 address.UpdatedBy = "Seller:" + sellerId.Value.ToString(CultureInfo.InvariantCulture);
             }
 
-            address.Title = (TitleInput.Text ?? string.Empty).Trim();
+            address.Title = title;
             address.AddressType = TypeDropDown.SelectedValue;
-            address.ContactName = (ContactNameInput.Text ?? string.Empty).Trim();
-            address.Phone = (PhoneInput.Text ?? string.Empty).Trim();
-            address.AddressLine = (AddressLineInput.Text ?? string.Empty).Trim();
-            address.ProvinceId = ParseNullableInt(ProvinceDropDown.SelectedValue);
-            address.WardId = ParseNullableInt(WardDropDown.SelectedValue);
+            address.ContactName = contactName;
+            address.Phone = phoneNormalized;
+            address.AddressLine = addressLine;
+            address.ProvinceId = provinceId;
+            address.WardId = wardId;
             address.ProvinceName = ProvinceDropDown.SelectedItem != null ? ProvinceDropDown.SelectedItem.Text : string.Empty;
             address.WardName = WardDropDown.SelectedItem != null ? WardDropDown.SelectedItem.Text : string.Empty;
 
@@ -106,7 +175,8 @@ public partial class SellerSettingsAddress : System.Web.UI.Page
         }
 
         AddressModal.Visible = false;
-        BindAddresses();
+        SetToastSession(isNew ? "Tạo địa chỉ thành công." : "Cập nhật địa chỉ thành công.", "success");
+        Response.Redirect(Request.RawUrl);
     }
 
     protected void AddressRepeater_ItemCommand(object source, System.Web.UI.WebControls.RepeaterCommandEventArgs e)
@@ -201,6 +271,8 @@ public partial class SellerSettingsAddress : System.Web.UI.Page
             return;
         }
 
+        AddressFormAlertLiteral.Text = string.Empty;
+
         using (var db = new BeautyStoryContext())
         {
             var shop = db.CfShops.FirstOrDefault(s => s.SellerId == sellerId.Value);
@@ -293,6 +365,8 @@ public partial class SellerSettingsAddress : System.Web.UI.Page
         }
 
         BindAddresses();
+        SetToastSession("Đã xóa địa chỉ.", "success");
+        Response.Redirect(Request.RawUrl);
     }
 
     private void SetDefaultAddress(int id)
@@ -333,6 +407,39 @@ public partial class SellerSettingsAddress : System.Web.UI.Page
         }
 
         BindAddresses();
+    }
+
+    private void ShowFormError(string message)
+    {
+        AddressFormAlertLiteral.Text = "<div class='alert alert-danger'>" + HttpUtility.HtmlEncode(message) + "</div>";
+        AddressModal.Visible = true;
+    }
+
+    private void ShowToast(string message, string type)
+    {
+        var safeMessage = HttpUtility.JavaScriptStringEncode(message ?? string.Empty);
+        var safeType = HttpUtility.JavaScriptStringEncode(type ?? "success");
+        ToastMessageLiteral.Text = "<script>(function(){var t=0;function tryShow(){if(window.SellerToast){window.SellerToast.show('" + safeMessage + "', '" + safeType + "');return;}t++;if(t<10){setTimeout(tryShow,80);}}tryShow();})();</script>";
+    }
+
+    private void SetToastSession(string message, string type)
+    {
+        Session["AddressToastMessage"] = message;
+        Session["AddressToastType"] = type;
+    }
+
+    private void ShowToastFromSession()
+    {
+        var message = Session["AddressToastMessage"] as string;
+        if (string.IsNullOrWhiteSpace(message))
+        {
+            return;
+        }
+
+        var type = Session["AddressToastType"] as string;
+        Session.Remove("AddressToastMessage");
+        Session.Remove("AddressToastType");
+        ShowToast(message, string.IsNullOrWhiteSpace(type) ? "success" : type);
     }
 
     private static int ParseInt(string raw)

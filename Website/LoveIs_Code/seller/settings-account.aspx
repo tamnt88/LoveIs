@@ -1,11 +1,11 @@
-<%@ Page Language="C#" AutoEventWireup="true" CodeFile="settings-account.aspx.cs" Inherits="SellerSettingsAccount" MasterPageFile="~/seller/Seller.master" ContentType="text/html; charset=utf-8" ResponseEncoding="utf-8" %>
+﻿<%@ Page Language="C#" AutoEventWireup="true" CodeFile="settings-account.aspx.cs" Inherits="SellerSettingsAccount" MasterPageFile="~/seller/Seller.master" ContentType="text/html; charset=utf-8" ResponseEncoding="utf-8" ValidateRequest="false" %>
 <asp:Content ID="TitleContent" ContentPlaceHolderID="TitleContent" runat="server">Thông tin cửa hàng</asp:Content>
 <asp:Content ID="MainContent" ContentPlaceHolderID="MainContent" runat="server">
     <div class="seller-account-settings">
         <div class="settings-header">
             <div>
                 <h2>Thông tin cửa hàng</h2>
-                <p>Quản lý thông tin cửa hàng của bạn</p>
+                <p>Quản lý thàng tin cửa hàng của bạn</p>
             </div>
         </div>
 
@@ -83,7 +83,6 @@
                 <i class="fa-solid fa-shield-halved"></i>
                 Bảo mật tài khoản
             </div>
-            <asp:Literal ID="PasswordMessageLiteral" runat="server" />
             <asp:Literal ID="KycMessageLiteral" runat="server" />
             <div class="security-item kyc-status-item">
                 <div class="security-icon kyc" id="KycStatusIcon" runat="server">
@@ -205,7 +204,7 @@
                     <div class="kyc-step" data-step="3">
                         <div class="kyc-step-title">
                             Ảnh xác thực bổ sung
-                            <span class="kyc-optional-tag">Không bắt buộc</span>
+                            <span class="kyc-optional-tag">Khàng bắt buộc</span>
                         </div>
                         <div class="kyc-upload-card compact" data-kyc-upload="selfie">
                             <div class="kyc-upload-frame">
@@ -273,38 +272,46 @@
                 </div>
             </div>
             <div class="security-item">
-                <div class="security-icon password">
-                    <i class="fa-solid fa-key"></i>
-                </div>
-                <div class="security-info">
-                    <div class="security-title">Mật khẩu</div>
-                    <div class="security-subtitle">
-                        Thay đổi lần cuối: <asp:Literal ID="PasswordChangedAtLiteral" runat="server" />
-                    </div>
-                </div>
-                <button type="button" class="btn-address-outline" id="TogglePasswordForm">Đổi mật khẩu</button>
-            </div>
-            <div class="security-form" id="PasswordForm">
-                <div class="settings-grid">
-                    <div class="form-group">
-                        <label>Mật khẩu hiện tại</label>
-                        <asp:TextBox ID="CurrentPasswordInput" runat="server" CssClass="form-control" TextMode="Password" />
-                    </div>
-                    <div class="form-group">
-                        <label>Mật khẩu mới</label>
-                        <asp:TextBox ID="NewPasswordInput" runat="server" CssClass="form-control" TextMode="Password" />
-                    </div>
-                    <div class="form-group">
-                        <label>Xác nhận mật khẩu mới</label>
-                        <asp:TextBox ID="ConfirmPasswordInput" runat="server" CssClass="form-control" TextMode="Password" />
-                    </div>
-                </div>
-                <div class="settings-actions account-actions">
-                    <asp:LinkButton ID="ChangePasswordButton" runat="server" CssClass="btn-address-primary" OnClick="ChangePasswordButton_Click">Cập nhật mật khẩu</asp:LinkButton>
-                </div>
+        <div class="security-icon password">
+            <i class="fa-solid fa-key"></i>
+        </div>
+        <div class="security-info">
+            <div class="security-title">Mật khẩu</div>
+            <div class="security-subtitle">
+                Thay đổi lần cuối: <asp:Literal ID="PasswordChangedAtLiteral" runat="server" />
             </div>
         </div>
+        <button type="button" class="btn-address-outline" id="TogglePasswordForm">Đổi mật khẩu</button>
     </div>
+</div>
+</div>
+<div class="modal-overlay" id="PasswordModal" style="display:none;">
+        <div class="modal-card">
+            <div class="modal-header">
+                <h4>Đổi mật khẩu</h4>
+                <button type="button" class="modal-close" data-modal-close>&times;</button>
+            </div>
+            <div class="settings-grid single-column">
+                <div class="form-group">
+                    <label>Mật khẩu hiện tại</label>
+                    <asp:TextBox ID="CurrentPasswordInput" runat="server" CssClass="form-control" TextMode="Password" />
+                </div>
+                <div class="form-group">
+                    <label>Mật khẩu mới</label>
+                    <asp:TextBox ID="NewPasswordInput" runat="server" CssClass="form-control" TextMode="Password" />
+                </div>
+                <div class="form-group">
+                    <label>Xác nhận mật khẩu mới</label>
+                    <asp:TextBox ID="ConfirmPasswordInput" runat="server" CssClass="form-control" TextMode="Password" />
+                </div>
+            </div>
+            <asp:Literal ID="PasswordMessageLiteral" runat="server" />
+            <div class="settings-actions account-actions">
+                <asp:LinkButton ID="ChangePasswordButton" runat="server" CssClass="btn-address-primary" OnClick="ChangePasswordButton_Click">Cập nhật mật khẩu</asp:LinkButton>
+            </div>
+    </div>
+</div>
+<script src="/admin/assets/vendor/ckeditor/ckeditor.js"></script>
     <script>
         (function () {
             var logoInput = document.getElementById('<%= LogoUpload.ClientID %>');
@@ -338,19 +345,56 @@
             }
 
             var passwordToggle = document.getElementById('TogglePasswordForm');
-            var passwordForm = document.getElementById('PasswordForm');
-            if (passwordForm) {
-                passwordForm.classList.remove('open');
+            var passwordModal = document.getElementById('PasswordModal');
+            var passwordMessage = document.querySelector('#PasswordModal .alert-danger');
+
+            function openPasswordModal() {
+                if (!passwordModal) return;
+                passwordModal.style.display = 'flex';
             }
-            if (passwordToggle && passwordForm) {
+
+            function closePasswordModal() {
+                if (!passwordModal) return;
+                passwordModal.style.display = 'none';
+            }
+
+            if (passwordToggle) {
                 passwordToggle.addEventListener('click', function () {
-                    passwordForm.classList.toggle('open');
+                    openPasswordModal();
                 });
             }
-            if (passwordForm && window.location.hash === '#password') {
-                passwordForm.classList.add('open');
-                passwordForm.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+            var passwordDropdownLink = document.getElementById('PasswordDropdownLink');
+            if (passwordDropdownLink) {
+                passwordDropdownLink.addEventListener('click', function (event) {
+                    event.preventDefault();
+                    openPasswordModal();
+                });
             }
+
+            document.addEventListener('click', function (event) {
+                if (!event.target) return;
+                if (event.target.matches('[data-modal-close]')) {
+                    closePasswordModal();
+                }
+                if (event.target === passwordModal) {
+                    closePasswordModal();
+                }
+            });
+
+            function shouldOpenPasswordModal() {
+                return window.location.search.indexOf('msg=password') >= 0 || passwordMessage || window.location.hash === '#password';
+            }
+
+            if (shouldOpenPasswordModal()) {
+                openPasswordModal();
+            }
+
+            window.addEventListener('hashchange', function () {
+                if (shouldOpenPasswordModal()) {
+                    openPasswordModal();
+                }
+            });
 
             var kycModal = document.getElementById('KycModal');
             var kycToggle = document.getElementById('<%= OpenKycFlow.ClientID %>');
@@ -593,6 +637,25 @@
             bindUpload('back', '<%= KycBackUpload.ClientID %>', '<%= KycBackExistingInput.ClientID %>');
             bindUpload('selfie', '<%= KycSelfieUpload.ClientID %>', '<%= KycSelfieExistingInput.ClientID %>');
             updateStep2();
+
+            if (window.CKEDITOR) {
+                CKEDITOR.config.versionCheck = false;
+                CKEDITOR.replace('<%= DescriptionInput.ClientID %>', {
+                    height: 180,
+                    removeButtons: 'Image,Table,Form,Checkbox,Radio,TextField,Textarea,Select,Button,ImageButton,HiddenField,Flash,Smiley,SpecialChar,PageBreak,Iframe,About'
+                });
+            }
         })();
     </script>
 </asp:Content>
+
+
+
+
+
+
+
+
+
+
+

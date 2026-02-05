@@ -48,9 +48,9 @@
                                 <div class="seller-chat-name">
                                     <asp:Literal ID="CustomerNameLiteral" runat="server" />
                                 </div>
-                                <div class="seller-chat-status">
+                                <div class="seller-chat-status" id="CustomerStatusWrap" runat="server">
                                     <span class="dot"></span>
-                                    Đang hoạt động
+                                    <asp:Literal ID='CustomerStatusLiteral' runat='server' />
                                 </div>
                             </div>
                         </div>
@@ -81,6 +81,10 @@
                 </section>
             </div>
         </asp:Panel>
+        <asp:Panel ID="EmptyPanel" runat="server" Visible="false" CssClass="seller-empty-state">
+            <div class="empty-icon"><i class="fa-regular fa-comments"></i></div>
+            <div class="empty-title">Chưa có cuộc hội thoại nào.</div>
+        </asp:Panel>
 
         <asp:HiddenField ID="InquiryIdField" runat="server" ClientIDMode="Static" />
         <asp:HiddenField ID="SenderTypeField" runat="server" ClientIDMode="Static" Value="shop" />
@@ -106,3 +110,4 @@
         })();
     </script>
 </asp:Content>
+

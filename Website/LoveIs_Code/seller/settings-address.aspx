@@ -71,6 +71,7 @@
                 <asp:LinkButton ID="CloseModalButton" runat="server" CssClass="address-icon-btn" OnClick="CloseModalButton_Click"><i class="fa-solid fa-xmark"></i></asp:LinkButton>
             </div>
             <div class="address-modal-body">
+                <asp:Literal ID="AddressFormAlertLiteral" runat="server" />
                 <asp:HiddenField ID="AddressIdHidden" runat="server" />
                 <asp:HiddenField ID="ShopIdHidden" runat="server" />
                 <div class="address-form-grid">
@@ -131,7 +132,50 @@
             </div>
         </div>
     </asp:Panel>
+    <asp:Literal ID="ToastMessageLiteral" runat="server" />
+    <div id="ToastHost" class="toast-host"></div>
     <script>
+        (function () {
+            function showToast(message, type) {
+                var host = document.getElementById("ToastHost");
+                if (!host) return;
+                var toast = document.createElement("div");
+                var tone = (type || "success").toLowerCase();
+                toast.className = "toast-message " + tone;
+                var title = tone === "error" ? "Lỗi" : "Thành công";
+                toast.innerHTML = '<div class="toast-accent"></div>'
+                    + '<div class="toast-body">'
+                    + '<div class="toast-title">' + title + '</div>'
+                    + '<div class="toast-text">' + (message || "") + '</div>'
+                    + '</div>'
+                    + '<button type="button" class="toast-close" aria-label="Close">&times;</button>';
+                host.appendChild(toast);
+                setTimeout(function () {
+                    toast.classList.add("show");
+                }, 10);
+                var closeBtn = toast.querySelector(".toast-close");
+                if (closeBtn) {
+                    closeBtn.addEventListener("click", function () {
+                        toast.classList.remove("show");
+                        setTimeout(function () {
+                            if (toast && toast.parentNode) {
+                                toast.parentNode.removeChild(toast);
+                            }
+                        }, 200);
+                    });
+                }
+                setTimeout(function () {
+                    toast.classList.remove("show");
+                    setTimeout(function () {
+                        if (toast && toast.parentNode) {
+                            toast.parentNode.removeChild(toast);
+                        }
+                    }, 300);
+                }, 2600);
+            }
+            window.SellerToast = { show: showToast };
+        })();
+
         (function () {
             function initSearchSelect(selectClientId, buttonId, menuId, uniqueId, triggerPostback) {
                 var select = document.getElementById(selectClientId);

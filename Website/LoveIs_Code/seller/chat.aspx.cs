@@ -66,7 +66,7 @@ public partial class SellerChatDefault : System.Web.UI.Page
 
             if (inquiries.Count == 0)
             {
-                ShowError("Chua co cuoc chat nao.");
+                ShowEmpty();
                 return;
             }
 
@@ -81,7 +81,14 @@ public partial class SellerChatDefault : System.Web.UI.Page
             var customerIds = inquiries.Select(i => i.CustomerId).Distinct().ToList();
             var customerLookup = db.CfCustomers.AsNoTracking()
                 .Where(c => customerIds.Contains(c.Id))
-                .ToDictionary(c => c.Id, c => string.IsNullOrWhiteSpace(c.DisplayName) ? c.Username : c.DisplayName);
+                .Select(c => new
+                {
+                    c.Id,
+                    Name = (c.DisplayName == null || c.DisplayName == "") ? c.Username : c.DisplayName,
+                    c.LastLoginAt
+                })
+                .ToList()
+                .ToDictionary(c => c.Id, c => c);
 
             var inquiryIds = inquiries.Select(i => i.Id).ToList();
             var lastMessages = db.CfShopInquiryMessages.AsNoTracking()
@@ -98,7 +105,7 @@ public partial class SellerChatDefault : System.Web.UI.Page
 
             var listView = inquiries.Select(i =>
             {
-                var customerName = customerLookup.ContainsKey(i.CustomerId) ? customerLookup[i.CustomerId] : ("Khach hang #" + i.CustomerId);
+                var customerName = customerLookup.ContainsKey(i.CustomerId) ? customerLookup[i.CustomerId].Name : ("Khach hang #" + i.CustomerId);
                 var initial = string.IsNullOrWhiteSpace(customerName) ? "?" : customerName.Trim().Substring(0, 1).ToUpperInvariant();
                 var lastMessage = lastMessages.ContainsKey(i.Id) ? lastMessages[i.Id] : null;
                 var lastTime = lastMessage != null ? lastMessage.CreatedAt : (i.LastReplyAt ?? i.CreatedAt);
@@ -131,10 +138,13 @@ public partial class SellerChatDefault : System.Web.UI.Page
 
             var current = inquiries.First(i => i.Id == inquiryId);
             var currentCustomerName = customerLookup.ContainsKey(current.CustomerId)
-                ? customerLookup[current.CustomerId]
+                ? customerLookup[current.CustomerId].Name
                 : ("Khach hang #" + current.CustomerId);
             CustomerNameLiteral.Text = HttpUtility.HtmlEncode(currentCustomerName);
             CustomerInitialLiteral.Text = HttpUtility.HtmlEncode(string.IsNullOrWhiteSpace(currentCustomerName) ? "?" : currentCustomerName.Trim().Substring(0, 1).ToUpperInvariant());
+            var customerLastLoginAt = customerLookup.ContainsKey(current.CustomerId) ? customerLookup[current.CustomerId].LastLoginAt : (DateTime?)null;
+            CustomerStatusLiteral.Text = ChatPresenceHelper.BuildStatusText(customerLastLoginAt);
+            CustomerStatusWrap.Attributes["class"] = ChatPresenceHelper.BuildStatusCssClass("seller-chat-status", customerLastLoginAt);
 
             InquiryIdField.Value = inquiryId.ToString(System.Globalization.CultureInfo.InvariantCulture);
             SenderIdField.Value = sellerId.Value.ToString(System.Globalization.CultureInfo.InvariantCulture);
@@ -254,6 +264,15 @@ public partial class SellerChatDefault : System.Web.UI.Page
         ErrorPanel.Controls.Clear();
         ErrorPanel.Controls.Add(new System.Web.UI.LiteralControl(HttpUtility.HtmlEncode(message)));
         ChatPanel.Visible = false;
+        EmptyPanel.Visible = false;
+    }
+
+    private void ShowEmpty()
+    {
+        ErrorPanel.Visible = false;
+        ErrorPanel.Controls.Clear();
+        ChatPanel.Visible = false;
+        EmptyPanel.Visible = true;
     }
 
     private static string BuildProductCardHtml(BeautyStoryContext db, int productId)

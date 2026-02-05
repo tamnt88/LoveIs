@@ -14,9 +14,9 @@
                     <span class="seller-chat-avatar large">L</span>
                     <div>
                         <div class="seller-chat-name">LoveIs Support</div>
-                        <div class="seller-chat-status">
+                        <div class="seller-chat-status" id="AdminStatusWrap" runat="server">
                             <span class="dot"></span>
-                            Đang hoạt động
+                            <asp:Literal ID='AdminStatusLiteral' runat='server' />
                         </div>
                     </div>
                 </div>
@@ -67,3 +67,4 @@
         })();
     </script>
 </asp:Content>
+

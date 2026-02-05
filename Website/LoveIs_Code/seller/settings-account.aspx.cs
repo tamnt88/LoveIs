@@ -78,7 +78,7 @@ public partial class SellerSettingsAccount : System.Web.UI.Page
         var sellerId = SellerAuth.GetSellerId();
         if (!sellerId.HasValue)
         {
-            PasswordMessageLiteral.Text = "<div class='text-danger small'>Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.</div>";
+            PasswordMessageLiteral.Text = "<div class='alert alert-danger'>Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.</div>";
             return;
         }
 
@@ -88,19 +88,19 @@ public partial class SellerSettingsAccount : System.Web.UI.Page
 
         if (string.IsNullOrWhiteSpace(currentPassword) || string.IsNullOrWhiteSpace(newPassword))
         {
-            PasswordMessageLiteral.Text = "<div class='text-danger small'>Vui lòng nhập đầy đủ mật khẩu.</div>";
+            PasswordMessageLiteral.Text = "<div class='alert alert-danger'>Vui lòng nhập đầy đủ mật khẩu.</div>";
             return;
         }
 
         if (newPassword.Length < 6)
         {
-            PasswordMessageLiteral.Text = "<div class='text-danger small'>Mật khẩu mới phải có ít nhất 6 ký tự.</div>";
+            PasswordMessageLiteral.Text = "<div class='alert alert-danger'>Mật khẩu mới phải có ít nhất 6 ký tự.</div>";
             return;
         }
 
         if (!string.Equals(newPassword, confirmPassword, StringComparison.Ordinal))
         {
-            PasswordMessageLiteral.Text = "<div class='text-danger small'>Xác nhận mật khẩu không khớp.</div>";
+            PasswordMessageLiteral.Text = "<div class='alert alert-danger'>Xác nhận mật khẩu không khớp.</div>";
             return;
         }
 
@@ -109,13 +109,13 @@ public partial class SellerSettingsAccount : System.Web.UI.Page
             var seller = db.CfSellers.FirstOrDefault(s => s.Id == sellerId.Value);
             if (seller == null)
             {
-                PasswordMessageLiteral.Text = "<div class='text-danger small'>Không tìm thấy tài khoản.</div>";
+                PasswordMessageLiteral.Text = "<div class='alert alert-danger'>Không tìm thấy tài khoản.</div>";
                 return;
             }
 
             if (!Pbkdf2Hasher.Verify(currentPassword, seller.PasswordSalt, seller.PasswordHash, seller.PasswordIterations))
             {
-                PasswordMessageLiteral.Text = "<div class='text-danger small'>Mật khẩu hiện tại không đúng.</div>";
+                PasswordMessageLiteral.Text = "<div class='alert alert-danger'>Mật khẩu hiện tại không đúng.</div>";
                 return;
             }
 
@@ -265,7 +265,7 @@ public partial class SellerSettingsAccount : System.Web.UI.Page
         }
 
         var safeText = HttpUtility.HtmlEncode(messageText);
-        var html = "<div class='text-success small'>" + safeText + "</div>";
+        var html = "<div class='alert alert-success'>" + safeText + "</div>";
         if (string.Equals(messageType, "profile", StringComparison.OrdinalIgnoreCase))
         {
             AccountMessageLiteral.Text = html;

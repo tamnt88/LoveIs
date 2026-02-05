@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Globalization;
 using System.Linq;
+using System.Web;
 using System.Web.UI;
 using System.Web.UI.WebControls;
 
@@ -14,10 +15,9 @@ public partial class SellerMarketing : Page
 
     protected void Page_Load(object sender, EventArgs e)
     {
-        if (!IsPostBack)
-        {
-            BindVoucherData();
-        }
+        ToastMessageLiteral.Text = string.Empty;
+        BindVoucherData();
+        ShowToastFromSession();
     }
 
     protected void TabButton_Click(object sender, EventArgs e)
@@ -40,65 +40,52 @@ public partial class SellerMarketing : Page
         VoucherModalPanel.Visible = false;
     }
 
-    protected void EditVoucherButton_Command(object sender, CommandEventArgs e)
+    protected void VoucherRepeater_ItemCommand(object source, RepeaterCommandEventArgs e)
     {
         int voucherId;
         if (!int.TryParse(Convert.ToString(e.CommandArgument, CultureInfo.InvariantCulture), out voucherId)) return;
 
-        using (var db = new BeautyStoryContext())
+        if (string.Equals(e.CommandName, "Edit", StringComparison.OrdinalIgnoreCase))
         {
-            var shopId = GetShopId(db);
-            if (!shopId.HasValue) return;
+            using (var db = new BeautyStoryContext())
+            {
+                var shopId = GetShopId(db);
+                if (!shopId.HasValue) return;
 
-            var voucher = db.CfCoupons.FirstOrDefault(x => x.Id == voucherId && x.ShopId == shopId.Value && x.Scope == "Shop");
-            if (voucher == null) return;
+                var voucher = db.CfCoupons.FirstOrDefault(x => x.Id == voucherId && x.ShopId == shopId.Value && x.Scope == "Shop");
+                if (voucher == null) return;
 
-            EditingVoucherIdHidden.Value = voucher.Id.ToString(CultureInfo.InvariantCulture);
-            VoucherCodeInput.Text = voucher.Code;
-            VoucherNameInput.Text = voucher.Name;
-            VoucherDescriptionInput.Text = voucher.Description ?? string.Empty;
-            VoucherTypeInput.SelectedValue = voucher.DiscountType == "Percent" ? "Percent" : "Fixed";
-            VoucherValueInput.Text = voucher.DiscountValue.ToString("0.##", CultureInfo.InvariantCulture);
-            VoucherMinOrderInput.Text = voucher.MinOrder.ToString("0.##", CultureInfo.InvariantCulture);
-            VoucherMaxDiscountInput.Text = (voucher.MaxDiscount ?? 0).ToString("0.##", CultureInfo.InvariantCulture);
-            VoucherStartAtInput.Text = voucher.StartAt.HasValue ? voucher.StartAt.Value.ToString("yyyy-MM-dd") : string.Empty;
-            VoucherEndAtInput.Text = voucher.EndAt.HasValue ? voucher.EndAt.Value.ToString("yyyy-MM-dd") : string.Empty;
-            VoucherUsageLimitInput.Text = (voucher.UsageLimit ?? 0).ToString(CultureInfo.InvariantCulture);
-            VoucherUsagePerUserInput.Text = (voucher.UsagePerUser ?? 1).ToString(CultureInfo.InvariantCulture);
+                EditingVoucherIdHidden.Value = voucher.Id.ToString(CultureInfo.InvariantCulture);
+                VoucherCodeInput.Text = voucher.Code;
+                VoucherNameInput.Text = voucher.Name;
+                VoucherDescriptionInput.Text = voucher.Description ?? string.Empty;
+                VoucherTypeInput.SelectedValue = voucher.DiscountType == "Percent" ? "Percent" : "Fixed";
+                VoucherValueInput.Text = voucher.DiscountValue.ToString("0.##", CultureInfo.InvariantCulture);
+                VoucherMinOrderInput.Text = voucher.MinOrder.ToString("0.##", CultureInfo.InvariantCulture);
+                VoucherMaxDiscountInput.Text = (voucher.MaxDiscount ?? 0).ToString("0.##", CultureInfo.InvariantCulture);
+                VoucherStartAtInput.Text = voucher.StartAt.HasValue ? voucher.StartAt.Value.ToString("yyyy-MM-dd") : string.Empty;
+                VoucherEndAtInput.Text = voucher.EndAt.HasValue ? voucher.EndAt.Value.ToString("yyyy-MM-dd") : string.Empty;
+                VoucherUsageLimitInput.Text = (voucher.UsageLimit ?? 0).ToString(CultureInfo.InvariantCulture);
+                VoucherUsagePerUserInput.Text = (voucher.UsagePerUser ?? 1).ToString(CultureInfo.InvariantCulture);
+            }
+
+            VoucherModalTitleLiteral.Text = "Chỉnh sửa mã giảm giá";
+            VoucherFormErrorLiteral.Text = string.Empty;
+            ToggleVoucherTypeUi();
+            VoucherModalPanel.Visible = true;
+            return;
         }
 
-        VoucherModalTitleLiteral.Text = "Chỉnh sửa mã giảm giá";
-        VoucherFormErrorLiteral.Text = string.Empty;
-        ToggleVoucherTypeUi();
-        VoucherModalPanel.Visible = true;
+        if (string.Equals(e.CommandName, "Delete", StringComparison.OrdinalIgnoreCase))
+        {
+            return;
+        }
     }
 
     protected void VoucherTypeInput_SelectedIndexChanged(object sender, EventArgs e)
     {
         ToggleVoucherTypeUi();
         VoucherModalPanel.Visible = true;
-    }
-
-    protected void DeleteVoucherButton_Command(object sender, CommandEventArgs e)
-    {
-        int voucherId;
-        if (!int.TryParse(Convert.ToString(e.CommandArgument, CultureInfo.InvariantCulture), out voucherId)) return;
-
-        using (var db = new BeautyStoryContext())
-        {
-            var shopId = GetShopId(db);
-            if (!shopId.HasValue) return;
-
-            var voucher = db.CfCoupons.FirstOrDefault(x => x.Id == voucherId && x.ShopId == shopId.Value && x.Scope == "Shop");
-            if (voucher == null) return;
-
-            voucher.Status = false;
-            voucher.UpdatedAt = DateTime.Now;
-            voucher.UpdatedBy = "Seller:" + shopId.Value.ToString(CultureInfo.InvariantCulture);
-            db.SaveChanges();
-        }
-
-        BindVoucherData();
     }
 
     protected void SaveVoucherButton_Click(object sender, EventArgs e)
@@ -160,6 +147,7 @@ public partial class SellerMarketing : Page
             return;
         }
 
+        var isNew = true;
         using (var db = new BeautyStoryContext())
         {
             var shopId = GetShopId(db);
@@ -196,6 +184,11 @@ public partial class SellerMarketing : Page
                     Status = true
                 };
                 db.CfCoupons.Add(voucher);
+                isNew = true;
+            }
+            else
+            {
+                isNew = false;
             }
 
             voucher.Code = code;
@@ -216,7 +209,9 @@ public partial class SellerMarketing : Page
         }
 
         VoucherModalPanel.Visible = false;
-        BindVoucherData();
+        var toastMessage = isNew ? "Tạo voucher thành công." : "Cập nhật voucher thành công.";
+        SetToastSession(toastMessage, "success");
+        Response.Redirect(Request.RawUrl);
     }
 
     private void BindVoucherData()
@@ -326,5 +321,32 @@ public partial class SellerMarketing : Page
     {
         var isPercent = VoucherTypeInput.SelectedValue == "Percent";
         VoucherValueWrap.Visible = isPercent;
+    }
+
+    private void ShowToast(string message, string type)
+    {
+        var safeMessage = HttpUtility.JavaScriptStringEncode(message ?? string.Empty);
+        var safeType = HttpUtility.JavaScriptStringEncode(type ?? "success");
+        ToastMessageLiteral.Text = "<script>(function(){var t=0;function tryShow(){if(window.SellerToast){window.SellerToast.show('" + safeMessage + "', '" + safeType + "');return;}t++;if(t<10){setTimeout(tryShow,80);}}tryShow();})();</script>";
+    }
+
+    private void SetToastSession(string message, string type)
+    {
+        Session["VoucherToastMessage"] = message;
+        Session["VoucherToastType"] = type;
+    }
+
+    private void ShowToastFromSession()
+    {
+        var message = Session["VoucherToastMessage"] as string;
+        if (string.IsNullOrWhiteSpace(message))
+        {
+            return;
+        }
+
+        var type = Session["VoucherToastType"] as string;
+        Session.Remove("VoucherToastMessage");
+        Session.Remove("VoucherToastType");
+        ShowToast(message, string.IsNullOrWhiteSpace(type) ? "success" : type);
     }
 }

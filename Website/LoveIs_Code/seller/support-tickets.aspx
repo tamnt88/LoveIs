@@ -142,8 +142,52 @@
     </div>
     <asp:HiddenField ID="CancelTicketArgInput" runat="server" />
 
+    <asp:Literal ID="ToastMessageLiteral" runat="server" />
+    <div id="ToastHost" class="toast-host"></div>
     <asp:Literal ID="SupportCreateModalStateLiteral" runat="server" />
+    <script src="/admin/assets/vendor/ckeditor/ckeditor.js"></script>
     <script>
+        (function () {
+            function showToast(message, type) {
+                var host = document.getElementById("ToastHost");
+                if (!host) return;
+                var toast = document.createElement("div");
+                var tone = (type || "success").toLowerCase();
+                toast.className = "toast-message " + tone;
+                var title = tone === "error" ? "Lỗi" : "Thành công";
+                toast.innerHTML = '<div class="toast-accent"></div>'
+                    + '<div class="toast-body">'
+                    + '<div class="toast-title">' + title + '</div>'
+                    + '<div class="toast-text">' + (message || "") + '</div>'
+                    + '</div>'
+                    + '<button type="button" class="toast-close" aria-label="Close">&times;</button>';
+                host.appendChild(toast);
+                setTimeout(function () {
+                    toast.classList.add("show");
+                }, 10);
+                var closeBtn = toast.querySelector(".toast-close");
+                if (closeBtn) {
+                    closeBtn.addEventListener("click", function () {
+                        toast.classList.remove("show");
+                        setTimeout(function () {
+                            if (toast && toast.parentNode) {
+                                toast.parentNode.removeChild(toast);
+                            }
+                        }, 200);
+                    });
+                }
+                setTimeout(function () {
+                    toast.classList.remove("show");
+                    setTimeout(function () {
+                        if (toast && toast.parentNode) {
+                            toast.parentNode.removeChild(toast);
+                        }
+                    }, 300);
+                }, 2600);
+            }
+            window.SellerToast = { show: showToast };
+        })();
+
         (function () {
             var createTrigger = document.getElementById('SupportCreateTrigger');
             var createModal = document.getElementById('SupportCreateModal');
@@ -237,6 +281,14 @@
             if (createSuccess && createSuccess.value === '1') {
                 closeModal(createModal);
                 createSuccess.value = '';
+            }
+
+            if (window.CKEDITOR) {
+                CKEDITOR.config.versionCheck = false;
+                CKEDITOR.replace('<%= CreateMessageInput.ClientID %>', {
+                    height: 180,
+                    removeButtons: 'Image,Table,Form,Checkbox,Radio,TextField,Textarea,Select,Button,ImageButton,HiddenField,Flash,Smiley,SpecialChar,PageBreak,Iframe,About'
+                });
             }
         })();
     </script>

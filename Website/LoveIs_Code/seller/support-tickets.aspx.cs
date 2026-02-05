@@ -8,6 +8,8 @@ public partial class SellerSupportTickets : System.Web.UI.Page
 {
     protected void Page_Load(object sender, EventArgs e)
     {
+        ToastMessageLiteral.Text = string.Empty;
+        ShowToastFromSession();
         if (!IsPostBack)
         {
             BindCreateDropdowns();
@@ -38,6 +40,7 @@ public partial class SellerSupportTickets : System.Web.UI.Page
             CreateTicketMessageLiteral.Text = "<div class=\"alert alert-warning mt-3\">Vui lòng nhập đầy đủ tiêu đề, danh mục và mức độ ưu tiên.</div>";
             CreateTicketSuccessInput.Value = string.Empty;
             MarkCreateModalOpen();
+            ForceOpenCreateModal();
             BindTickets();
             return;
         }
@@ -53,6 +56,7 @@ public partial class SellerSupportTickets : System.Web.UI.Page
                 CreateTicketMessageLiteral.Text = "<div class=\"alert alert-danger mt-3\">Chưa cấu hình trạng thái ticket.</div>";
                 CreateTicketSuccessInput.Value = string.Empty;
                 MarkCreateModalOpen();
+                ForceOpenCreateModal();
                 BindTickets();
                 return;
             }
@@ -90,7 +94,8 @@ public partial class SellerSupportTickets : System.Web.UI.Page
         CreateTicketSuccessInput.Value = "1";
         MarkCreateModalClose();
 
-        BindTickets();
+        SetToastSession("Tạo yêu cầu thành công.", "success");
+        Response.Redirect(Request.RawUrl);
     }
 
     protected void CancelTicketButton_Command(object sender, System.Web.UI.WebControls.CommandEventArgs e)
@@ -133,6 +138,8 @@ public partial class SellerSupportTickets : System.Web.UI.Page
         }
 
         BindTickets();
+        SetToastSession("Đã xóa yêu cầu.", "success");
+        Response.Redirect(Request.RawUrl);
     }
 
     protected void ReplyTicketButton_Click(object sender, EventArgs e)
@@ -183,8 +190,9 @@ public partial class SellerSupportTickets : System.Web.UI.Page
         }
 
         ReplyMessageInput.Text = string.Empty;
-        ReplyMessageLiteral.Text = "<div class=\"alert alert-success mt-3\">Đã gửi phản hồi.</div>";
-        BindTickets();
+        ReplyMessageLiteral.Text = string.Empty;
+        SetToastSession("Đã gửi phản hồi.", "success");
+        Response.Redirect(Request.RawUrl);
     }
 
     private void BindCreateDropdowns()
@@ -388,5 +396,37 @@ public partial class SellerSupportTickets : System.Web.UI.Page
     {
         object value = ViewState["SupportCreateModalOpen"];
         return value is bool && (bool)value;
+    }
+
+    private void ForceOpenCreateModal()
+    {
+        SupportCreateModalStateLiteral.Text = "<script>document.addEventListener('DOMContentLoaded',function(){var m=document.getElementById('SupportCreateModal'); if(m){m.style.display='flex';}});</script>";
+    }
+
+    private void ShowToast(string message, string type)
+    {
+        var safeMessage = HttpUtility.JavaScriptStringEncode(message ?? string.Empty);
+        var safeType = HttpUtility.JavaScriptStringEncode(type ?? "success");
+        ToastMessageLiteral.Text = "<script>(function(){var t=0;function tryShow(){if(window.SellerToast){window.SellerToast.show('" + safeMessage + "', '" + safeType + "');return;}t++;if(t<10){setTimeout(tryShow,80);}}tryShow();})();</script>";
+    }
+
+    private void SetToastSession(string message, string type)
+    {
+        Session["SupportToastMessage"] = message;
+        Session["SupportToastType"] = type;
+    }
+
+    private void ShowToastFromSession()
+    {
+        var message = Session["SupportToastMessage"] as string;
+        if (string.IsNullOrWhiteSpace(message))
+        {
+            return;
+        }
+
+        var type = Session["SupportToastType"] as string;
+        Session.Remove("SupportToastMessage");
+        Session.Remove("SupportToastType");
+        ShowToast(message, string.IsNullOrWhiteSpace(type) ? "success" : type);
     }
 }

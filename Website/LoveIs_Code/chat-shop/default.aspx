@@ -19,9 +19,9 @@
                     </div>
                     <div class="shop-chat-meta">
                         <div class="shop-chat-name"><asp:Literal ID="ShopNameLiteral" runat="server" /></div>
-                        <div class="shop-chat-status">
+                        <div class="shop-chat-status" id="ShopStatusWrap" runat="server">
                             <span class="dot"></span>
-                            Đang hoạt động
+                            <asp:Literal ID='ShopStatusLiteral' runat='server' />
                         </div>
                     </div>
                 </div>
@@ -77,3 +77,4 @@
         })();
     </script>
 </asp:Content>
+

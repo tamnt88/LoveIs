@@ -65,6 +65,14 @@
     background: #1f9d55;
 }
 
+.shop-chat-status.is-offline {
+    color: #94a3b8;
+}
+
+.shop-chat-status.is-offline .dot {
+    background: #cbd5e1;
+}
+
 .shop-chat-body {
     padding: 20px;
     background: #fff;

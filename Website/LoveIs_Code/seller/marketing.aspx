@@ -528,7 +528,7 @@
                     <asp:Button ID="TabExpiredButton" runat="server" CssClass="voucher-tab" Text="Đã Hết Hạn" OnClick="TabButton_Click" CommandArgument="expired" UseSubmitBehavior="false" />
                 </div>
                 <div class="voucher-list">
-                    <asp:Repeater ID="VoucherRepeater" runat="server">
+                    <asp:Repeater ID="VoucherRepeater" runat="server" OnItemCommand="VoucherRepeater_ItemCommand">
                         <ItemTemplate>
                             <div class="voucher-item">
                                 <div class="voucher-info">
@@ -546,8 +546,7 @@
                                     </div>
                                 </div>
                                 <div class="voucher-actions">
-                                    <asp:Button ID="EditVoucherButton" runat="server" CssClass="voucher-icon-btn" Text="✎" CommandArgument='<%# Eval("Id") %>' OnCommand="EditVoucherButton_Command" UseSubmitBehavior="false" />
-                                    <asp:Button ID="DeleteVoucherButton" runat="server" CssClass="voucher-icon-btn is-danger" Text="🗑" CommandArgument='<%# Eval("Id") %>' OnCommand="DeleteVoucherButton_Command" OnClientClick="return confirm('Xóa voucher này?');" UseSubmitBehavior="false" />
+                                    <asp:LinkButton ID="EditVoucherButton" runat="server" CssClass="voucher-icon-btn" CommandName="Edit" CommandArgument='<%# Eval("Id") %>' CausesValidation="false">✎</asp:LinkButton>
                                 </div>
                                 <div class="voucher-metrics">
                                     <div><div class="voucher-metric-label">Đơn tối thiểu</div><div class="voucher-metric-value"><%# Eval("MinOrderText") %></div></div>
@@ -600,6 +599,8 @@
                     </div>
                 </div>
             </asp:Panel>
+            <asp:Literal ID="ToastMessageLiteral" runat="server" />
+            <div id="ToastHost" class="toast-host"></div>
         </div>
 
         <div class="marketing-view" data-tab="addon">
@@ -791,6 +792,46 @@
     </div>
 
     <script>
+        (function () {
+            function showToast(message, type) {
+                var host = document.getElementById("ToastHost");
+                if (!host) return;
+                var toast = document.createElement("div");
+                var tone = (type || "success").toLowerCase();
+                toast.className = "toast-message " + tone;
+                var title = tone === "error" ? "Lỗi" : "Thành công";
+                toast.innerHTML = '<div class="toast-accent"></div>'
+                    + '<div class="toast-body">'
+                    + '<div class="toast-title">' + title + '</div>'
+                    + '<div class="toast-text">' + (message || "") + '</div>'
+                    + '</div>'
+                    + '<button type="button" class="toast-close" aria-label="Close">&times;</button>';
+                host.appendChild(toast);
+                setTimeout(function () {
+                    toast.classList.add("show");
+                }, 10);
+                var closeBtn = toast.querySelector(".toast-close");
+                if (closeBtn) {
+                    closeBtn.addEventListener("click", function () {
+                        toast.classList.remove("show");
+                        setTimeout(function () {
+                            if (toast && toast.parentNode) {
+                                toast.parentNode.removeChild(toast);
+                            }
+                        }, 200);
+                    });
+                }
+                setTimeout(function () {
+                    toast.classList.remove("show");
+                    setTimeout(function () {
+                        if (toast && toast.parentNode) {
+                            toast.parentNode.removeChild(toast);
+                        }
+                    }, 300);
+                }, 2600);
+            }
+            window.SellerToast = { show: showToast };
+        })();
         (function () {
             var page = document.querySelector('[data-marketing-page="true"]');
             if (!page) return;

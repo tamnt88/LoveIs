@@ -45,6 +45,16 @@ public partial class SellerSupportChat : System.Web.UI.Page
             CurrentChatId = chat.Id;
             ChatIdField.Value = chat.Id.ToString(System.Globalization.CultureInfo.InvariantCulture);
             SenderIdField.Value = sellerId.Value.ToString(System.Globalization.CultureInfo.InvariantCulture);
+            DateTime? adminLastLoginAt = null;
+            if (chat.AdminId.HasValue)
+            {
+                adminLastLoginAt = db.CfUsers.AsNoTracking()
+                    .Where(u => u.Id == chat.AdminId.Value)
+                    .Select(u => (DateTime?)u.LastLoginAt)
+                    .FirstOrDefault();
+            }
+            AdminStatusLiteral.Text = ChatPresenceHelper.BuildStatusText(adminLastLoginAt);
+            AdminStatusWrap.Attributes["class"] = ChatPresenceHelper.BuildStatusCssClass("seller-chat-status", adminLastLoginAt);
 
             BindMessages(db, chat.Id);
         }

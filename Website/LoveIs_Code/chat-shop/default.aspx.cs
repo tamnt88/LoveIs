@@ -70,6 +70,10 @@ public partial class ShopChatDefault : System.Web.UI.Page
             TitleLiteral.Text = HttpUtility.HtmlEncode(shop.ShopName) + " | Chat";
             ShopNameLiteral.Text = HttpUtility.HtmlEncode(shop.ShopName);
             ShopAvatar.ImageUrl = string.IsNullOrWhiteSpace(shop.LogoUrl) ? "/images/fav.png" : shop.LogoUrl;
+            var seller = db.CfSellers.FirstOrDefault(s => s.Id == shop.SellerId);
+            var sellerLastLoginAt = seller != null ? seller.LastLoginAt : (DateTime?)null;
+            ShopStatusLiteral.Text = ChatPresenceHelper.BuildStatusText(sellerLastLoginAt);
+            ShopStatusWrap.Attributes["class"] = ChatPresenceHelper.BuildStatusCssClass("shop-chat-status", sellerLastLoginAt);
 
             var inquiry = db.CfShopInquiries.FirstOrDefault(i => i.ShopId == shopId
                 && i.CustomerId == customerId.Value

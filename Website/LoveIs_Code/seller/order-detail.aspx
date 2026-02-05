@@ -98,10 +98,40 @@
                     </div>
                 </ItemTemplate>
             </asp:Repeater>
-            <div class="order-detail-summary">
-                <div class="order-summary-row"><span>Tạm tính</span><span>:</span><strong><asp:Literal ID="SubtotalLiteral" runat="server" /></strong></div>
-                <div class="order-summary-row"><span>Phí vận chuyển</span><span>:</span><strong><asp:Literal ID="ShopShippingFeeLiteral" runat="server" /></strong></div>
-                <div class="order-summary-row total"><span>Tổng cộng</span><span>:</span><strong><asp:Literal ID="TotalLiteral" runat="server" /></strong></div>
+            <div class="order-detail-summary order-revenue-summary">
+                <button type="button" class="order-summary-toggle" id="OrderSummaryToggle">Chi tiết</button>
+                <div class="order-summary-details" id="OrderSummaryDetails">
+                    <div class="summary-block">
+                        <div class="order-summary-row"><span>Tổng tiền sản phẩm</span><strong><asp:Literal ID="SubtotalLiteral" runat="server" /></strong></div>
+                        <div class="order-summary-row sub"><span>Giá bán sản phẩm</span><strong><asp:Literal ID="ProductSaleTotalLiteral" runat="server" /></strong></div>
+                    </div>
+
+                    <div class="summary-block">
+                        <div class="order-summary-row"><span>Tổng phí vận chuyển ước tính</span><strong><asp:Literal ID="ShippingTotalEstimatedLiteral" runat="server" /></strong></div>
+                        <div class="order-summary-row sub"><span>Phí vận chuyển Người mua trả</span><strong><asp:Literal ID="ShippingBuyerPaidLiteral" runat="server" /></strong></div>
+                        <div class="order-summary-row sub"><span>Phí vận chuyển ước tính</span><strong><asp:Literal ID="ShippingEstimatedLiteral" runat="server" /></strong></div>
+                        <div class="order-summary-row sub"><span>Phí vận chuyển được trợ giá</span><strong><asp:Literal ID="ShippingSubsidyLiteral" runat="server" /></strong></div>
+                    </div>
+
+                    <div class="summary-block">
+                        <div class="order-summary-row"><span>Phụ phí</span><strong><asp:Literal ID="FeeTotalLiteral" runat="server" /></strong></div>
+                        <div class="order-summary-row sub"><span>Phí cố định</span><strong><asp:Literal ID="FeeFixedLiteral" runat="server" /></strong></div>
+                        <div class="order-summary-row sub"><span>Phí dịch vụ</span><strong><asp:Literal ID="FeeServiceLiteral" runat="server" /></strong></div>
+                        <div class="order-summary-row sub"><span>Phí thanh toán</span><strong><asp:Literal ID="FeePaymentLiteral" runat="server" /></strong></div>
+                    </div>
+
+                    <div class="summary-block">
+                        <div class="order-summary-row"><span>Thuế</span><strong><asp:Literal ID="TaxTotalLiteral" runat="server" /></strong></div>
+                        <div class="order-summary-row sub"><span>Thuế GTGT</span><strong><asp:Literal ID="TaxVatLiteral" runat="server" /></strong></div>
+                        <div class="order-summary-row sub"><span>Thuế TNCN</span><strong><asp:Literal ID="TaxPitLiteral" runat="server" /></strong></div>
+                    </div>
+
+                    <div class="summary-block">
+                        <div class="order-summary-row"><span>Tổng phụ phí và giá trị gia tăng cho người mua</span><strong><asp:Literal ID="BuyerExtraLiteral" runat="server" /></strong></div>
+                    </div>
+                </div>
+
+                <div class="order-summary-row total"><span>Doanh thu đơn hàng ước tính</span><strong><asp:Literal ID="TotalLiteral" runat="server" /></strong></div>
             </div>
         </div>
 
@@ -118,4 +148,17 @@
         </div>
         <asp:HiddenField ID="StatusClassField" runat="server" />
     </div>
+    <script>
+        (function () {
+            var toggle = document.getElementById('OrderSummaryToggle');
+            var details = document.getElementById('OrderSummaryDetails');
+            if (!toggle || !details) return;
+            details.style.display = 'none';
+            toggle.addEventListener('click', function () {
+                var open = details.style.display === 'block';
+                details.style.display = open ? 'none' : 'block';
+                toggle.textContent = open ? 'Chi tiết' : 'Ẩn chi tiết';
+            });
+        })();
+    </script>
 </asp:Content>

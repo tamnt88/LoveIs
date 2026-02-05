@@ -135,8 +135,33 @@ public partial class SellerOrderDetail : System.Web.UI.Page
 
             var subtotal = orderItems.Sum(i => i.LineTotal > 0 ? i.LineTotal : ((i.SalePrice.HasValue && i.SalePrice.Value > 0 ? i.SalePrice.Value : i.Price) * i.Quantity));
             SubtotalLiteral.Text = FormatCurrency(subtotal);
-            ShopShippingFeeLiteral.Text = FormatCurrency(shopOrder.ShippingFee);
-            TotalLiteral.Text = FormatCurrency(subtotal + shopOrder.ShippingFee);
+
+            ProductSaleTotalLiteral.Text = FormatCurrency(subtotal);
+            ShippingTotalEstimatedLiteral.Text = FormatCurrency(shopOrder.ShippingFee);
+            ShippingBuyerPaidLiteral.Text = FormatCurrency(shopOrder.ShippingFee);
+            ShippingEstimatedLiteral.Text = FormatCurrency(shopOrder.ShippingFee);
+            ShippingSubsidyLiteral.Text = FormatCurrency(0m);
+
+            var feeFixed = order.InfrastructureFee ?? 0m;
+            var feeService = order.PlatformFeeAmount ?? 0m;
+            var feePayment = order.PaymentFeeAmount ?? 0m;
+            var feeTotal = feeFixed + feeService + feePayment;
+            FeeFixedLiteral.Text = FormatCurrency(feeFixed);
+            FeeServiceLiteral.Text = FormatCurrency(feeService);
+            FeePaymentLiteral.Text = FormatCurrency(feePayment);
+            FeeTotalLiteral.Text = FormatCurrency(feeTotal);
+
+            var taxVat = 0m;
+            var taxPit = 0m;
+            var taxTotal = taxVat + taxPit;
+            TaxVatLiteral.Text = FormatCurrency(taxVat);
+            TaxPitLiteral.Text = FormatCurrency(taxPit);
+            TaxTotalLiteral.Text = FormatCurrency(taxTotal);
+
+            BuyerExtraLiteral.Text = FormatCurrency(0m);
+
+            var estimatedRevenue = subtotal + shopOrder.ShippingFee - feeTotal - taxTotal;
+            TotalLiteral.Text = FormatCurrency(estimatedRevenue);
 
             var histories = db.CfOrderHistories
                 .Where(h => h.OrderId == order.Id && h.Status)

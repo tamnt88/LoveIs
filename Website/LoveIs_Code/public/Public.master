@@ -30,6 +30,8 @@
     <link rel="stylesheet" href="<%= ResolveUrl("~/public/theme/assets/css/category/cosmetic-store.css") %>" />
     <link rel="stylesheet" href="<%= ResolveUrl("~/public/assets/vendor/malihu/jquery.mCustomScrollbar.min.css") %>" />
     <link rel="stylesheet" href="<%= ResolveUrl("~/public/assets/css/public.css") %>" />
+    <link rel="stylesheet" href="<%= ResolveUrl("~/public/assets/css/public-desktop.css") %>" media="(min-width: 992px)" />
+    <link rel="stylesheet" href="<%= ResolveUrl("~/public/assets/css/public-mobile.css") %>" media="(max-width: 991px)" />
     <asp:ContentPlaceHolder ID="HeadContent" runat="server"></asp:ContentPlaceHolder>
     <asp:Literal ID="HeaderTrackingLiteral" runat="server"></asp:Literal>
 </head>

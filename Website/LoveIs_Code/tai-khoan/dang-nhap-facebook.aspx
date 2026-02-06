@@ -5,6 +5,8 @@
     <meta charset="utf-8" />
     <title>Đăng nhập Facebook</title>
     <link rel="stylesheet" href="/public/assets/css/public.css" />
+    <link rel="stylesheet" href="/public/assets/css/public-desktop.css" media="(min-width: 992px)" />
+    <link rel="stylesheet" href="/public/assets/css/public-mobile.css" media="(max-width: 991px)" />
 </head>
 <body>
     <form id="form1" runat="server">

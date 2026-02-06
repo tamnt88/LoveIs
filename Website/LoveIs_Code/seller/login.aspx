@@ -9,6 +9,8 @@
     <link rel="shortcut icon" href="<%= ResolveUrl("~/images/fav.png") %>" />
     <link rel="stylesheet" href="<%= ResolveUrl("~/public/theme/assets/css/bootstrap.min.css") %>" />
     <link rel="stylesheet" href="<%= ResolveUrl("~/public/assets/css/public.css") %>" />
+    <link rel="stylesheet" href="<%= ResolveUrl("~/public/assets/css/public-desktop.css") %>" media="(min-width: 992px)" />
+    <link rel="stylesheet" href="<%= ResolveUrl("~/public/assets/css/public-mobile.css") %>" media="(max-width: 991px)" />
     <link rel="stylesheet" href="<%= ResolveUrl("~/public/assets/vendor/fontawesome/css/all.min.css") %>" />
     <link rel="stylesheet" href="<%= ResolveUrl("~/seller/seller.css") %>" />
 </head>

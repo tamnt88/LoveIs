@@ -2589,20 +2589,20 @@ h1, h2, h3, h4, h5, h6, .h1, .h2, .h3, .h4, .h5, .h6, h1 a, h2 a, h3 a, h4 a, h5
     }
 
         .cart-page .cart-price::before {
-            content: "GiÃƒÂ¡";
+            content: "Giá";
             font-weight: 600;
             color: #cc557d;
         }
 
         .cart-page .cart-qty::before {
-            content: "SÃ¡Â»â€˜ lÃ†Â°Ã¡Â»Â£ng";
+            content: "Số lượng";
             font-weight: 600;
             color: #cc557d;
             margin-right: auto;
         }
 
         .cart-page .cart-total::before {
-            content: "ThÃƒÂ nh tiÃ¡Â»Ân";
+            content: "Thành tiền";
             font-weight: 600;
             color: #cc557d;
         }
@@ -5581,24 +5581,7 @@ button.search-submit {
     padding-top: 0 !important;
 }
 
-.ecommerce-header .product-search-one {
-    width: 100%;
-    display: inline-block;
-}
 
-.ecommerce-header .product-search-one-cart {
-    display: inline-block;
-    float: right;
-    top: 10px;
-}
-
-@media screen and (max-width: 420px) {
-    .header-sticky .flat-small::before {
-        font-size: 29px;
-        line-height: 30px;
-        top: 0;
-    }
-}
 
 .footer-logo {
     height: 65px;

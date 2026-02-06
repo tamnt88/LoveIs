@@ -1,0 +1,11 @@
+﻿/* Desktop-only header layout overrides */
+.ecommerce-header .product-search-one {
+    width: 100%;
+    display: inline-block;
+}
+
+.ecommerce-header .product-search-one-cart {
+    display: inline-block;
+    float: right;
+    top: 10px;
+}

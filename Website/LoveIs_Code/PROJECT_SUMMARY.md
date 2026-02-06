@@ -26,6 +26,7 @@
 - Buyer/Seller login pages follow design.
 - Seller dashboard + DB-driven menu.
 - Public theme uses #3a0517, footer payment/shipping logos.
+- Site-wide font stack: proximanova, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, system-ui, "Helvetica Neue", Arial, sans-serif.
 - Home page: category slider, banners, best-selling swiper, new-product grid.
 
 ### 4) Cart & checkout

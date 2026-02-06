@@ -1,6 +1,42 @@
 @charset "utf-8";
 
 @font-face {
+    font-family: "proximanova";
+    src: url("/public/assets/fonts/proximanova/proximanova-regular-webfont.woff2") format("woff2"),
+        url("/public/assets/fonts/proximanova/proximanova-regular-webfont.woff") format("woff");
+    font-weight: 400;
+    font-style: normal;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: "proximanova";
+    src: url("/public/assets/fonts/proximanova/proximanova-medium-webfont.woff2") format("woff2"),
+        url("/public/assets/fonts/proximanova/proximanova-medium-webfont.woff") format("woff");
+    font-weight: 500;
+    font-style: normal;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: "proximanova";
+    src: url("/public/assets/fonts/proximanova/proximanova-semibold-webfont.woff2") format("woff2"),
+        url("/public/assets/fonts/proximanova/proximanova-semibold-webfont.woff") format("woff");
+    font-weight: 600;
+    font-style: normal;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: "proximanova";
+    src: url("/public/assets/fonts/proximanova/proximanova-bold-webfont.woff2") format("woff2"),
+        url("/public/assets/fonts/proximanova/proximanova-bold-webfont.woff") format("woff");
+    font-weight: 700;
+    font-style: normal;
+    font-display: swap;
+}
+
+@font-face {
     font-family: "Roboto";
     font-style: normal;
     font-weight: 400;
@@ -29,10 +65,11 @@
     --brand-olive-dark: #6b1a33;
     --brand-sand: #f7eff2;
     --brand-rose: #d8a6b5;
+    --font-sans: "proximanova", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, system-ui, "Helvetica Neue", Arial, sans-serif;
 }
 
 body {
-    font-family: "Roboto", sans-serif;
+    font-family: var(--font-sans);
     background: linear-gradient(135deg, #f7eff2 0%, #f2e1e8 45%, #ffffff 100%);
     color: #1f0a12;
     min-height: 100vh;

@@ -26,7 +26,8 @@ public partial class CustomerOauthFacebook : System.Web.UI.Page
     private string GetRedirectUri(string path)
     {
         var request = Request;
-        var baseUrl = request.Url != null ? request.Url.GetLeftPart(UriPartial.Authority) : "http://localhost:59159";
+        var baseUrl = request.Url != null ? request.Url.GetLeftPart(UriPartial.Authority) : "https://www.loveis.vn";
+        //var baseUrl = request.Url != null ? request.Url.GetLeftPart(UriPartial.Authority) : "http://localhost:59159";
         return baseUrl.TrimEnd('/') + path;
     }
 }

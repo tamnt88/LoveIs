@@ -71,7 +71,6 @@
                 <asp:LinkButton ID="CloseModalButton" runat="server" CssClass="address-icon-btn" OnClick="CloseModalButton_Click"><i class="fa-solid fa-xmark"></i></asp:LinkButton>
             </div>
             <div class="address-modal-body">
-                <asp:Literal ID="AddressFormAlertLiteral" runat="server" />
                 <asp:HiddenField ID="AddressIdHidden" runat="server" />
                 <asp:HiddenField ID="ShopIdHidden" runat="server" />
                 <div class="address-form-grid">
@@ -126,6 +125,7 @@
                     </div>
                 </div>
             </div>
+            <asp:Literal ID="AddressFormAlertLiteral" runat="server" />
             <div class="address-modal-footer">
                 <asp:LinkButton ID="CancelModalButton" runat="server" CssClass="btn-outline" OnClick="CloseModalButton_Click">Hủy</asp:LinkButton>
                 <asp:LinkButton ID="SaveAddressButton" runat="server" CssClass="btn-primary" OnClick="SaveAddressButton_Click">Lưu địa chỉ</asp:LinkButton>

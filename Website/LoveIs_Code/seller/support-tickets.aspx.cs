@@ -37,7 +37,7 @@ public partial class SellerSupportTickets : System.Web.UI.Page
 
         if (string.IsNullOrWhiteSpace(title) || !categoryId.HasValue || !priorityId.HasValue)
         {
-            CreateTicketMessageLiteral.Text = "<div class=\"alert alert-warning mt-3\">Vui lòng nhập đầy đủ tiêu đề, danh mục và mức độ ưu tiên.</div>";
+            CreateTicketMessageLiteral.Text = "<div class=\"alert alert-danger mt-3\">Vui lòng nhập đầy đủ tiêu đề, danh mục và mức độ ưu tiên.</div>";
             CreateTicketSuccessInput.Value = string.Empty;
             MarkCreateModalOpen();
             ForceOpenCreateModal();
@@ -155,7 +155,7 @@ public partial class SellerSupportTickets : System.Web.UI.Page
         var message = (ReplyMessageInput.Text ?? string.Empty).Trim();
         if (!ticketId.HasValue || string.IsNullOrWhiteSpace(message))
         {
-            ReplyMessageLiteral.Text = "<div class=\"alert alert-warning mt-3\">Vui lòng nhập nội dung phản hồi.</div>";
+            ReplyMessageLiteral.Text = "<div class=\"alert alert-danger mt-3\">Vui lòng nhập nội dung phản hồi.</div>";
             BindTickets();
             return;
         }

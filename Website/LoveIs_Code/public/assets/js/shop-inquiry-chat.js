@@ -8,6 +8,10 @@ document.addEventListener("DOMContentLoaded", function () {
     var idKey = root.getAttribute("data-chat-id-key") || "inquiryId";
     var senderType = (root.getAttribute("data-sender-type") || "").toLowerCase();
     var senderId = parseInt(root.getAttribute("data-sender-id") || "0", 10);
+    var inquiryIds = (root.getAttribute("data-inquiry-ids") || "")
+        .split(",")
+        .map(function (id) { return parseInt(id, 10); })
+        .filter(function (id) { return id > 0; });
     var input = root.querySelector("[data-chat-input]");
     var sendBtn = root.querySelector("[data-chat-send]");
     var chatBody = root.querySelector("[data-chat-body]");
@@ -15,25 +19,40 @@ document.addEventListener("DOMContentLoaded", function () {
     var fileInput = root.querySelector("[data-chat-file]");
     var convoList = root.querySelector("[data-chat-list]");
     var filterTabs = root.querySelectorAll("[data-chat-filter]");
+    var searchInput = root.querySelector("[data-chat-search]");
     var uploadUrl = root.getAttribute("data-upload-url") || "/chat-upload.aspx";
     var hubName = root.getAttribute("data-chat-hub") || "shopInquiryChatHub";
     var joined = false;
 
-    if (!chatId || !senderType || !senderId || !input || !sendBtn || !chatBody) {
+    if (!senderType || !senderId) {
+        return;
+    }
+
+    var hasChatUi = !!(input && sendBtn && chatBody && chatId);
+    var hasListUi = !!convoList;
+    if (!hasChatUi && !hasListUi) {
         return;
     }
 
     function scrollToBottom() {
+        if (!chatBody) {
+            return;
+        }
         chatBody.scrollTop = chatBody.scrollHeight;
     }
 
     function autoResize() {
+        if (!input) {
+            return;
+        }
         input.style.height = "auto";
         input.style.height = Math.min(input.scrollHeight, 140) + "px";
     }
 
-    input.addEventListener("input", autoResize);
-    autoResize();
+    if (input) {
+        input.addEventListener("input", autoResize);
+        autoResize();
+    }
 
     if (!window.jQuery || !jQuery.connection || !jQuery.connection.hub) {
         console.warn("SignalR chua san sang.");
@@ -134,11 +153,17 @@ document.addEventListener("DOMContentLoaded", function () {
 
         convoList.insertBefore(item, convoList.firstChild);
         applyFilter();
+        updateGlobalBadgeFromList();
     }
 
     function appendMessage(message) {
         var threadId = getThreadId(message);
         if (String(threadId) !== String(chatId)) {
+            updateConversationItem(message);
+            return;
+        }
+
+        if (!hasChatUi) {
             updateConversationItem(message);
             return;
         }
@@ -155,18 +180,19 @@ document.addEventListener("DOMContentLoaded", function () {
         if ((message.SenderType || "").toLowerCase() !== senderType && hub.server && hub.server.markRead) {
             hub.server.markRead(chatId, senderType, senderId);
         }
+        updateGlobalBadgeFromList();
     }
 
     hub.client.joinedInquiry = function () {
         joined = true;
-        if (hub.server && hub.server.markRead) {
+        if (hub.server && hub.server.markRead && chatId > 0) {
             hub.server.markRead(chatId, senderType, senderId);
         }
     };
 
     hub.client.joinedChat = function () {
         joined = true;
-        if (hub.server && hub.server.markRead) {
+        if (hub.server && hub.server.markRead && chatId > 0) {
             hub.server.markRead(chatId, senderType, senderId);
         }
     };
@@ -183,11 +209,19 @@ document.addEventListener("DOMContentLoaded", function () {
     };
 
     jQuery.connection.hub.start().done(function () {
-        if (hub.server.joinInquiry) {
-            hub.server.joinInquiry(chatId.toString(), senderType, senderId);
-        } else if (hub.server.joinChat) {
+        var joinTargets = inquiryIds.slice();
+        if (!joinTargets.length && chatId > 0) {
+            joinTargets = [chatId];
+        }
+
+        if (joinTargets.length && hub.server.joinInquiry) {
+            joinTargets.forEach(function (id) {
+                hub.server.joinInquiry(id.toString(), senderType, senderId);
+            });
+        } else if (chatId > 0 && hub.server.joinChat) {
             hub.server.joinChat(chatId.toString(), senderType, senderId);
         }
+
         scrollToBottom();
     }).fail(function (error) {
         console.error("SignalR start failed", error);
@@ -198,7 +232,7 @@ document.addEventListener("DOMContentLoaded", function () {
         if (!text.trim()) {
             return;
         }
-        if (!joined || !hub.server || !hub.server.sendMessage) {
+        if (!joined || !hub.server || !hub.server.sendMessage || chatId <= 0) {
             alert("Chat chua san sang. Vui long thu lai.");
             return;
         }
@@ -207,17 +241,21 @@ document.addEventListener("DOMContentLoaded", function () {
         autoResize();
     }
 
-    sendBtn.addEventListener("click", function (event) {
-        event.preventDefault();
-        sendMessage();
-    });
-
-    input.addEventListener("keydown", function (event) {
-        if (event.key === "Enter" && !event.shiftKey) {
+    if (sendBtn) {
+        sendBtn.addEventListener("click", function (event) {
             event.preventDefault();
             sendMessage();
-        }
-    });
+        });
+    }
+
+    if (input) {
+        input.addEventListener("keydown", function (event) {
+            if (event.key === "Enter" && !event.shiftKey) {
+                event.preventDefault();
+                sendMessage();
+            }
+        });
+    }
 
     if (attachBtn && fileInput) {
         attachBtn.addEventListener("click", function () {
@@ -262,12 +300,18 @@ document.addEventListener("DOMContentLoaded", function () {
         }
         var activeFilter = root.getAttribute("data-chat-filter") || "all";
         var items = convoList.querySelectorAll(".seller-chat-item");
+        var keyword = searchInput ? (searchInput.value || "").trim().toLowerCase() : "";
         items.forEach(function (item) {
+            var matched = true;
+            if (keyword) {
+                var title = (item.getAttribute("data-title") || "").toLowerCase();
+                matched = title.indexOf(keyword) !== -1;
+            }
             if (activeFilter === "unread") {
                 var unread = parseInt(item.getAttribute("data-unread") || "0", 10);
-                item.style.display = unread > 0 ? "" : "none";
+                item.style.display = (unread > 0 && matched) ? "" : "none";
             } else {
-                item.style.display = "";
+                item.style.display = matched ? "" : "none";
             }
         });
     }
@@ -281,6 +325,31 @@ document.addEventListener("DOMContentLoaded", function () {
             applyFilter();
         });
     });
+
+    if (searchInput) {
+        searchInput.addEventListener("input", function () {
+            applyFilter();
+        });
+    }
+
+    function updateGlobalBadgeFromList() {
+        var badgePanel = document.querySelector(".shop-chat-fab-badge");
+        if (!badgePanel || !convoList) {
+            return;
+        }
+        var total = 0;
+        var items = convoList.querySelectorAll(".seller-chat-item");
+        items.forEach(function (item) {
+            total += parseInt(item.getAttribute("data-unread") || "0", 10);
+        });
+        if (total > 0) {
+            badgePanel.textContent = total.toString();
+            badgePanel.style.display = "inline-flex";
+        } else {
+            badgePanel.textContent = "0";
+            badgePanel.style.display = "none";
+        }
+    }
 
     function ensureLightbox() {
         var overlay = document.querySelector(".chat-lightbox");

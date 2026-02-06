@@ -549,6 +549,16 @@
     <div class="lace-divider"></div>
 </header>
 
+<div class="shop-chat-fab">
+    <a href="/chat-shop/default.aspx" class="shop-chat-fab-btn" runat="server" id="ShopChatFabLink" ClientIDMode="Static">
+        <i class="fa-regular fa-message"></i>
+        <span>Chat</span>
+        <asp:Panel ID="ShopChatBadgePanel" runat="server" CssClass="shop-chat-fab-badge">
+            <asp:Literal ID="ShopChatBadgeLiteral" runat="server" />
+        </asp:Panel>
+    </a>
+</div>
+
 
 
 

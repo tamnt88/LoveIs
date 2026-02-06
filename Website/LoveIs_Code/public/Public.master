@@ -60,6 +60,9 @@
         <script src="<%= ResolveUrl("~/public/theme/assets/js/custom.js") %>"></script>
         <script src="<%= ResolveUrl("~/public/assets/vendor/malihu/jquery.mCustomScrollbar.concat.min.js") %>"></script>
         <script src="/public/assets/js/public-search.js"></script>
+        <script src="/public/assets/js/jquery.signalR-2.4.3.min.js"></script>
+        <script src="/signalr/hubs"></script>
+        <script src="/public/assets/js/shop-inquiry-badge.js"></script>
         <script>
             (function () {
                 var categoryParents = document.querySelectorAll(".category-parent");

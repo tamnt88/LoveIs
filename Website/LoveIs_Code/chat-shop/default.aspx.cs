@@ -34,90 +34,127 @@ public partial class ShopChatDefault : System.Web.UI.Page
             return;
         }
 
-        int shopId = 0;
-        int.TryParse(Request.QueryString["shopId"], out shopId);
-        int productId = 0;
-        int.TryParse(Request.QueryString["productId"], out productId);
-        if (shopId <= 0)
-        {
-            ShowError("Khong tim thay cua hang.");
-            return;
-        }
-        if (productId <= 0)
-        {
-            ShowError("Khong tim thay san pham.");
-            return;
-        }
-
-        ShopId = shopId;
+        SenderIdField.Value = customerId.Value.ToString(System.Globalization.CultureInfo.InvariantCulture);
+        InquiryIdField.Value = "0";
 
         using (var db = new BeautyStoryContext())
         {
-            var product = db.CfProducts.FirstOrDefault(p => p.Id == productId && p.Status);
-            if (product == null || !product.ShopId.HasValue || product.ShopId.Value != shopId)
+            var inquiryIdParam = 0;
+            int.TryParse(Request.QueryString["inquiryId"], out inquiryIdParam);
+            var shopId = 0;
+            int.TryParse(Request.QueryString["shopId"], out shopId);
+            var productId = 0;
+            int.TryParse(Request.QueryString["productId"], out productId);
+
+            CfShopInquiry currentInquiry = null;
+            if (inquiryIdParam > 0)
             {
-                ShowError("Khong tim thay san pham.");
+                currentInquiry = db.CfShopInquiries.FirstOrDefault(i => i.Id == inquiryIdParam && i.CustomerId == customerId.Value && i.Status);
+            }
+            else if (shopId > 0 && productId > 0)
+            {
+                ShopId = shopId;
+                var product = db.CfProducts.FirstOrDefault(p => p.Id == productId && p.Status);
+                if (product == null || !product.ShopId.HasValue || product.ShopId.Value != shopId)
+                {
+                    ShowError("Khong tim thay san pham.");
+                    return;
+                }
+
+                var inquiry = db.CfShopInquiries.FirstOrDefault(i => i.ShopId == shopId
+                    && i.CustomerId == customerId.Value
+                    && i.ProductId == productId
+                    && i.Status);
+                if (inquiry == null)
+                {
+                    inquiry = new CfShopInquiry
+                    {
+                        ShopId = shopId,
+                        CustomerId = customerId.Value,
+                        ProductId = productId,
+                        CreatedAt = DateTime.Now,
+                        Status = true
+                    };
+                    db.CfShopInquiries.Add(inquiry);
+                    db.SaveChanges();
+
+                    db.CfShopInquiryMessages.Add(new CfShopInquiryMessage
+                    {
+                        InquiryId = inquiry.Id,
+                        ShopId = inquiry.ShopId,
+                        CustomerId = inquiry.CustomerId,
+                        SenderType = "customer",
+                        MessageType = "product_card",
+                        Message = product.ProductName,
+                        CreatedAt = DateTime.Now
+                    });
+                    inquiry.LastReplyAt = DateTime.Now;
+                    inquiry.LastMessageAt = inquiry.LastReplyAt;
+                    inquiry.LastMessageSender = "customer";
+                    db.SaveChanges();
+                }
+
+                currentInquiry = inquiry;
+            }
+
+            if (currentInquiry != null)
+            {
+                InquiryId = currentInquiry.Id;
+                InquiryIdField.Value = currentInquiry.Id.ToString(System.Globalization.CultureInfo.InvariantCulture);
+            }
+
+            BindConversationList(db, customerId.Value, currentInquiry != null ? currentInquiry.Id : 0);
+
+            if (ChatRoot != null)
+            {
+                ChatRoot.Attributes["data-sender-id"] = customerId.Value.ToString(System.Globalization.CultureInfo.InvariantCulture);
+                ChatRoot.Attributes["data-sender-type"] = "customer";
+                ChatRoot.Attributes["data-chat-id"] = currentInquiry != null ? currentInquiry.Id.ToString(System.Globalization.CultureInfo.InvariantCulture) : "0";
+            }
+
+            if (currentInquiry == null)
+            {
+                WelcomePanel.Visible = true;
+                ChatPanel.Visible = false;
                 return;
             }
 
-            var shop = db.CfShops.FirstOrDefault(s => s.Id == shopId);
-            if (shop == null)
+            var currentShop = db.CfShops.FirstOrDefault(s => s.Id == currentInquiry.ShopId);
+            if (currentShop == null)
             {
                 ShowError("Khong tim thay cua hang.");
                 return;
             }
 
-            TitleLiteral.Text = HttpUtility.HtmlEncode(shop.ShopName) + " | Chat";
-            ShopNameLiteral.Text = HttpUtility.HtmlEncode(shop.ShopName);
-            ShopAvatar.ImageUrl = string.IsNullOrWhiteSpace(shop.LogoUrl) ? "/images/fav.png" : shop.LogoUrl;
-            var seller = db.CfSellers.FirstOrDefault(s => s.Id == shop.SellerId);
+            ShopId = currentInquiry.ShopId;
+            TitleLiteral.Text = HttpUtility.HtmlEncode(currentShop.ShopName) + " | Chat";
+            ShopNameLiteral.Text = HttpUtility.HtmlEncode(currentShop.ShopName);
+            ShopAvatar.ImageUrl = string.IsNullOrWhiteSpace(currentShop.LogoUrl) ? "/images/fav.png" : currentShop.LogoUrl;
+            var seller = db.CfSellers.FirstOrDefault(s => s.Id == currentShop.SellerId);
             var sellerLastLoginAt = seller != null ? seller.LastLoginAt : (DateTime?)null;
             ShopStatusLiteral.Text = ChatPresenceHelper.BuildStatusText(sellerLastLoginAt);
             ShopStatusWrap.Attributes["class"] = ChatPresenceHelper.BuildStatusCssClass("shop-chat-status", sellerLastLoginAt);
 
-            var inquiry = db.CfShopInquiries.FirstOrDefault(i => i.ShopId == shopId
-                && i.CustomerId == customerId.Value
-                && i.ProductId == productId
-                && i.Status);
-            if (inquiry == null)
-            {
-                inquiry = new CfShopInquiry
-                {
-                    ShopId = shopId,
-                    CustomerId = customerId.Value,
-                    ProductId = productId,
-                    CreatedAt = DateTime.Now,
-                    Status = true
-                };
-                db.CfShopInquiries.Add(inquiry);
-                db.SaveChanges();
-
-                db.CfShopInquiryMessages.Add(new CfShopInquiryMessage
-                {
-                    InquiryId = inquiry.Id,
-                    ShopId = inquiry.ShopId,
-                    CustomerId = inquiry.CustomerId,
-                    SenderType = "customer",
-                    MessageType = "product_card",
-                    Message = product.ProductName,
-                    CreatedAt = DateTime.Now
-                });
-                inquiry.LastReplyAt = DateTime.Now;
-                inquiry.LastMessageAt = inquiry.LastReplyAt;
-                inquiry.LastMessageSender = "customer";
-                db.SaveChanges();
-            }
-
-            InquiryId = inquiry.Id;
-            InquiryIdField.Value = inquiry.Id.ToString(System.Globalization.CultureInfo.InvariantCulture);
-            SenderIdField.Value = customerId.Value.ToString(System.Globalization.CultureInfo.InvariantCulture);
-
-            BindMessages(db, inquiry.Id, productId);
+            BindMessages(db, currentInquiry.Id, currentInquiry.ProductId);
         }
     }
 
-    private void BindMessages(BeautyStoryContext db, int inquiryId, int productId)
+    private void BindMessages(BeautyStoryContext db, int inquiryId, int? productId)
     {
+        var unread = db.CfShopInquiryMessages
+            .Where(m => m.InquiryId == inquiryId && m.SenderType == "shop" && m.ReadAt == null)
+            .ToList();
+
+        if (unread.Count > 0)
+        {
+            var now = DateTime.Now;
+            foreach (var msg in unread)
+            {
+                msg.ReadAt = now;
+            }
+            db.SaveChanges();
+        }
+
         var messages = db.CfShopInquiryMessages.AsNoTracking()
             .Where(m => m.InquiryId == inquiryId)
             .OrderBy(m => m.CreatedAt)
@@ -138,7 +175,7 @@ public partial class ShopChatDefault : System.Web.UI.Page
             .GroupBy(f => f.MessageId)
             .ToDictionary(g => g.Key, g => g.ToList());
 
-        var productCardHtml = BuildProductCardHtml(db, productId);
+        var productCardHtml = productId.HasValue ? BuildProductCardHtml(db, productId.Value) : string.Empty;
         ProductCardLiteral.Text = productCardHtml;
 
         var view = messages
@@ -155,6 +192,92 @@ public partial class ShopChatDefault : System.Web.UI.Page
 
         MessageRepeater.DataSource = view;
         MessageRepeater.DataBind();
+    }
+
+    private void BindConversationList(BeautyStoryContext db, int customerId, int currentInquiryId)
+    {
+        var inquiries = db.CfShopInquiries.AsNoTracking()
+            .Where(i => i.CustomerId == customerId && i.Status)
+            .OrderByDescending(i => i.LastReplyAt ?? i.CreatedAt)
+            .Select(i => new
+            {
+                i.Id,
+                i.ShopId,
+                i.ProductId,
+                i.CreatedAt,
+                i.LastReplyAt,
+                i.LastMessageAt
+            })
+            .ToList();
+
+        if (inquiries.Count == 0)
+        {
+            ChatUnreadLiteral.Text = "0";
+            WelcomePanel.Visible = true;
+            ChatPanel.Visible = false;
+            return;
+        }
+
+        var inquiryIds = inquiries.Select(i => i.Id).ToList();
+        if (ChatRoot != null)
+        {
+            ChatRoot.Attributes["data-inquiry-ids"] = string.Join(",", inquiryIds);
+        }
+        var lastMessages = db.CfShopInquiryMessages.AsNoTracking()
+            .Where(m => inquiryIds.Contains(m.InquiryId))
+            .OrderByDescending(m => m.CreatedAt)
+            .ToList()
+            .GroupBy(m => m.InquiryId)
+            .ToDictionary(g => g.Key, g => g.First());
+
+        var unreadCounts = db.CfShopInquiryMessages.AsNoTracking()
+            .Where(m => inquiryIds.Contains(m.InquiryId) && m.SenderType == "shop" && m.ReadAt == null)
+            .GroupBy(m => m.InquiryId)
+            .ToDictionary(g => g.Key, g => g.Count());
+
+        var shopIds = inquiries.Select(i => i.ShopId).Distinct().ToList();
+        var shopLookup = db.CfShops.AsNoTracking()
+            .Where(s => shopIds.Contains(s.Id))
+            .Select(s => new { s.Id, s.ShopName, s.LogoUrl })
+            .ToList()
+            .ToDictionary(s => s.Id, s => s);
+
+        var totalUnread = unreadCounts.Sum(x => x.Value);
+        ChatUnreadLiteral.Text = totalUnread.ToString();
+
+            var listView = inquiries.Select(i =>
+            {
+                var shopName = shopLookup.ContainsKey(i.ShopId) ? shopLookup[i.ShopId].ShopName : ("Shop #" + i.ShopId);
+                var initial = string.IsNullOrWhiteSpace(shopName) ? "?" : shopName.Trim().Substring(0, 1).ToUpperInvariant();
+                var lastMessage = lastMessages.ContainsKey(i.Id) ? lastMessages[i.Id] : null;
+                var lastTime = lastMessage != null ? lastMessage.CreatedAt : (i.LastReplyAt ?? i.CreatedAt);
+            var snippet = lastMessage == null ? "Chua co tin nhan."
+                : (string.Equals(lastMessage.MessageType, "product_card", StringComparison.OrdinalIgnoreCase) ? "Da gui the san pham." : lastMessage.Message);
+            if (!string.IsNullOrWhiteSpace(snippet) && snippet.Length > 80)
+            {
+                snippet = snippet.Substring(0, 80) + "...";
+            }
+
+                var unread = unreadCounts.ContainsKey(i.Id) ? unreadCounts[i.Id] : 0;
+                return new
+                {
+                    InquiryId = i.Id,
+                    Url = "/chat-shop/default.aspx?inquiryId=" + i.Id,
+                    Title = HttpUtility.HtmlEncode(shopName),
+                    TitlePlain = HttpUtility.HtmlAttributeEncode(shopName ?? string.Empty),
+                    Initial = HttpUtility.HtmlEncode(initial),
+                    Snippet = HttpUtility.HtmlEncode(snippet),
+                    TimeText = lastTime.ToString("dd/MM"),
+                    UnreadCount = unread,
+                    ActiveClass = i.Id == currentInquiryId ? "active" : string.Empty,
+                UnreadClass = unread > 0 ? "is-unread" : string.Empty,
+                UnreadSort = unread > 0 ? 0 : 1,
+                LastTime = lastTime
+            };
+        }).OrderBy(v => v.UnreadSort).ThenByDescending(v => v.LastTime).ToList();
+
+        InquiryRepeater.DataSource = listView;
+        InquiryRepeater.DataBind();
     }
 
     protected void SendButton_Click(object sender, EventArgs e)

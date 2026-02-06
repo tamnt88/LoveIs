@@ -70,13 +70,17 @@ public partial class SellerChatDefault : System.Web.UI.Page
                 return;
             }
 
-            if (inquiryId <= 0 || !inquiries.Any(i => i.Id == inquiryId))
+            if (inquiryId > 0 && inquiries.Any(i => i.Id == inquiryId))
             {
-                inquiryId = inquiries[0].Id;
+                CurrentInquiryId = inquiryId;
+                CurrentShopId = inquiries.First(i => i.Id == inquiryId).ShopId;
             }
-
-            CurrentInquiryId = inquiryId;
-            CurrentShopId = inquiries.First(i => i.Id == inquiryId).ShopId;
+            else
+            {
+                inquiryId = 0;
+                CurrentInquiryId = 0;
+                CurrentShopId = 0;
+            }
 
             var customerIds = inquiries.Select(i => i.CustomerId).Distinct().ToList();
             var customerLookup = db.CfCustomers.AsNoTracking()
@@ -91,6 +95,12 @@ public partial class SellerChatDefault : System.Web.UI.Page
                 .ToDictionary(c => c.Id, c => c);
 
             var inquiryIds = inquiries.Select(i => i.Id).ToList();
+            if (ChatRoot != null)
+            {
+                ChatRoot.Attributes["data-inquiry-ids"] = string.Join(",", inquiryIds);
+                ChatRoot.Attributes["data-sender-id"] = sellerId.Value.ToString(System.Globalization.CultureInfo.InvariantCulture);
+                ChatRoot.Attributes["data-sender-type"] = "shop";
+            }
             var lastMessages = db.CfShopInquiryMessages.AsNoTracking()
                 .Where(m => inquiryIds.Contains(m.InquiryId))
                 .OrderByDescending(m => m.CreatedAt)
@@ -136,20 +146,41 @@ public partial class SellerChatDefault : System.Web.UI.Page
             InquiryRepeater.DataSource = listView;
             InquiryRepeater.DataBind();
 
-            var current = inquiries.First(i => i.Id == inquiryId);
-            var currentCustomerName = customerLookup.ContainsKey(current.CustomerId)
-                ? customerLookup[current.CustomerId].Name
-                : ("Khach hang #" + current.CustomerId);
-            CustomerNameLiteral.Text = HttpUtility.HtmlEncode(currentCustomerName);
-            CustomerInitialLiteral.Text = HttpUtility.HtmlEncode(string.IsNullOrWhiteSpace(currentCustomerName) ? "?" : currentCustomerName.Trim().Substring(0, 1).ToUpperInvariant());
-            var customerLastLoginAt = customerLookup.ContainsKey(current.CustomerId) ? customerLookup[current.CustomerId].LastLoginAt : (DateTime?)null;
-            CustomerStatusLiteral.Text = ChatPresenceHelper.BuildStatusText(customerLastLoginAt);
-            CustomerStatusWrap.Attributes["class"] = ChatPresenceHelper.BuildStatusCssClass("seller-chat-status", customerLastLoginAt);
+            if (inquiryId > 0)
+            {
+                var current = inquiries.First(i => i.Id == inquiryId);
+                var currentCustomerName = customerLookup.ContainsKey(current.CustomerId)
+                    ? customerLookup[current.CustomerId].Name
+                    : ("Khach hang #" + current.CustomerId);
+                CustomerNameLiteral.Text = HttpUtility.HtmlEncode(currentCustomerName);
+                CustomerInitialLiteral.Text = HttpUtility.HtmlEncode(string.IsNullOrWhiteSpace(currentCustomerName) ? "?" : currentCustomerName.Trim().Substring(0, 1).ToUpperInvariant());
+                var customerLastLoginAt = customerLookup.ContainsKey(current.CustomerId) ? customerLookup[current.CustomerId].LastLoginAt : (DateTime?)null;
+                CustomerStatusLiteral.Text = ChatPresenceHelper.BuildStatusText(customerLastLoginAt);
+                CustomerStatusWrap.Attributes["class"] = ChatPresenceHelper.BuildStatusCssClass("seller-chat-status", customerLastLoginAt);
 
-            InquiryIdField.Value = inquiryId.ToString(System.Globalization.CultureInfo.InvariantCulture);
-            SenderIdField.Value = sellerId.Value.ToString(System.Globalization.CultureInfo.InvariantCulture);
+                InquiryIdField.Value = inquiryId.ToString(System.Globalization.CultureInfo.InvariantCulture);
+                SenderIdField.Value = sellerId.Value.ToString(System.Globalization.CultureInfo.InvariantCulture);
+                if (ChatRoot != null)
+                {
+                    ChatRoot.Attributes["data-chat-id"] = inquiryId.ToString(System.Globalization.CultureInfo.InvariantCulture);
+                }
 
-            BindMessages(db, inquiryId, current.ProductId);
+                WelcomePanel.Visible = false;
+                ChatPanel.Visible = true;
+                BindMessages(db, inquiryId, current.ProductId);
+            }
+            else
+            {
+                SetWelcomeText("Chọn một cuộc hội thoại để bắt đầu.", "Tin nhắn sẽ hiển thị tại đây.");
+                WelcomePanel.Visible = true;
+                ChatPanel.Visible = false;
+                InquiryIdField.Value = "0";
+                SenderIdField.Value = sellerId.Value.ToString(System.Globalization.CultureInfo.InvariantCulture);
+                if (ChatRoot != null)
+                {
+                    ChatRoot.Attributes["data-chat-id"] = "0";
+                }
+            }
         }
     }
 
@@ -264,7 +295,7 @@ public partial class SellerChatDefault : System.Web.UI.Page
         ErrorPanel.Controls.Clear();
         ErrorPanel.Controls.Add(new System.Web.UI.LiteralControl(HttpUtility.HtmlEncode(message)));
         ChatPanel.Visible = false;
-        EmptyPanel.Visible = false;
+        WelcomePanel.Visible = false;
     }
 
     private void ShowEmpty()
@@ -272,7 +303,20 @@ public partial class SellerChatDefault : System.Web.UI.Page
         ErrorPanel.Visible = false;
         ErrorPanel.Controls.Clear();
         ChatPanel.Visible = false;
-        EmptyPanel.Visible = true;
+        SetWelcomeText("Chưa có cuộc hội thoại nào.", "Khi có khách nhắn tin, cuộc hội thoại sẽ hiển thị ở đây.");
+        WelcomePanel.Visible = true;
+    }
+
+    private void SetWelcomeText(string title, string subtitle)
+    {
+        if (WelcomeTitleLiteral != null)
+        {
+            WelcomeTitleLiteral.Text = HttpUtility.HtmlEncode(title ?? string.Empty);
+        }
+        if (WelcomeSubtitleLiteral != null)
+        {
+            WelcomeSubtitleLiteral.Text = HttpUtility.HtmlEncode(subtitle ?? string.Empty);
+        }
     }
 
     private static string BuildProductCardHtml(BeautyStoryContext db, int productId)

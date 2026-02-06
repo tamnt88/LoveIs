@@ -18,6 +18,7 @@ public partial class PublicHeader : System.Web.UI.UserControl
             BindCustomerLinks();
             BindNotifications();
             BindMessageBadge();
+            BindShopChatBadge();
         }
     }
 
@@ -321,6 +322,48 @@ public partial class PublicHeader : System.Web.UI.UserControl
                 .Count();
 
             MessageCountLiteral.Text = unreadCount.ToString();
+        }
+    }
+
+    private void BindShopChatBadge()
+    {
+        if (ShopChatBadgeLiteral == null || ShopChatBadgePanel == null || ShopChatFabLink == null)
+        {
+            return;
+        }
+
+        var customerId = CustomerAuth.GetCustomerId();
+        if (!customerId.HasValue)
+        {
+            ShopChatBadgePanel.Visible = false;
+            return;
+        }
+
+        using (var db = new BeautyStoryContext())
+        {
+            var inquiryIds = db.CfShopInquiries.AsNoTracking()
+                .Where(i => i.CustomerId == customerId.Value && i.Status)
+                .Select(i => i.Id)
+                .ToList();
+
+            ShopChatFabLink.Attributes["data-sender-id"] = customerId.Value.ToString(System.Globalization.CultureInfo.InvariantCulture);
+            ShopChatFabLink.Attributes["data-sender-type"] = "customer";
+            ShopChatFabLink.Attributes["data-inquiry-ids"] = string.Join(",", inquiryIds);
+
+            if (inquiryIds.Count == 0)
+            {
+                ShopChatBadgePanel.Visible = true;
+                ShopChatBadgePanel.Style["display"] = "none";
+                return;
+            }
+
+            var unreadCount = db.CfShopInquiryMessages.AsNoTracking()
+                .Where(m => inquiryIds.Contains(m.InquiryId) && m.SenderType == "shop" && m.ReadAt == null)
+                .Count();
+
+            ShopChatBadgeLiteral.Text = unreadCount.ToString();
+            ShopChatBadgePanel.Visible = true;
+            ShopChatBadgePanel.Style["display"] = unreadCount > 0 ? "inline-flex" : "none";
         }
     }
 

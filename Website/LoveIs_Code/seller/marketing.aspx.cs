@@ -313,7 +313,7 @@ public partial class SellerMarketing : Page
 
     private void SetVoucherError(string message)
     {
-        VoucherFormErrorLiteral.Text = "<div class='alert alert-warning'>" + message + "</div>";
+        VoucherFormErrorLiteral.Text = "<div class='alert alert-danger'>" + message + "</div>";
         VoucherModalPanel.Visible = true;
     }
 

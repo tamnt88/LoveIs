@@ -92,6 +92,55 @@
     --bs-light: var(--brand-light);
 }
 
+.shop-chat-fab {
+    position: fixed;
+    right: 24px;
+    bottom: 24px;
+    z-index: 1050;
+}
+
+.shop-chat-fab-btn {
+    background: #ee4d2d;
+    color: #fff;
+    border-radius: 12px;
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 18px;
+    font-weight: 600;
+    text-decoration: none;
+    box-shadow: 0 10px 24px rgba(238, 77, 45, 0.25);
+    position: relative;
+}
+
+.shop-chat-fab-btn i {
+    font-size: 16px;
+}
+
+.shop-chat-fab-btn:hover {
+    color: #fff;
+    text-decoration: none;
+    background: #e44527;
+}
+
+.shop-chat-fab-badge {
+    position: absolute;
+    top: -10px;
+    right: -10px;
+    background: #ff3b30;
+    color: #fff;
+    border-radius: 999px;
+    min-width: 22px;
+    height: 22px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    font-weight: 700;
+    padding: 0 6px;
+    box-shadow: 0 6px 12px rgba(255, 59, 48, 0.25);
+}
+
 body {
     font-family: var(--theme-general-font);
     color: var(--brand-ink);

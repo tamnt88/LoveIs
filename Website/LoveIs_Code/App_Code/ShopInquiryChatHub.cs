@@ -36,6 +36,40 @@ public class ShopInquiryChatHub : Hub
         Clients.Caller.joinedInquiry(parsedInquiryId);
     }
 
+    public void JoinSellerInquiries(int sellerId)
+    {
+        if (sellerId <= 0)
+        {
+            return;
+        }
+
+        ConnectionUsers[Context.ConnectionId] = new ConnectionContext
+        {
+            SenderType = "shop",
+            SenderId = sellerId
+        };
+
+        Groups.Add(Context.ConnectionId, BuildSellerGroup(sellerId));
+        Clients.Caller.joinedSeller(sellerId);
+    }
+
+    public void JoinCustomerInquiries(int customerId)
+    {
+        if (customerId <= 0)
+        {
+            return;
+        }
+
+        ConnectionUsers[Context.ConnectionId] = new ConnectionContext
+        {
+            SenderType = "customer",
+            SenderId = customerId
+        };
+
+        Groups.Add(Context.ConnectionId, BuildCustomerGroup(customerId));
+        Clients.Caller.joinedCustomer(customerId);
+    }
+
     public void LeaveInquiry(string inquiryId)
     {
         int parsedInquiryId;
@@ -114,6 +148,32 @@ public class ShopInquiryChatHub : Hub
                 MessageType = "text",
                 CreatedAt = newMessage.CreatedAt.ToString("HH:mm")
             });
+
+            var shop = db.CfShops.AsNoTracking().FirstOrDefault(s => s.Id == inquiry.ShopId);
+            var sellerId = shop != null ? shop.SellerId : 0;
+            var customer = db.CfCustomers.AsNoTracking().FirstOrDefault(c => c.Id == inquiry.CustomerId);
+            var customerName = customer != null
+                ? (!string.IsNullOrWhiteSpace(customer.DisplayName) ? customer.DisplayName : customer.Username)
+                : ("Khach hang #" + inquiry.CustomerId);
+            var shopName = shop != null ? shop.ShopName : ("Shop #" + inquiry.ShopId);
+            var alertPayload = new
+            {
+                InquiryId = inquiryId,
+                ShopId = inquiry.ShopId,
+                CustomerId = inquiry.CustomerId,
+                SenderType = senderType,
+                SenderId = context.SenderId,
+                Message = safeMessage,
+                MessageType = "text",
+                CreatedAt = newMessage.CreatedAt.ToString("HH:mm"),
+                CustomerName = customerName,
+                ShopName = shopName
+            };
+            if (sellerId > 0)
+            {
+                Clients.Group(BuildSellerGroup(sellerId)).newMessageAlert(alertPayload);
+            }
+            Clients.Group(BuildCustomerGroup(inquiry.CustomerId)).newMessageAlert(alertPayload);
         }
     }
 
@@ -154,6 +214,16 @@ public class ShopInquiryChatHub : Hub
     private static string BuildGroup(int inquiryId)
     {
         return "shop-inquiry-" + inquiryId.ToString(System.Globalization.CultureInfo.InvariantCulture);
+    }
+
+    private static string BuildSellerGroup(int sellerId)
+    {
+        return "shop-inquiry-seller-" + sellerId.ToString(System.Globalization.CultureInfo.InvariantCulture);
+    }
+
+    private static string BuildCustomerGroup(int customerId)
+    {
+        return "shop-inquiry-customer-" + customerId.ToString(System.Globalization.CultureInfo.InvariantCulture);
     }
 
     private static bool IsAuthorized(int inquiryId, string senderType, int senderId)

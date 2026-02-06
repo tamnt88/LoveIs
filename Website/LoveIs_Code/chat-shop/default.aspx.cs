@@ -1,6 +1,7 @@
 using System;
 using System.Linq;
 using System.Web;
+using Microsoft.AspNet.SignalR;
 
 public partial class ShopChatDefault : System.Web.UI.Page
 {
@@ -78,21 +79,23 @@ public partial class ShopChatDefault : System.Web.UI.Page
                     db.CfShopInquiries.Add(inquiry);
                     db.SaveChanges();
 
-                    db.CfShopInquiryMessages.Add(new CfShopInquiryMessage
-                    {
-                        InquiryId = inquiry.Id,
-                        ShopId = inquiry.ShopId,
-                        CustomerId = inquiry.CustomerId,
-                        SenderType = "customer",
-                        MessageType = "product_card",
-                        Message = product.ProductName,
-                        CreatedAt = DateTime.Now
-                    });
-                    inquiry.LastReplyAt = DateTime.Now;
-                    inquiry.LastMessageAt = inquiry.LastReplyAt;
-                    inquiry.LastMessageSender = "customer";
-                    db.SaveChanges();
-                }
+                db.CfShopInquiryMessages.Add(new CfShopInquiryMessage
+                {
+                    InquiryId = inquiry.Id,
+                    ShopId = inquiry.ShopId,
+                    CustomerId = inquiry.CustomerId,
+                    SenderType = "customer",
+                    MessageType = "product_card",
+                    Message = product.ProductName,
+                    CreatedAt = DateTime.Now
+                });
+                inquiry.LastReplyAt = DateTime.Now;
+                inquiry.LastMessageAt = inquiry.LastReplyAt;
+                inquiry.LastMessageSender = "customer";
+                db.SaveChanges();
+
+                NotifyNewMessageAlert(inquiry, shopId, "product_card", product.ProductName);
+            }
 
                 currentInquiry = inquiry;
             }
@@ -136,6 +139,50 @@ public partial class ShopChatDefault : System.Web.UI.Page
             ShopStatusWrap.Attributes["class"] = ChatPresenceHelper.BuildStatusCssClass("shop-chat-status", sellerLastLoginAt);
 
             BindMessages(db, currentInquiry.Id, currentInquiry.ProductId);
+        }
+    }
+
+    private static void NotifyNewMessageAlert(CfShopInquiry inquiry, int shopId, string messageType, string message)
+    {
+        if (inquiry == null || shopId <= 0)
+        {
+            return;
+        }
+
+        var sellerId = 0;
+        using (var db = new BeautyStoryContext())
+        {
+            var shop = db.CfShops.AsNoTracking().FirstOrDefault(s => s.Id == shopId);
+            if (shop != null)
+            {
+                sellerId = shop.SellerId;
+            }
+        }
+
+        if (sellerId <= 0)
+        {
+            return;
+        }
+
+        var payload = new
+        {
+            InquiryId = inquiry.Id,
+            ShopId = inquiry.ShopId,
+            CustomerId = inquiry.CustomerId,
+            SenderType = "customer",
+            SenderId = inquiry.CustomerId,
+            Message = message ?? string.Empty,
+            MessageType = messageType ?? "text",
+            CreatedAt = DateTime.Now.ToString("HH:mm"),
+            CustomerName = string.Empty,
+            ShopName = string.Empty
+        };
+
+        var context = GlobalHost.ConnectionManager.GetHubContext<ShopInquiryChatHub>();
+        if (context != null)
+        {
+            context.Clients.Group("shop-inquiry-seller-" + sellerId.ToString(System.Globalization.CultureInfo.InvariantCulture))
+                .newMessageAlert(payload);
         }
     }
 

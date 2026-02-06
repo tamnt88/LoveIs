@@ -120,7 +120,10 @@ document.addEventListener("DOMContentLoaded", function () {
         var threadId = getThreadId(message);
         var item = convoList.querySelector("[data-inquiry-id='" + threadId + "']");
         if (!item) {
-            return;
+            item = createConversationItem(message, threadId);
+            if (!item) {
+                return;
+            }
         }
 
         var snippet = item.querySelector(".seller-chat-snippet");
@@ -156,6 +159,82 @@ document.addEventListener("DOMContentLoaded", function () {
         updateGlobalBadgeFromList();
     }
 
+    function createConversationItem(message, threadId) {
+        if (!convoList || !threadId) {
+            return null;
+        }
+        var title = "";
+        if (root.classList.contains("seller-chat-page")) {
+            title = message.CustomerName || ("Khach hang #" + (message.CustomerId || ""));
+        } else if (root.classList.contains("shop-chat-page")) {
+            title = message.ShopName || ("Shop #" + (message.ShopId || ""));
+        }
+        title = title || "Hoi thoai moi";
+        var initial = title.trim().substring(0, 1).toUpperCase();
+
+        var item = document.createElement("a");
+        item.className = "seller-chat-item is-unread";
+        item.href = root.classList.contains("seller-chat-page")
+            ? ("/seller/chat.aspx?inquiryId=" + threadId)
+            : ("/chat-shop/default.aspx?inquiryId=" + threadId);
+        item.setAttribute("data-inquiry-id", threadId.toString());
+        item.setAttribute("data-unread", "0");
+        item.setAttribute("data-title", title);
+
+        var avatar = document.createElement("span");
+        avatar.className = "seller-chat-avatar";
+        avatar.textContent = initial;
+
+        var info = document.createElement("span");
+        info.className = "seller-chat-info";
+        var top = document.createElement("span");
+        top.className = "seller-chat-top";
+        var name = document.createElement("span");
+        name.className = "seller-chat-name";
+        name.textContent = title;
+        var time = document.createElement("span");
+        time.className = "seller-chat-time";
+        time.textContent = message.CreatedAt || "";
+        top.appendChild(name);
+        top.appendChild(time);
+
+        var snippet = document.createElement("span");
+        snippet.className = "seller-chat-snippet";
+        snippet.textContent = (message.Message || "").trim() || "Tin nhan moi";
+
+        info.appendChild(top);
+        info.appendChild(snippet);
+
+        var badge = document.createElement("span");
+        badge.className = "seller-chat-badge";
+        badge.style.display = "none";
+
+        item.appendChild(avatar);
+        item.appendChild(info);
+        item.appendChild(badge);
+
+        convoList.insertBefore(item, convoList.firstChild);
+        return item;
+    }
+
+    function clearCurrentUnread() {
+        if (!convoList || !chatId) {
+            return;
+        }
+        var item = convoList.querySelector("[data-inquiry-id='" + chatId + "']");
+        if (!item) {
+            return;
+        }
+        item.setAttribute("data-unread", "0");
+        item.classList.remove("is-unread");
+        var badge = item.querySelector(".seller-chat-badge");
+        if (badge) {
+            badge.textContent = "";
+            badge.style.display = "none";
+        }
+        updateGlobalBadgeFromList();
+    }
+
     function appendMessage(message) {
         var threadId = getThreadId(message);
         if (String(threadId) !== String(chatId)) {
@@ -188,6 +267,7 @@ document.addEventListener("DOMContentLoaded", function () {
         if (hub.server && hub.server.markRead && chatId > 0) {
             hub.server.markRead(chatId, senderType, senderId);
         }
+        clearCurrentUnread();
     };
 
     hub.client.joinedChat = function () {
@@ -195,6 +275,7 @@ document.addEventListener("DOMContentLoaded", function () {
         if (hub.server && hub.server.markRead && chatId > 0) {
             hub.server.markRead(chatId, senderType, senderId);
         }
+        clearCurrentUnread();
     };
 
     hub.client.newMessage = function (message) {
@@ -202,6 +283,13 @@ document.addEventListener("DOMContentLoaded", function () {
             return;
         }
         appendMessage(message);
+    };
+
+    hub.client.newMessageAlert = function (message) {
+        if (!message || !message.InquiryId) {
+            return;
+        }
+        updateConversationItem(message);
     };
 
     hub.client.chatError = function (text) {
@@ -220,6 +308,13 @@ document.addEventListener("DOMContentLoaded", function () {
             });
         } else if (chatId > 0 && hub.server.joinChat) {
             hub.server.joinChat(chatId.toString(), senderType, senderId);
+        }
+
+        if (senderType === "shop" && hub.server.joinSellerInquiries) {
+            hub.server.joinSellerInquiries(senderId);
+        }
+        if (senderType === "customer" && hub.server.joinCustomerInquiries) {
+            hub.server.joinCustomerInquiries(senderId);
         }
 
         scrollToBottom();
